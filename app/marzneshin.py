@@ -13,6 +13,7 @@ from starlette.staticfiles import StaticFiles
 from uvicorn import Config, Server
 
 from app.config.env import (
+    CORS_ALLOWED_ORIGINS,
     DEBUG,
     DOCS,
     HOME_PAGE_TEMPLATE,
@@ -69,10 +70,14 @@ def home_page():
     return render_template(HOME_PAGE_TEMPLATE)
 
 
+# CORS: strict by default (AUDIT.md P0-4). Operators opt in via
+# CORS_ALLOWED_ORIGINS in .env. Credentials are only permitted when
+# specific origins are configured — the `*` + credentials combination
+# is a spec violation AND a cookie-theft vector.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=CORS_ALLOWED_ORIGINS,
+    allow_credentials=bool(CORS_ALLOWED_ORIGINS),
     allow_methods=["*"],
     allow_headers=["*"],
 )
