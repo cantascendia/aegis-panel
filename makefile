@@ -25,3 +25,44 @@ dashboard-preview:
 
 dashboard-cleanup:
 	rm -rf ./dashboard/node_modules/
+
+# --- Aegis additions: test / lint / format / db-reset ---
+
+.PHONY: test test-backend test-dashboard lint lint-backend lint-dashboard format format-backend format-dashboard db-reset install-dev
+
+test: test-backend test-dashboard
+
+test-backend:
+	pytest tests/ -q
+
+test-dashboard:
+	cd dashboard && pnpm run test
+
+lint: lint-backend lint-dashboard
+
+lint-backend:
+	ruff check .
+
+lint-dashboard:
+	cd dashboard && pnpm run lint
+
+format: format-backend format-dashboard
+
+format-backend:
+	ruff format .
+	ruff check --fix .
+
+format-dashboard:
+	cd dashboard && pnpm run format || pnpm run lint -- --write
+
+db-reset:
+	@echo "WARN: this deletes local SQLite DB and re-runs migrations."
+	@echo "Press Ctrl-C within 3s to abort..."
+	@sleep 3
+	rm -f db.sqlite3
+	alembic upgrade head
+
+install-dev:
+	pip install -r requirements.txt
+	pip install ruff pytest pytest-asyncio pytest-cov httpx
+	pnpm install --prefix ./dashboard

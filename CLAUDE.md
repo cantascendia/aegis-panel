@@ -6,8 +6,8 @@
 
 ## 完整手册
 
-CTO 操作手册（工作流程、输出格式、配置规范、决策框架、快捷命令）见：
-`C:/projects/ai-guidebook/playbook/handbook.md`
+CTO 操作手册（§1-§29，工作流程、输出格式、配置规范、决策框架、项目集成教程）见：
+`C:/projects/ai-playbook/playbook/handbook.md`
 
 ## 项目记忆
 
