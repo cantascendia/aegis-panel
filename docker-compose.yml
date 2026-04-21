@@ -21,3 +21,64 @@ services:
       SSL_CERT_FILE: "./server.cert"
     volumes:
       - /var/lib/marznode:/var/lib/marznode
+
+  # --- Optional profiles -----------------------------------------------
+  # Opt in with:
+  #   docker compose --profile postgres --profile redis up -d
+  # Without the flag these services never start, so SQLite-only
+  # deployments see zero behavior change.
+  #
+  # Production note: host network is kept to match the upstream
+  # marzneshin/marznode services. Both PG and Redis therefore bind to
+  # localhost only on the host (127.0.0.1:5432 / 127.0.0.1:6379) — any
+  # external access must go through an SSH tunnel or a reverse proxy.
+  # --------------------------------------------------------------------
+
+  postgres:
+    profiles: [postgres]
+    image: postgres:16-alpine
+    restart: always
+    network_mode: host
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-aegis}"
+      POSTGRES_USER: "${POSTGRES_USER:-aegis}"
+      # Do not use `${POSTGRES_PASSWORD:?error}` here: Compose expands
+      # variables before profile filtering, which would break SQLite-only
+      # deployments that never enable the postgres profile.
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-}"
+      # Bind to localhost on the host; external access via tunnel/proxy.
+      PGPORT: "${POSTGRES_PORT:-5432}"
+    volumes:
+      - /var/lib/aegis-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aegis} -d ${POSTGRES_DB:-aegis}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  redis:
+    profiles: [redis]
+    image: redis:7-alpine
+    restart: always
+    network_mode: host
+    # `--save ""` disables snapshotting for the rate-limit-only use
+    # case (short-lived counters). If a consumer ever needs durability
+    # (session storage, persistent cache) override with a custom
+    # redis.conf mounted into /usr/local/etc/redis/.
+    command: >
+      redis-server
+      --port ${REDIS_PORT:-6379}
+      --bind 127.0.0.1
+      --save ""
+      --appendonly no
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - /var/lib/aegis-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "${REDIS_PORT:-6379}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s

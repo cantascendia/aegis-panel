@@ -103,6 +103,20 @@ CORS_ALLOWED_ORIGINS = config(
 )
 
 
+# Redis 7 (optional). See docs/ai-cto/SPEC-postgres-redis.md.
+#
+# Empty == disabled. Consumers that *require* Redis (rate limit) must
+# check is_redis_configured() and fail loud when absent. Consumers
+# that can degrade (opportunistic cache) should skip silently.
+#
+# Connection string format:
+#   redis://[:password@]host[:port][/db]
+#   rediss://... (TLS)
+#   unix:///path/to/socket?db=0
+REDIS_URL = config("REDIS_URL", default="")
+REDIS_POOL_SIZE = config("REDIS_POOL_SIZE", cast=int, default=20)
+
+
 class AuthAlgorithm(Enum):
     PLAIN = "plain"
     XXH128 = "xxh128"
