@@ -6,6 +6,9 @@ on:
       - '*'
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   find-locales:
     runs-on: ubuntu-latest
@@ -14,15 +17,29 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Find locale JSON files
         id: find
         run: |
-          files=$(ls dashboard/public/locales/*.json | jq -R -s -c 'split("\n")[:-1]')
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            files=$(git diff --name-only FETCH_HEAD...HEAD -- 'dashboard/public/locales/*.json')
+          else
+            before="${{ github.event.before }}"
+            if [[ -n "$before" && "$before" != "0000000000000000000000000000000000000000" ]]; then
+              files=$(git diff --name-only "$before" HEAD -- 'dashboard/public/locales/*.json')
+            else
+              files=$(git diff --name-only HEAD^ HEAD -- 'dashboard/public/locales/*.json' || true)
+            fi
+          fi
+          files=$(printf '%s\n' "$files" | sed '/^$/d' | jq -R -s -c 'split("\n")[:-1]')
           echo "files=$files" >> "$GITHUB_OUTPUT"
 
   run-script:
     needs: find-locales
+    if: ${{ needs.find-locales.outputs.files != '[]' }}
     runs-on: ubuntu-latest
 
     strategy:

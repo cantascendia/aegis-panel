@@ -218,3 +218,4 @@ ops/_runtime/
 # Local env overrides
 .env.local
 .env.*.local
+/.claude/worktrees/

@@ -1,0 +1,45 @@
+# Git line-ending normalization.
+# Goal: the repository blobs are always LF; working trees may be CRLF on
+# Windows via the user's core.autocrlf setting. This kills the "every
+# checkout shows 10 files as modified" noise that plagues Windows forks.
+#
+# If you're seeing a one-time large diff after adding this file, that's
+# expected: Git is normalizing existing CRLF blobs to LF. Commit it once.
+
+* text=auto eol=lf
+
+# Explicit markers for common text types (belt + suspenders).
+*.py      text eol=lf
+*.pyi     text eol=lf
+*.md      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.toml    text eol=lf
+*.json    text eol=lf
+*.txt     text eol=lf
+*.sh      text eol=lf
+*.cfg     text eol=lf
+*.ini     text eol=lf
+*.ts      text eol=lf
+*.tsx     text eol=lf
+*.js      text eol=lf
+*.jsx     text eol=lf
+*.html    text eol=lf
+*.css     text eol=lf
+makefile  text eol=lf
+Makefile  text eol=lf
+Dockerfile text eol=lf
+
+# Never mess with binaries.
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.eot     binary
+*.pdf     binary
+*.db      binary
+*.sqlite3 binary

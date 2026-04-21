@@ -4,6 +4,10 @@ on:
   pull_request_target:
     types: [opened, edited, synchronize]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   conventional_commit:
     name: Conventional Commit Title

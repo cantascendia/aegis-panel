@@ -1,3 +1,96 @@
 [tool.black]
+# Upstream-inherited formatter. Kept for compatibility with the existing
+# Marzneshin formatting baseline in app/. Ruff `format` is configured to
+# produce byte-compatible output so either tool is safe.
 line-length = 79
 extend-exclude = ".*_(grpc|pb2).pyi?"
+
+[tool.ruff]
+# Align line-length with upstream black config to keep upstream-sync diffs
+# minimal. Do NOT widen without consensus — it creates churn across app/.
+line-length = 79
+target-version = "py312"
+extend-exclude = [
+    "alembic/versions",      # auto-generated migrations
+    "app/marznode/service_pb2.py",
+    "app/marznode/service_pb2.pyi",
+    "app/marznode/service_grpc.py",
+    ".venv",
+    "dashboard",
+]
+
+[tool.ruff.lint]
+# Start conservative. We'll tighten gradually; the goal of Round 1 is
+# "CI green without reformatting upstream", not full stylistic overhaul.
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import ordering)
+    "B",    # bugbear (common footguns)
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",  # line-too-long — handled by formatter, don't double-complain
+    "B008",  # do not perform function call in argument defaults —
+             # FastAPI idiom (`Depends(...)`) triggers this everywhere
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["F401", "F811"]       # fixtures cause these false positives
+"alembic/env.py" = ["E402"]         # sys.path manipulation order
+
+[tool.ruff.format]
+# Byte-compatible with black at line-length=79.
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# asyncio auto-mode: async def test_* just works, no per-test marker needed.
+asyncio_mode = "auto"
+addopts = [
+    "-ra",                 # short traceback + reason summary
+    "--strict-markers",    # typo'd @pytest.mark.foo becomes an error
+    "--strict-config",
+]
+filterwarnings = [
+    # Round 1 policy: surface warnings but don't fail the suite on them.
+    # We'll flip to "error" once upstream-inherited deprecation noise
+    # (passlib/crypt, pydantic, sqlalchemy, authlib) is triaged — doing it
+    # on day one would keep CI permanently red on third-party drift.
+    "default",
+    # These two are already triaged — always silence:
+    "ignore::DeprecationWarning:pydantic.*",
+    "ignore::DeprecationWarning:sqlalchemy.*",
+    # passlib still imports `crypt` which Python 3.13 deprecates; harmless
+    # for us because we never hit that code path in tests.
+    "ignore::DeprecationWarning:passlib.*",
+    "ignore:'crypt' is deprecated:DeprecationWarning",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["app", "hardening", "ops"]
+omit = [
+    "app/marznode/service_pb2.py",
+    "app/marznode/service_pb2.pyi",
+    "app/marznode/service_grpc.py",
+    "alembic/versions/*",
+    "tests/*",
+]
+
+[tool.coverage.report]
+precision = 1
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
