@@ -2,7 +2,7 @@ from typing import Optional, Annotated
 
 import sqlalchemy
 from fastapi import APIRouter
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
@@ -22,6 +22,7 @@ from app.models.admin import (
 from app.models.service import ServiceResponse
 from app.models.user import UserResponse
 from app.utils.auth import create_admin_token
+from hardening.panel.rate_limit import ADMIN_LOGIN_LIMIT, limiter
 
 router = APIRouter(tags=["Admin"], prefix="/admins")
 
@@ -65,8 +66,11 @@ def get_current_admin(admin: AdminDep):
 
 
 @router.post("/token", response_model=Token)
+@limiter.limit(ADMIN_LOGIN_LIMIT)
 def admin_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: DBDep
+    request: Request,  # noqa: ARG001  # required by slowapi rate-limit decorator
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: DBDep,
 ):
     if dbadmin := authenticate_admin(
         db, form_data.username, form_data.password

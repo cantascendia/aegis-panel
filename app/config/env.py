@@ -117,6 +117,26 @@ REDIS_URL = config("REDIS_URL", default="")
 REDIS_POOL_SIZE = config("REDIS_POOL_SIZE", cast=int, default=20)
 
 
+# Admin-login rate limiting (AUDIT.md section 4, finding P0-2).
+#
+# Disabled by default so existing deployments don't suddenly 429 on
+# upgrade. Operators enable after confirming REDIS_URL is reachable.
+#
+# When enabled, Redis is a hard dependency — rate limiting without a
+# shared counter (in-process only) gives false security in multi-
+# worker deployments. Startup fails loud if enabled without Redis,
+# see hardening/panel/rate_limit.py:RateLimitMisconfigured.
+#
+# The limit string uses `limits` library syntax:
+#   "5/minute" / "100/hour" / "1000/day"
+# Per-IP by default; behind a proxy, set trusted proxy headers in
+# deploy config (see DEVELOPMENT.md).
+RATE_LIMIT_ENABLED = config("RATE_LIMIT_ENABLED", default=False, cast=bool)
+RATE_LIMIT_ADMIN_LOGIN = config(
+    "RATE_LIMIT_ADMIN_LOGIN", default="5/minute"
+)
+
+
 class AuthAlgorithm(Enum):
     PLAIN = "plain"
     XXH128 = "xxh128"

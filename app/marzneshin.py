@@ -29,6 +29,7 @@ from app.config.env import (
     TASKS_RESET_USER_DATA_USAGE,
 )
 from app.templates import render_template
+from hardening.panel import apply_panel_hardening
 from . import __version__
 from .routes import api_router
 from .tasks import (
@@ -63,6 +64,10 @@ app.webhooks.include_router(webhooks_router)
 
 app.include_router(api_router)
 add_pagination(app)
+
+# Install panel hardening (rate limit, future: etc.). Kept behind a
+# single call so upstream-sync diffs on marzneshin.py stay minimal.
+apply_panel_hardening(app)
 
 
 @app.get("/", response_class=HTMLResponse)
