@@ -1,13 +1,11 @@
-[tool.black]
-# Upstream-inherited formatter. Kept for compatibility with the existing
-# Marzneshin formatting baseline in app/. Ruff `format` is configured to
-# produce byte-compatible output so either tool is safe.
-line-length = 79
-extend-exclude = ".*_(grpc|pb2).pyi?"
-
 [tool.ruff]
-# Align line-length with upstream black config to keep upstream-sync diffs
-# minimal. Do NOT widen without consensus — it creates churn across app/.
+# Ruff is the single Python lint+format tool for this project (since
+# Round 1). The old `[tool.black]` section was removed at Round 1
+# tail — black is no longer installed, CI does not reference it.
+#
+# line-length=79 matches the historical upstream black config. Do NOT
+# widen without consensus — it creates churn across `app/` if we ever
+# take over its formatting.
 line-length = 79
 target-version = "py312"
 extend-exclude = [
