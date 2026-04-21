@@ -86,6 +86,23 @@ WEBHOOK_ADDRESS = config("WEBHOOK_ADDRESS", default=None)
 WEBHOOK_SECRET = config("WEBHOOK_SECRET", default=None)
 
 
+# CORS allowed origins (comma-separated). Empty list == no cross-origin
+# access (same-origin only). AUDIT.md section 4, finding P0-4.
+#
+# Upstream shipped `allow_origins=["*"]` + `allow_credentials=True`, a
+# combination browsers reject AND one that, if browsers accepted it,
+# would let any website read an authenticated admin's session. We
+# default to the closed position and require operators to opt in.
+#
+# Example: CORS_ALLOWED_ORIGINS="https://panel.example.com,https://admin.example.com"
+# Dev override: CORS_ALLOWED_ORIGINS="http://localhost:3000"
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS",
+    default="",
+    cast=lambda v: [o.strip() for o in v.split(",") if o.strip()],
+)
+
+
 class AuthAlgorithm(Enum):
     PLAIN = "plain"
     XXH128 = "xxh128"
