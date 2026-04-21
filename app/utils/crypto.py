@@ -1,5 +1,5 @@
 import ssl
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -28,14 +28,21 @@ def generate_certificate():
         key.public_key()
     )
 
+    # `datetime.utcnow()` is Python 3.12 deprecated (naive datetimes are
+    # the root cause). Pass a timezone-aware UTC datetime instead.
+    # CertificateBuilder's `.not_valid_before()` / `.not_valid_after()`
+    # setters continue to be the supported API; their deprecation story
+    # applies only to the *read-side* properties on Certificate objects
+    # (`cert.not_valid_before_utc`, etc.), not to these builder methods.
+    now = datetime.now(timezone.utc)
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.utcnow())
-        .not_valid_after(datetime.utcnow() + timedelta(days=3650))
+        .not_valid_before(now)
+        .not_valid_after(now + timedelta(days=3650))
         .add_extension(
             x509.BasicConstraints(ca=False, path_length=None), critical=True
         )
