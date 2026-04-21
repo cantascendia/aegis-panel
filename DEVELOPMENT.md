@@ -59,6 +59,58 @@ docker-compose logs -f
 # 生产 compose 未来在 deploy/compose/docker-compose.prod.yml
 ```
 
+### 可选服务:PostgreSQL 16 + Redis 7
+
+Round 1 起,`docker-compose.yml` 包含两个**可选 profile**。默认启动**不会**拉起它们,SQLite-only 部署零改变。
+
+```bash
+# 同时启 PG + Redis
+docker compose --profile postgres --profile redis up -d
+
+# 只启 PG(无 Redis,rate-limit 功能禁用)
+docker compose --profile postgres up -d
+
+# 退回默认
+docker compose up -d
+```
+
+**切换到 PostgreSQL**(必须在启动 `marzneshin` 前设好 `.env`):
+
+```env
+POSTGRES_DB=aegis
+POSTGRES_USER=aegis
+POSTGRES_PASSWORD=<32-char random>
+SQLALCHEMY_DATABASE_URL=postgresql+psycopg://aegis:<同上>@127.0.0.1:5432/aegis
+```
+
+迁移:
+
+```bash
+alembic upgrade head
+```
+
+**启用 Redis**:
+
+```env
+REDIS_URL=redis://127.0.0.1:6379/0
+# REDIS_POOL_SIZE=20  # 可选,默认 20,>1000 req/s 再调
+```
+
+Redis 未配置时,`app.cache.redis.get_redis()` 会抛 `RedisDisabled`,所有依赖 Redis 的功能(下一轮的 admin 速率限制)都会失效告警,**不会**让 app 启动失败。
+
+健康检查:`docker compose ps` 应该看到 `postgres` 和 `redis` 都是 `healthy`。
+
+### 从 SQLite 迁移到 PostgreSQL
+
+官方未提供 in-place 迁移。现有操作:
+
+1. 在旧 SQLite 部署上跑 `marzneshin-cli` 导出用户 / 订阅 / 节点
+2. 切 `.env` 到 PostgreSQL URL
+3. `alembic upgrade head` 建表
+4. `marzneshin-cli` 导入
+
+期间面板下线。如果数据量大、停机不可接受,在 `deploy/README.md` 规划的 Ansible playbook 里会有一个蓝绿流程,Round 2 落地。
+
 ## 目录速查
 
 | 目录 | 性质 | 修改策略 |
