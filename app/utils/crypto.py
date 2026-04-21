@@ -28,12 +28,12 @@ def generate_certificate():
         key.public_key()
     )
 
-    # Use timezone-aware datetimes + the `_utc` builder variants.
-    # `datetime.utcnow()` is Python 3.12 deprecated; cryptography 42+
-    # deprecated `not_valid_before` / `not_valid_after` in favour of
-    # `not_valid_before_utc` / `not_valid_after_utc` (slated for removal
-    # in cryptography 47). Fixing both here clears two
-    # DeprecationWarnings from the certificate-generation path.
+    # `datetime.utcnow()` is Python 3.12 deprecated (naive datetimes are
+    # the root cause). Pass a timezone-aware UTC datetime instead.
+    # CertificateBuilder's `.not_valid_before()` / `.not_valid_after()`
+    # setters continue to be the supported API; their deprecation story
+    # applies only to the *read-side* properties on Certificate objects
+    # (`cert.not_valid_before_utc`, etc.), not to these builder methods.
     now = datetime.now(timezone.utc)
     cert = (
         x509.CertificateBuilder()
@@ -41,8 +41,8 @@ def generate_certificate():
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before_utc(now)
-        .not_valid_after_utc(now + timedelta(days=3650))
+        .not_valid_before(now)
+        .not_valid_after(now + timedelta(days=3650))
         .add_extension(
             x509.BasicConstraints(ca=False, path_length=None), critical=True
         )
