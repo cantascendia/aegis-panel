@@ -47,6 +47,13 @@ indent-style = "space"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
+# `pytest` invoked directly (not `python -m pytest`) does NOT put the
+# CWD on sys.path. Without this, tests running before pytest-alembic
+# initializes alembic (which adds the repo root as a side effect) fail
+# to import `app.*`. Root-cause story: test_cache_redis.py landed first
+# alphabetically and broke, while later-ordered tests continued to
+# pass by accident. Making the path explicit kills the class of bug.
+pythonpath = ["."]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
