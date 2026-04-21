@@ -49,13 +49,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: ruff check (lint — self-owned dirs only)
+      - name: ruff check (lint - self-owned dirs only)
         # Round 1 policy: lint self-owned code strictly; leave upstream
         # app/ untouched until we do a deliberate cleanup sweep. Widening
-        # to `ruff check .` is a full-repo churn event — don't do it here.
+        # to `ruff check .` is a full-repo churn event; don't do it here.
         run: ruff check hardening deploy ops tests
 
-      - name: ruff format --check (style — self-owned dirs only)
+      - name: ruff format --check (style - self-owned dirs only)
         run: ruff format --check hardening deploy ops tests
 
   test:
@@ -95,12 +95,11 @@ jobs:
   security:
     name: Dependency audit (pip-audit)
     runs-on: ubuntu-latest
-    # Non-blocking for now — the goal is visibility, not gating. Flip
-    # `continue-on-error: false` once we've triaged the initial report.
+    # Non-blocking for now: the goal is visibility, not gating. Flip
+    # the step back to blocking once we've triaged the initial report.
     # Switched from `safety` to `pip-audit`: safety 3.2.x shipped broken
     # against typer>=0.12 (AttributeError rich_utils), and pip-audit is
     # both actively maintained and backed by PyPA.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -113,4 +112,5 @@ jobs:
         run: pip install pip-audit==2.7.3
 
       - name: pip-audit (runtime deps)
+        continue-on-error: true
         run: pip-audit --requirement requirements.txt --strict
