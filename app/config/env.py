@@ -50,8 +50,21 @@ TELEGRAM_LOGGER_CHANNEL_ID = config(
     "TELEGRAM_LOGGER_CHANNEL_ID", cast=int, default=0
 )
 
+# JWT signing secret. Externalize from the database to avoid putting the
+# key inside SQL-injection / DB-dump blast radius (AUDIT.md section 4,
+# finding P0-3). Generate a 32-byte hex secret with:
+#     python -c "import secrets; print(secrets.token_hex(32))"
+# If empty, app/config/db.py:get_secret_key falls back to the legacy
+# in-database secret and emits a RuntimeWarning. The fallback will be
+# removed in v0.2 — set this in .env before upgrading past that.
+JWT_SECRET_KEY = config("JWT_SECRET_KEY", default="")
+
+# P0: default token lifetime tightened from 24h (1440) to 60 minutes.
+# 24h leaves a huge blast radius on any accidental token leak. Refresh
+# tokens arrive in a later PR; until then operators who need longer
+# sessions can override via .env.
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES = config(
-    "JWT_ACCESS_TOKEN_EXPIRE_MINUTES", cast=int, default=1440
+    "JWT_ACCESS_TOKEN_EXPIRE_MINUTES", cast=int, default=60
 )
 
 CUSTOM_TEMPLATES_DIRECTORY = config("CUSTOM_TEMPLATES_DIRECTORY", default=None)
@@ -71,6 +84,23 @@ CLASH_SUBSCRIPTION_TEMPLATE = config(
 
 WEBHOOK_ADDRESS = config("WEBHOOK_ADDRESS", default=None)
 WEBHOOK_SECRET = config("WEBHOOK_SECRET", default=None)
+
+
+# CORS allowed origins (comma-separated). Empty list == no cross-origin
+# access (same-origin only). AUDIT.md section 4, finding P0-4.
+#
+# Upstream shipped `allow_origins=["*"]` + `allow_credentials=True`, a
+# combination browsers reject AND one that, if browsers accepted it,
+# would let any website read an authenticated admin's session. We
+# default to the closed position and require operators to opt in.
+#
+# Example: CORS_ALLOWED_ORIGINS="https://panel.example.com,https://admin.example.com"
+# Dev override: CORS_ALLOWED_ORIGINS="http://localhost:3000"
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS",
+    default="",
+    cast=lambda v: [o.strip() for o in v.split(",") if o.strip()],
+)
 
 
 class AuthAlgorithm(Enum):

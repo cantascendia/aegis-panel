@@ -2,7 +2,21 @@ from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from pydantic import ConfigDict, BaseModel
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Passlib bcrypt configuration.
+#
+# AUDIT.md section 4, finding P0-5: the upstream code trusted passlib's
+# default work factor. As of passlib 1.7.x the default is 12, which
+# matches OWASP 2023 guidance — but relying on the library default
+# means a passlib downgrade or a future library change could silently
+# weaken every password hash going forward.
+#
+# We pin rounds=12 explicitly. Raising this to 13 costs ~2x CPU on
+# every admin login; do it deliberately once CPU headroom is known.
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12,
+)
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/admins/token"
 )  # Admin view url
