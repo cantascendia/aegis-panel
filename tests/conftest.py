@@ -24,6 +24,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+# Type-only imports. `from __future__ import annotations` makes every
+# annotation a lazy string, so names imported here never need to exist
+# at runtime — they do not trigger real fastapi/sqlalchemy imports until
+# a tool (mypy, pyright) resolves them.
 if TYPE_CHECKING:
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
@@ -56,9 +60,7 @@ def _isolated_env() -> Iterator[None]:
             saved[key] = os.environ.pop(key)
 
     # Point the app at an ephemeral in-memory SQLite unless a test overrides.
-    os.environ.setdefault(
-        "SQLALCHEMY_DATABASE_URL", "sqlite:///:memory:"
-    )
+    os.environ.setdefault("SQLALCHEMY_DATABASE_URL", "sqlite:///:memory:")
 
     yield
 
@@ -74,7 +76,7 @@ def _isolated_env() -> Iterator[None]:
 
 
 @pytest.fixture
-def db_session() -> Generator["Session", None, None]:
+def db_session() -> Generator[Session, None, None]:
     """Per-test SQLAlchemy session bound to an in-memory SQLite.
 
     TODO(round-1, P0-security PR): wire this to `app.db.Session` with a
@@ -90,7 +92,7 @@ def db_session() -> Generator["Session", None, None]:
 
 
 @pytest.fixture
-def app() -> "FastAPI":
+def app() -> FastAPI:
     """The ASGI application under test.
 
     TODO(round-1): import `app.marzneshin` and return the app factory output,
@@ -100,7 +102,7 @@ def app() -> "FastAPI":
 
 
 @pytest.fixture
-def client(app: "FastAPI") -> Iterator["TestClient"]:
+def client(app: FastAPI) -> Iterator[TestClient]:
     """Synchronous HTTP test client. Async tests should use httpx.AsyncClient."""
     from fastapi.testclient import TestClient
 
@@ -120,5 +122,7 @@ def mock_marznode() -> Iterator[object]:
     TODO(round-1, iplimit PR): concrete fake implementing the subset of
     `app/marznode/*` gRPC surface that the control plane calls.
     """
-    pytest.skip("mock_marznode fixture not implemented yet (round-1 follow-up)")
+    pytest.skip(
+        "mock_marznode fixture not implemented yet (round-1 follow-up)"
+    )
     yield  # type: ignore[misc]

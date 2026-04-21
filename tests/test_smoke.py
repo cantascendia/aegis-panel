@@ -16,9 +16,10 @@ def test_python_version_is_312() -> None:
     """We pin to 3.12 in CI and `requirements.txt` (grpcio compat)."""
     import sys
 
-    assert sys.version_info[:2] == (3, 12), (
-        f"Expected Python 3.12, got {sys.version_info[:3]}"
-    )
+    assert sys.version_info[:2] == (
+        3,
+        12,
+    ), f"Expected Python 3.12, got {sys.version_info[:3]}"
 
 
 def test_app_package_imports() -> None:
@@ -42,6 +43,6 @@ def test_hardening_package_tree_exists() -> None:
 
     root = pathlib.Path(__file__).resolve().parents[1]
     for name in ("hardening", "deploy", "ops"):
-        assert (root / name / "README.md").is_file(), (
-            f"{name}/ scaffolding missing — did a rebase drop it?"
-        )
+        assert (
+            root / name / "README.md"
+        ).is_file(), f"{name}/ scaffolding missing — did a rebase drop it?"

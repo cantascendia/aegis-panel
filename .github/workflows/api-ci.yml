@@ -49,14 +49,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: ruff check (lint)
-        run: ruff check .
+      - name: ruff check (lint — self-owned dirs only)
+        # Round 1 policy: lint self-owned code strictly; leave upstream
+        # app/ untouched until we do a deliberate cleanup sweep. Widening
+        # to `ruff check .` is a full-repo churn event — don't do it here.
+        run: ruff check hardening deploy ops tests
 
-      - name: ruff format --check (style)
-        # Only enforce format on our self-owned code. Upstream files in
-        # app/ still follow black formatting; reformatting them would
-        # explode the upstream-sync diff. Widen the scope when we
-        # deliberately take over app/ style.
+      - name: ruff format --check (style — self-owned dirs only)
         run: ruff format --check hardening deploy ops tests
 
   test:
@@ -94,10 +93,13 @@ jobs:
           if-no-files-found: ignore
 
   security:
-    name: Dependency audit (safety)
+    name: Dependency audit (pip-audit)
     runs-on: ubuntu-latest
     # Non-blocking for now — the goal is visibility, not gating. Flip
     # `continue-on-error: false` once we've triaged the initial report.
+    # Switched from `safety` to `pip-audit`: safety 3.2.x shipped broken
+    # against typer>=0.12 (AttributeError rich_utils), and pip-audit is
+    # both actively maintained and backed by PyPA.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -107,8 +109,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install safety
-        run: pip install safety==3.2.11
+      - name: Install pip-audit
+        run: pip install pip-audit==2.7.3
 
-      - name: safety check (runtime deps)
-        run: safety check --file requirements.txt --full-report
+      - name: pip-audit (runtime deps)
+        run: pip-audit --requirement requirements.txt --strict
