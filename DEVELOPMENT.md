@@ -96,7 +96,26 @@ REDIS_URL=redis://127.0.0.1:6379/0
 # REDIS_POOL_SIZE=20  # 可选,默认 20,>1000 req/s 再调
 ```
 
-Redis 未配置时,`app.cache.redis.get_redis()` 会抛 `RedisDisabled`,所有依赖 Redis 的功能(下一轮的 admin 速率限制)都会失效告警,**不会**让 app 启动失败。
+Redis 未配置时,`app.cache.redis.get_redis()` 会抛 `RedisDisabled`,依赖 Redis 的功能(如下方的 admin 速率限制)会**拒绝启用**,**不会**让 app 启动失败。
+
+### 启用 admin 登录速率限制
+
+默认关。开启前 **必须** 先配好 `REDIS_URL`。
+
+```env
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_ADMIN_LOGIN=5/minute  # 可选,默认值
+```
+
+开启后若 `REDIS_URL` 缺,启动直接抛 `RateLimitMisconfigured` 并终止。这是故意的 —— 多 worker 部署下,内存计数器会让每个 worker 独立限流,相当于没限。
+
+**反代情况下**(CF Tunnel / Nginx / Caddy):默认按 `request.client.host` 取 IP,反代后会取到反代节点 IP(所有请求看起来都来自同一 IP,要么 0 限速要么全 429)。解决:
+
+- Uvicorn 启动加 `--forwarded-allow-ips='*'`(或具体反代 IP)
+- 或在 `app/marzneshin.py` 的 Uvicorn `Config` 里加 `forwarded_allow_ips`
+- 真正治本:在 Round 2 的 `hardening/panel/` 下加一个 `TrustedProxyMiddleware` 读 `X-Forwarded-For` 的倒数第 N 个值,由 `.env` 配置可信反代层数
+
+当前 Round 1 不处理反代,文档里标清楚。
 
 健康检查:`docker compose ps` 应该看到 `postgres` 和 `redis` 都是 `healthy`。
 

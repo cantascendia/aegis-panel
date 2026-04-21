@@ -9,7 +9,8 @@
 | 模块 | 阶段 | 说明 |
 |---|---|---|
 | `jwt_secret.py` | v0.1 | 从 `.env` 读 HMAC_SECRET,禁止库存储(AUDIT.md ④ 🔴) |
-| `rate_limit.py` | v0.1 | slowapi + Redis 令牌桶,`/api/admins/token` 必装。Redis 客户端在 `app/cache/redis.py`,`REDIS_URL` 未配置时会 fail-loud(见 `docs/ai-cto/SPEC-postgres-redis.md`) |
+| `rate_limit.py` | ✅ v0.1(PR #5) | slowapi + Redis 令牌桶,已装在 `/api/admins/token`。默认关,`RATE_LIMIT_ENABLED=true` 启用,**必须** 配 `REDIS_URL`,否则启动 fail-loud |
+| `middleware.py` | ✅ v0.1(PR #5) | `apply_panel_hardening(app)` 一键装 Limiter + 429 handler + SlowAPIMiddleware,与 upstream `app/marzneshin.py` 耦合面仅一行 |
 | `cors_policy.py` | v0.1 | 从 `.env` 读 CORS 白名单,禁止 `*` + `allow_credentials=True` 组合 |
 | `dashboard_path.py` | v0.2 | 随机化 `DASHBOARD_PATH`,避免扫描器命中默认 `/dashboard/` |
 | `cf_tunnel_wizard/` | v0.2 | CF Tunnel + Access 配置生成 + 一键下发 |
