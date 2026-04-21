@@ -2,7 +2,6 @@ import asyncio
 import atexit
 import logging
 
-from _testcapi import INT_MAX
 from grpc import ChannelConnectivity, RpcError
 from grpc.aio import insecure_channel
 
@@ -25,14 +24,18 @@ from ..models.node import NodeStatus
 
 logger = logging.getLogger(__name__)
 
+# gRPC core channel args use int32 for millisecond timeouts; int32 max
+# effectively disables idle-connection termination and age limits.
+_INT32_MAX_MS = 2**31 - 1
+
 channel_options = [
     ("grpc.keepalive_time_ms", 8000),
     ("grpc.keepalive_timeout_ms", 5000),
     ("grpc.http2.max_pings_without_data", 0),
     ("grpc.keepalive_permit_without_calls", 1),
-    ("grpc.max_connection_idle_ms", INT_MAX),
-    ("grpc.client_idle_timeout_ms", INT_MAX),
-    ("grpc.max_connection_age_ms", INT_MAX),
+    ("grpc.max_connection_idle_ms", _INT32_MAX_MS),
+    ("grpc.client_idle_timeout_ms", _INT32_MAX_MS),
+    ("grpc.max_connection_age_ms", _INT32_MAX_MS),
 ]
 
 
