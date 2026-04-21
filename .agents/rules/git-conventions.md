@@ -30,7 +30,9 @@ security: tighten CORS policy
 harden: JWT secret externalization
 ```
 
-**scope** 可自定义:推荐 `security / hardening / infra / cache / cd / memory` 等领域名。
+**scope 是必填**(本仓 `amannn/action-semantic-pull-request` 配了 `requireScope: true`)。`fix: ...` 会被 CI 打回,必须写成 `fix(security): ...` / `fix(ci): ...`。没 scope 的 commit title 不违法(`git log` 允许),但 PR 合并前 title 必须带 scope。
+
+推荐 scope 词典:`security / hardening / infra / cache / cd / memory / rules / spec / deps` 等领域名。首次出现一个新 scope 记一下,下次沿用同名。
 
 **body 细节** 放 PR description,不挤标题。标题 ≤ 70 chars。
 
