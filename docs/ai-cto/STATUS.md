@@ -1,6 +1,6 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-21(第零轮结束)
+> 最后更新:2026-04-21(依赖安全基线清零)
 > 更新频率:每 3 轮或重大节点
 
 ---
@@ -62,11 +62,12 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点 + Realit
 
 - TOP 5 紧急修复(见 AUDIT.md):
   1. P0 计费系统(5-7 周)
-  2. P0 JWT Secret 外置到 .env(2 天)
+  2. ~~P0 JWT Secret 外置到 .env(2 天)~~ — 依赖层由 PR #2 处理;应用层仍需确认
   3. P0 Admin 登录速率限制(1-2 天)
   4. P1 审计日志系统(3-4 天)
   5. P1 N+1 + Task 异步化(2-3 天)
 - 依赖管理:Marzneshin 当前 v2share 是 0.1.0b31(beta),风险;需评估替代
+- **预存在 bug**:`app/marznode/grpcio.py:5` `from _testcapi import INT_MAX` — CPython 内部模块,非公开 API,阻塞 full app import。自 ca4735e 存在,独立于依赖升级,待单独 PR 清理
 
 ## 竞品关键发现
 
@@ -77,7 +78,8 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点 + Realit
 
 ## 🔀 分支状态
 
-- `main` — 当前唯一分支,包含 Round 0 初始 commit(`ca4735e`)
+- `main` — 已合并:PR #1(test-infra + CI + pip-audit)、PR #2(P0 auth security deps)、PR #3(runtime deps / 28 非 auth CVE + cryptography 最终收尾)
+- **依赖安全基线**:`pip-audit --requirement requirements.txt --strict` 当前**零漏洞**(PR #3 merge commit `a3d932c`);测试 **12 passed / 1 skipped**(baseline 1 passed)
 - 计划创建:`feat/round-1-*` 系列(见 ROADMAP 第一轮)
 
 ## 📅 最后同步确认
