@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git --version)",
+      "Read(//c/projects/**)",
+      "Bash(rm -rf \"C:/projects/Marzban-upstream-tmp/.git\")",
+      "Bash(cp -r \"C:/projects/Marzban-upstream-tmp/.\" \"C:/projects/Marzban/\")",
+      "Bash(rm -rf \"C:/projects/Marzban-upstream-tmp\")"
+    ]
+  }
+}
