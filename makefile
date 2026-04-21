@@ -49,8 +49,10 @@ lint-dashboard:
 format: format-backend format-dashboard
 
 format-backend:
-	ruff format .
-	ruff check --fix .
+	# Format only self-owned directories — reformatting upstream app/
+	# would explode the upstream-sync diff. See .github/workflows/api-ci.yml.
+	ruff format hardening deploy ops tests
+	ruff check --fix hardening deploy ops tests
 
 format-dashboard:
 	cd dashboard && pnpm run format || pnpm run lint -- --write
@@ -63,6 +65,5 @@ db-reset:
 	alembic upgrade head
 
 install-dev:
-	pip install -r requirements.txt
-	pip install ruff pytest pytest-asyncio pytest-cov httpx
+	pip install -r requirements-dev.txt
 	pnpm install --prefix ./dashboard

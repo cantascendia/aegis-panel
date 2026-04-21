@@ -93,7 +93,7 @@ fixture 约定(建立中):
 
 ## 代码风格
 
-- **Python**:Ruff(线宽 100)+ `from __future__ import annotations` 统一开启
+- **Python**:Ruff(线宽 **79**,与 upstream black 一致,别随手改)+ `from __future__ import annotations` 统一开启
 - **TS/React**:Biome(dashboard 已配)+ 组件 PascalCase / hooks `use*`
 - **i18n**:新增 UI 文本**必须**走 i18n key,禁止硬编码中英文
 - **SQL**:SQLAlchemy 2.0 `select()` 风格,禁止裸 SQL 除非迁移脚本
