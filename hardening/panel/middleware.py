@@ -42,7 +42,5 @@ def apply_panel_hardening(app: FastAPI) -> None:
       negotiate that here rather than editing `app/marzneshin.py`.
     """
     app.state.limiter = limiter
-    app.add_exception_handler(
-        RateLimitExceeded, _rate_limit_exceeded_handler
-    )
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.add_middleware(SlowAPIMiddleware)
