@@ -5,6 +5,113 @@
 
 ---
 
+## D-009 | 2026-04-21 | CI 门禁:自研目录扫,upstream 不扫;pip-audit 非阻塞但可视
+
+**决策**: 本项目 CI 的三档硬门禁:
+
+1. `ruff check` + `ruff format --check` **只扫** `hardening/` `deploy/` `ops/` `tests/`。`app/` / `dashboard/` 走 upstream 自己的风格,我们不擅自格式化
+2. `pytest` 跑全量 22 个测试,任何 fail 阻塞合并
+3. `pip-audit` **step 级** `continue-on-error: true`:job 整体 report 绿,但日志保留发现。继续让 CVE 可见不让它阻塞日常 PR
+
+**Why**:
+- 反例:Round 1 第一轮 PR 里 `ruff check .` 扫 upstream 刷出 218 个错误,瞬间不可合。扫自研 = 严格,扫 upstream = churn 战争
+- `pip-audit` job 级 `continue-on-error` 会让 PR UI 继续红,对强迫症不友好。step 级 + step 失败等于 `exit 0` job 报绿
+- 真的要阻塞 CVE,用 Dependabot / Renovate 自动开 PR,不用门禁打人
+
+**How to apply**:
+- 新增自研目录(未来的 `ops/billing/` 等),按相同惯例加到 CI
+- upstream 合并后若新增 upstream 代码格式化风格,本项目不强行对齐
+- 当下 pip-audit 非阻塞;哪天我们真的要 "新代码禁止引入新 CVE 依赖",单独加一个 job 只扫 diff 的包
+
+**推翻条件**: 我们决定主动接管 `app/` 代码风格(有独立格式化 sweep PR 了),或 CVE 密度突然爆炸需要强门禁。
+
+---
+
+## D-008 | 2026-04-21 | Redis 客户端契约:可选 + lazy + 类型化 disabled
+
+**决策**: `app/cache/redis.py` 的三条硬契约:
+
+1. **可选**:`REDIS_URL` 为空 == 功能禁用。`is_redis_configured()` 返回 False
+2. **lazy**:`get_redis()` 首次调用才建连接池,不在 import 时建。startup 不 crash
+3. **类型化 disabled**:需要 Redis 的调用方拿到 `RedisDisabled` 异常(dedicated class)而不是 generic `RuntimeError`。调用方按"必需"/"可选"分层选择 fail-loud 或 graceful skip
+
+**Why**:
+- 很多 Python 项目的 Redis 客户端 import-time connect → 一处 Redis 下线整个 app 起不来。拒绝这个陷阱
+- generic `RuntimeError` 无法让调用方区分"配置没设"和"Redis 挂了"。前者是运维策略决定(刻意禁用),后者是 incident。同名不同因就是 bug magnet
+- 配置 Redis 是二阶段:启用 → 提供 URL。两者分离让升级路径平滑
+
+**How to apply**:
+- 需要 Redis 的特性(rate limit / 未来的缓存 / session store)**必须** `if not is_redis_configured(): raise FeatureRequiresRedis(...)` 或类似
+- 可以降级的特性(opportunistic cache)**必须** `if is_redis_configured(): try_use(...)` 且失败也不影响主路径
+- 新增 Redis 消费者时,导入 `from app.cache import get_redis, is_redis_configured, RedisDisabled`
+
+**推翻条件**: 改用别的 KV 存储(比如 etcd)替代 Redis,或产品决定 Redis 从"可选"变"必须"(那时把 `REDIS_URL` 设为必填,删 `RedisDisabled` 代码路径)。
+
+---
+
+## D-007 | 2026-04-21 | compose 可选服务用 profile,upstream-sync 冲突面控制在零
+
+**决策**: PostgreSQL 16 + Redis 7 通过 Docker Compose 的 `profiles: [postgres]` / `profiles: [redis]` 挂在根 `docker-compose.yml`,而不是新开 `docker-compose.prod.yml`。
+
+**Why**:
+- upstream `docker-compose.yml` 目前只有 `marzneshin` + `marznode` 两个服务,再加服务的冲突面小到几乎零
+- `profiles` 是 Compose 原生机制,没 profile 标志就像服务不存在,零行为变化给 SQLite-only 部署
+- 开新 `docker-compose.prod.yml` 会让 "启动命令 + 环境切换" 翻倍,新人容易走错文件
+
+**陷阱**(Round 1 里踩过,经 user 修复):
+- Compose 变量展开 (`${VAR:?error}`) 在 **profile 过滤前**发生。对可选 profile 服务的"必需"变量用 `:?err` 会让不启该 profile 的部署直接 parse 失败
+- 修法:用 `${VAR:-}` 空默认,运行时启动 postgres 容器自身会因无密码退出,fail 时机正确转移到 startup 而非 parse
+
+**How to apply**:
+- 未来新增可选服务(如 `deploy/compose/monitoring.yml` 的 Prometheus + Grafana)继续用 profiles
+- 任何 "required env" 检查,用 `:-` + 启动时验证,不用 `:?`
+- 文档必须说明:用户启哪个 profile,必须设哪些 env
+
+**推翻条件**: 生产 compose 需要跟开发 compose 本质不同的拓扑(比如生产用 overlay network + external secrets),那时分文件合理。
+
+---
+
+## D-006 | 2026-04-21 | 速率限制契约:opt-in + 失 Redis 即 fail-loud,禁止降级内存
+
+**决策**: `RATE_LIMIT_ENABLED=false` 默认关;开启时 `REDIS_URL` 必须设,否则 **import 时抛 `RateLimitMisconfigured`,panel 拒绝启动**。
+
+**Why**:
+- 多 worker 部署下内存计数器让每个 worker 独立限流 = 攻击者直接 scale out 就过,等于没限
+- 内存计数器的"看起来有限速"比"明确没有"更糟,是典型**误导性安全**(security theater)
+- opt-in 让现有部署升级不吃 429,运维确认 Redis 可达了再翻开关
+
+**How to apply**:
+- `/api/admins/token` 已装 `@limiter.limit(ADMIN_LOGIN_LIMIT)`,默认 `5/minute` 按 IP
+- 未来装更多 rate limit 的端点(比如 `/api/subscription/*` 防爬),沿用 `hardening/panel/rate_limit.limiter` 单例,别重新建一个 Limiter
+- 反代场景下,必须同时配 Uvicorn `--forwarded-allow-ips` 或未来的 `TrustedProxyMiddleware`,否则所有请求看起来同 IP,要么 0 限速要么全 429
+
+**推翻条件**: 未来某端点必须 rate limit 且可接受 per-worker 计数(比如真正本地化的限流),单独实现另一个 Limiter 不走这个单例。
+
+---
+
+## D-005 | 2026-04-21 | Spec-Driven 首次应用:SPEC-postgres-redis.md 作为模板
+
+**决策**: Round 1 的 PostgreSQL + Redis PR 按 CTO handbook §18 先写 `docs/ai-cto/SPEC-postgres-redis.md`,作为未来大功能 PR 的**事实模板**:
+
+- **What**:能做什么 / 不能做什么(scope boundaries 列 ❌ 边界)
+- **Why**:引用 VISION / AUDIT / ROADMAP 的具体段落
+- **How**:按数据库 / cache / infra / 依赖 / 测试 / 文档六个维度列落地
+- **Risks**:风险矩阵 + mitigation
+- **Acceptance criteria**:checklist 形式的完成定义
+
+**Why**:
+- 第一次用,走通了"写 SPEC → 写 PR 描述 → 写 commit 消息"的三段式,每层都能引用上一层,commit history 自带上下文
+- 未来大功能(计费 / SNI 选型 / 健康度仪表盘)都需要这种尺度,现在有模板比临时发明好
+
+**How to apply**:
+- 下次 "非 trivial 新功能" PR 前,先在 `docs/ai-cto/SPEC-<kebab-name>.md` 起草,参考 postgres-redis 结构
+- SPEC 提交为 PR 的第一个 commit,让后续代码 review 有背景
+- SPEC 落地完成后可删(或改为 "ARCHIVED" 标记),路线图上的决策进入 `docs/ai-cto/DECISIONS.md`
+
+**推翻条件**: 小 PR(<100 行 diff 或纯 bug 修复)不强制 SPEC;只有"新增模块/服务/架构决策"级别才走。
+
+---
+
 ## D-004 | 2026-04-21 | Round 0 完成,Round 1 聚焦 P0 安全 + 基础测试设施
 
 **决策**: Round 1 **不做新功能**,只做:
