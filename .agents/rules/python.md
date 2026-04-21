@@ -96,10 +96,27 @@ except:
 
 ## 格式化与 lint
 
-- Black(line-length=79,见 `pyproject.toml`)
-- 推荐引入 ruff(待 Round 1 确认):`ruff check . --fix`
-- import 顺序:stdlib / third-party / app
-- 模块顶部没有 `__all__` 就不导出私有函数
+**Ruff** 是本项目唯一的 Python lint/format 工具(Round 1 起,`[tool.ruff]` 在 `pyproject.toml`)。
+
+- **line-length=79**(对齐 upstream 历史 black 配置,不擅自加宽 —— 会引爆 upstream-sync diff)
+- **`target-version = "py312"`**,项目 Python 严格 3.12
+- 命令:`ruff check hardening deploy ops tests`(lint)/ `ruff format hardening deploy ops tests`(format)
+
+**硬规则:CI 的 `ruff check` / `ruff format --check` 只扫自研目录**(`hardening` `deploy` `ops` `tests`),**不扫 upstream `app/` 和 `dashboard/`**。
+- 理由:对 upstream 强推 ruff 风格会让每次 `git fetch upstream` 的合并冲突爆炸
+- 新增自研目录(未来 `ops/billing/` 等)同规则加到 CI 里
+- 真的要接管 upstream 风格,单独开 "format sweep" PR 一次性做完,且要评估 upstream 是否还活跃
+
+**import 顺序**:stdlib / third-party / app(ruff `I` 规则已强制)。`from __future__ import annotations` 在所有自研模块顶部统一开启。
+
+**模块顶部没有 `__all__` 就不导出私有函数**。
+
+## 测试基础设施(pytest)
+
+- **`pyproject.toml` 的 `[tool.pytest.ini_options]` 必设 `pythonpath = ["."]`**。否则直调 `pytest`(非 `python -m pytest`)时 CWD 不入 sys.path,测试能否 import `app.*` 取决于字母序(alembic 先 init 会副作用修正,不先就炸)—— 参见 `docs/ai-cto/LESSONS.md#L-003`
+- `asyncio_mode = "auto"`,async test 不需要每个加 `@pytest.mark.asyncio`
+- warnings-as-errors 当前**关**,等 upstream 依赖的 deprecation 清干净后再开
+- 测 "模块级 raise" 时**不要用 `importlib.reload`** —— 重建 class 让 `pytest.raises` 身份失配,改 monkeypatch 模块常量 + 调内部函数(`_build_xxx`) —— `LESSONS.md#L-002`
 
 ## Marzneshin 特定
 

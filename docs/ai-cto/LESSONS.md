@@ -16,7 +16,7 @@
 
 **防线**: 未来命名 PR 标题,**type 段只能选白名单值**。scope 可以任意,所以 `fix(security): ...` / `feat(hardening): ...` 都合法,但 `hardening(...)` / `security(...)` / `harden(...)` 都会炸。
 
-**沉淀**: 未转 rule。Round 2 开始前加入 `.agents/rules/git-conventions.md`。
+**沉淀**: ✅ 已转 `.agents/rules/git-conventions.md`。
 
 ---
 
@@ -28,7 +28,7 @@
 
 **防线**: 对可选 profile 服务里 "真的需要" 的 env,用 `${VAR:-}` 空默认 + 容器启动时 fail(比如 postgres 没密码会自己退出),把 fail 点正确转移到运行时。**永远不要** 在可选 profile 的服务里用 `:?` 语法。
 
-**沉淀**: 未转 rule。计划沉淀进 `.agents/rules/compose-profiles.md` 或 `deploy/README.md` 附录。
+**沉淀**: ✅ 已转 `.agents/rules/ci-workflows.md`("Docker Compose" 段落)。
 
 ---
 
@@ -40,7 +40,7 @@
 
 **防线**: YAML / 工作流文件 / CI step name / comment **只用 ASCII hyphen `-`**。文档正文(README / markdown)可以 em-dash,读者用的是 markdown 渲染器不会有问题。
 
-**沉淀**: 未转 rule。下次刷 `.agents/rules/ci.md` 时加一条。
+**沉淀**: ✅ 已转 `.agents/rules/ci-workflows.md`("ASCII hyphen" 段落)。
 
 ---
 
@@ -52,7 +52,7 @@
 
 **防线**: 要让一个检查"可见但非阻塞",把 `continue-on-error: true` 放到 **执行真实命令的那个 step 上**,不是 job 顶层。
 
-**沉淀**: 未转 rule。
+**沉淀**: ✅ 已转 `.agents/rules/ci-workflows.md`("continue-on-error 放 step 级" 段落)。
 
 ---
 
@@ -66,7 +66,7 @@
 
 **防线**: `pyproject.toml` 的 `[tool.pytest.ini_options]` 必设 `pythonpath = ["."]`,让 pytest 启动前就把 repo root 放进 sys.path,与测试顺序无关。
 
-**沉淀**: 未转 rule。下次刷 `.agents/rules/python.md` 时加 "新建 Python 项目时 pytest 必配 pythonpath"。
+**沉淀**: ✅ 已转 `.agents/rules/python.md`("测试基础设施(pytest)" 段落)。
 
 ---
 
@@ -78,7 +78,7 @@
 
 **防线**: 测"特定条件下模块级代码 raise"时,**不要用 `importlib.reload`**。改用 `monkeypatch.setattr(module, "CONST", value)` + 调用模块内的 build 函数(比如 `_build_limiter()`)。class 身份保持稳定,`pytest.raises` 正常工作。
 
-**沉淀**: 未转 rule。
+**沉淀**: ✅ 已转 `.agents/rules/python.md`("测试基础设施(pytest)" 段落最后一条)。
 
 ---
 
