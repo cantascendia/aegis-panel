@@ -1,0 +1,14 @@
+# KR-region candidate SNIs. Use when the VPS egress IP is in Korea.
+
+hosts:
+  - host: static.naver.net
+    category: regional-cdn
+    notes: "Naver static CDN; compass-cited"
+
+  - host: www.kakao.com
+    category: regional-messaging
+    notes: "Kakao; compass-cited"
+
+  - host: www.daum.net
+    category: regional-portal
+    notes: "Daum portal; KR-domestic CDN"

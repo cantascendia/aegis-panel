@@ -1,0 +1,23 @@
+# JP-region candidate SNIs. Use when the VPS egress IP is in Japan so
+# the "same ASN / same datacenter" check has a chance of passing.
+#
+# Compass-recommended: www.lovelive-anime.jp, www.tiktok.jp, www.amazon.co.jp.
+# These have Japanese CDN terminations and are naturally plausible as
+# proxy destinations for a Japanese node.
+
+hosts:
+  - host: www.amazon.co.jp
+    category: ecommerce
+    notes: "Amazon JP - multi-AZ CloudFront, broad TLS 1.3 support"
+
+  - host: www.lovelive-anime.jp
+    category: regional-content
+    notes: "Compass-cited; low-overuse Reality candidate"
+
+  - host: www.tiktok.jp
+    category: social-media
+    notes: "TikTok JP; compass-cited"
+
+  - host: www.rakuten.co.jp
+    category: ecommerce
+    notes: "Rakuten JP; JP-CDN typical"
