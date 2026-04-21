@@ -8,6 +8,21 @@
 
 ---
 
+## L-009 | Round 2 开场 | "`foo` deprecated in favour of `foo_utc`" 改名不可全局套用 —— 读 vs 写可能是两个对象
+
+**现象**: PR #11 第一次 commit 把 `CertificateBuilder.not_valid_before()` / `.not_valid_after()` 改成 `*_utc` 版本,CI 30 秒抓到 `AttributeError: 'CertificateBuilder' object has no attribute 'not_valid_before_utc'`。
+
+**根因**: cryptography 42 changelog 写着 "`not_valid_before` deprecated in favour of `not_valid_before_utc`" —— 我看到一行就批量改。真相是这个 deprecation **只针对 `Certificate` 对象的只读 property**(给出一个现成的证书,读它的生效时间),不针对 `CertificateBuilder` 的 **setter 方法**(构建证书时设置生效时间)。两个不同对象共享同一个属性名,官方从没给 builder 加 `_utc` 的 setter。
+
+**防线**:
+1. 遇到 "API X deprecated in favour of X_new" 之前,先问:**X 属于哪个类/对象?是 read-side(property / attribute)还是 write-side(setter / builder method)?**
+2. 正式改之前,去**该类的官方文档页**(不是 changelog)确认新 API 确实存在于那个类上
+3. 改动带单测覆盖(本项目的 `app/utils/crypto.py` 没单测,只有 migration 测试偶然 exercise —— 这也是为什么错误 surface 在 migration 测试里而不是直接测试;值得后补一条 `test_generate_certificate` 测试)
+
+**沉淀**: 不转硬规则(不是 CI/工具坑,是"读 API 文档要细"级别的 judgment)。LESSONS 作为 historical 留痕。未来若再栽同样坑 → 就说明要升为规则。
+
+---
+
 ## L-008 | Round 1 tail | PR 标题 scope **必填**,不仅 type 要合法
 
 **现象**: PR #9 第一次标题 `chore: promote LESSONS to .agents/rules + drop [tool.black]`,`Conventional Commit Title` 校验失败。合并前 user 改成 `chore(rules): promote ...` 才过。
