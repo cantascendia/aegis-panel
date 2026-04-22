@@ -85,3 +85,63 @@ export interface PaymentChannelPatch {
     enabled?: boolean;
     priority?: number;
 }
+
+/*
+ * Invoice + audit views. State machine literal values mirror
+ * ops/billing/db.py's INVOICE_STATE_* constants; keep in sync on
+ * schema changes.
+ */
+
+export type InvoiceState =
+    | "created"
+    | "pending"
+    | "awaiting_payment"
+    | "paid"
+    | "applied"
+    | "expired"
+    | "cancelled"
+    | "failed";
+
+export const INVOICE_TERMINAL_STATES: InvoiceState[] = [
+    "applied",
+    "expired",
+    "cancelled",
+    "failed",
+];
+
+export interface InvoiceLine {
+    id: number;
+    plan_id: number;
+    quantity: number;
+    unit_price_fen_at_purchase: number;
+}
+
+export interface Invoice {
+    id: number;
+    user_id: number;
+    total_cny_fen: number;
+    state: InvoiceState;
+    provider: string;
+    provider_invoice_id: string | null;
+    payment_url: string | null;
+    trc20_memo: string | null;
+    trc20_expected_amount_millis: number | null;
+    created_at: string;
+    paid_at: string | null;
+    applied_at: string | null;
+    expires_at: string;
+    lines: InvoiceLine[];
+}
+
+export interface PaymentEvent {
+    id: number;
+    invoice_id: number;
+    event_type: string;
+    payload_json: Record<string, unknown>;
+    note: string | null;
+    created_at: string;
+}
+
+export interface InvoiceAdminAction {
+    note: string;
+}

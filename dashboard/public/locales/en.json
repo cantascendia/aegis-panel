@@ -456,6 +456,59 @@
           "update_success": "Channel {{code}} updated",
           "update_error": "Update failed"
         }
+      },
+      "invoices": {
+        "title": "Invoices",
+        "subtitle": "User orders and the state-machine path each one took.",
+        "empty": "No invoices yet. Users will create these by checking out a plan once the user-facing flow ships (A.4).",
+        "load_error": "Failed to load invoices",
+        "filter": {
+          "state": "State",
+          "state_any": "Any state",
+          "user_id": "User ID"
+        },
+        "col": {
+          "id": "ID",
+          "user_id": "User",
+          "state": "State",
+          "provider": "Provider",
+          "total": "Total",
+          "created_at": "Created"
+        },
+        "detail": {
+          "title": "Invoice",
+          "desc": "Invoice summary, lines, and audit trail. Actions at the bottom when non-terminal.",
+          "load_error": "Failed to load invoice",
+          "user_id": "User",
+          "state": "State",
+          "provider": "Provider",
+          "total": "Total",
+          "created_at": "Created",
+          "expires_at": "Expires",
+          "paid_at": "Paid at",
+          "applied_at": "Applied at",
+          "trc20_memo": "TRC20 memo",
+          "trc20_amount": "Expected TRC20 amount",
+          "lines_title": "Lines",
+          "lines_empty": "No line items.",
+          "events_title": "Audit trail",
+          "events_empty": "No events recorded."
+        },
+        "action": {
+          "apply_manual": "Apply manually",
+          "applying": "Applying...",
+          "cancel": "Cancel invoice",
+          "cancelling": "Cancelling...",
+          "note_label": "Admin note",
+          "note_placeholder": "VIP granted; refund issued out-of-band; etc.",
+          "note_hint": "Required. Appears verbatim in the audit trail for forensics."
+        },
+        "toast": {
+          "apply_success": "Invoice #{{id}} applied",
+          "apply_error": "Apply failed",
+          "cancel_success": "Invoice #{{id}} cancelled",
+          "cancel_error": "Cancel failed"
+        }
       }
     }
   },

@@ -2,6 +2,7 @@ import { SidebarObject } from '@marzneshin/common/components';
 import {
     Box,
     CreditCard,
+    FileText,
     Home,
     Landmark,
     ShieldCheck,
@@ -57,6 +58,12 @@ export const sidebarItems: SidebarObject = {
             title: 'Channels',
             to: '/billing/channels',
             icon: <Landmark />,
+            isParent: false,
+        },
+        {
+            title: 'Invoices',
+            to: '/billing/invoices',
+            icon: <FileText />,
             isParent: false,
         },
     ],

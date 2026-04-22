@@ -335,6 +335,59 @@
           "update_success": "通道 {{code}} 已更新",
           "update_error": "更新失败"
         }
+      },
+      "invoices": {
+        "title": "订单",
+        "subtitle": "用户订单与各自走过的状态机路径。",
+        "empty": "还没订单。等 A.4 上线后,用户下单会自动生成。",
+        "load_error": "加载订单失败",
+        "filter": {
+          "state": "状态",
+          "state_any": "全部状态",
+          "user_id": "用户 ID"
+        },
+        "col": {
+          "id": "ID",
+          "user_id": "用户",
+          "state": "状态",
+          "provider": "通道",
+          "total": "金额",
+          "created_at": "创建时间"
+        },
+        "detail": {
+          "title": "订单",
+          "desc": "订单摘要、明细、审计日志。非终态时,底部有操作按钮。",
+          "load_error": "加载订单失败",
+          "user_id": "用户",
+          "state": "状态",
+          "provider": "通道",
+          "total": "金额",
+          "created_at": "创建时间",
+          "expires_at": "过期时间",
+          "paid_at": "支付时间",
+          "applied_at": "生效时间",
+          "trc20_memo": "TRC20 备注",
+          "trc20_amount": "预期 TRC20 金额",
+          "lines_title": "明细",
+          "lines_empty": "无明细。",
+          "events_title": "审计日志",
+          "events_empty": "无事件。"
+        },
+        "action": {
+          "apply_manual": "手工生效",
+          "applying": "生效中...",
+          "cancel": "取消订单",
+          "cancelling": "取消中...",
+          "note_label": "管理员备注",
+          "note_placeholder": "VIP 赠送;已另路退款;等等。",
+          "note_hint": "必填。原样写入审计日志供事后追查。"
+        },
+        "toast": {
+          "apply_success": "订单 #{{id}} 已生效",
+          "apply_error": "生效失败",
+          "cancel_success": "订单 #{{id}} 已取消",
+          "cancel_error": "取消失败"
+        }
       }
     }
   },
