@@ -46,3 +46,42 @@ export interface PlanPatch {
     enabled?: boolean;
     sort_order?: number;
 }
+
+/*
+ * PaymentChannel — EPay 码商 credentials. `secret_key` is write-only
+ * (never echoed in ChannelOut); rotate by PATCH with the new value.
+ */
+
+export type PaymentChannelKind = "epay";
+
+export interface PaymentChannel {
+    id: number;
+    channel_code: string;
+    display_name: string;
+    kind: PaymentChannelKind;
+    gateway_url: string;
+    merchant_id: string;
+    enabled: boolean;
+    priority: number;
+    created_at: string;
+}
+
+export interface PaymentChannelIn {
+    channel_code: string;
+    display_name: string;
+    kind?: PaymentChannelKind;
+    gateway_url: string;
+    merchant_id: string;
+    secret_key: string;
+    enabled?: boolean;
+    priority?: number;
+}
+
+export interface PaymentChannelPatch {
+    display_name?: string;
+    gateway_url?: string;
+    merchant_id?: string;
+    secret_key?: string;
+    enabled?: boolean;
+    priority?: number;
+}

@@ -293,6 +293,48 @@
           "update_success": "套餐 {{code}} 已更新",
           "update_error": "更新失败"
         }
+      },
+      "channels": {
+        "title": "支付通道",
+        "subtitle": "易支付码商聚合。多个通道同时启用 = 故障切换。",
+        "empty": "还没配通道。点 '新建通道' 添加第一家码商。",
+        "load_error": "加载通道失败",
+        "create_button": "新建通道",
+        "col": {
+          "code": "代号",
+          "name": "名称",
+          "merchant_id": "商户 ID",
+          "priority": "优先级",
+          "enabled": "状态"
+        },
+        "status": {
+          "on": "开",
+          "off": "关"
+        },
+        "field": {
+          "channel_code": "通道代号",
+          "channel_code_lock": "创建后不可改。",
+          "display_name": "显示名",
+          "gateway_url": "网关 URL",
+          "merchant_id": "商户 ID",
+          "priority": "优先级",
+          "secret_key": "密钥",
+          "secret_key_rotate_placeholder": "留空保持当前密钥",
+          "secret_key_rotate_hint": "填入新值即轮换密钥;留空保持现有密钥不变。",
+          "enabled": "启用"
+        },
+        "dialog": {
+          "create_title": "新建支付通道",
+          "edit_title": "编辑支付通道",
+          "desc": "配置一家易支付码商。多通道并行运行;某一家挂了禁用它,下一家自动接管。",
+          "saving": "保存中..."
+        },
+        "toast": {
+          "create_success": "通道 {{code}} 已创建",
+          "create_error": "创建失败:{{code}}",
+          "update_success": "通道 {{code}} 已更新",
+          "update_error": "更新失败"
+        }
       }
     }
   },
