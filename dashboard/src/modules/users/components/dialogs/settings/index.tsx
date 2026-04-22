@@ -13,7 +13,9 @@ import {
     UserServicesTable,
     UserNodesUsageWidget,
     type UserType,
+    UserIpLimitSection,
 } from "@marzneshin/modules/users";
+import { useAuth } from "@marzneshin/modules/auth";
 import { type FC } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -36,6 +38,7 @@ export const UsersSettingsDialog: FC<UsersSettingsDialogProps> = ({
     isPending,
 }) => {
     const { t } = useTranslation();
+    const { isSudo } = useAuth();
 
     return (
         <SettingsDialog open={open} onClose={onClose} onOpenChange={onOpenChange}>
@@ -57,6 +60,14 @@ export const UsersSettingsDialog: FC<UsersSettingsDialogProps> = ({
                                     <TabsTrigger className="w-full" value="nodes-usage">
                                         {t("page.users.nodes-usage")}
                                     </TabsTrigger>
+                                    {isSudo() && (
+                                        <TabsTrigger className="w-full" value="iplimit">
+                                            {t(
+                                                "page.users.iplimit.tab",
+                                                "IP Limit",
+                                            )}
+                                        </TabsTrigger>
+                                    )}
                                 </TabsList>
                                 <TabsContent
                                     value="info"
@@ -74,6 +85,13 @@ export const UsersSettingsDialog: FC<UsersSettingsDialogProps> = ({
                                 <TabsContent value="nodes-usage">
                                     <UserNodesUsageWidget user={entity} />
                                 </TabsContent>
+                                {isSudo() && (
+                                    <TabsContent value="iplimit">
+                                        <UserIpLimitSection
+                                            username={entity.username}
+                                        />
+                                    </TabsContent>
+                                )}
                             </Tabs>
                         </ScrollArea>
                     ) : (
