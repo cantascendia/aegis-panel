@@ -81,11 +81,38 @@ python -m hardening.sni.selector --ip 103.x.x.x --count 5 --region jp
 | `scoring.py` | `score_candidate(checks)` 纯函数打分 |
 | `loaders.py` | YAML 加载 + 校验(`SeedLoadError`) |
 | `selector.py` | orchestrator + `main()` CLI 入口 |
+| `endpoint.py` | **FastAPI router `POST /api/nodes/sni-suggest`** — 由 `hardening/panel/middleware.apply_panel_hardening()` 注册,dashboard 前端调用 |
 | `blacklist.yaml` | DPI 黑名单数据 |
 | `seeds/*.yaml` | 候选种子数据(按区域) |
 
+## HTTP 端点
+
+`POST /api/nodes/sni-suggest`
+
+- **Auth**: sudo admin(`SudoAdminDep`)
+- **Rate limit**: 当前未在端点装饰;依赖 sudo-admin 门 + 60s wall-clock + 选型器内 `Semaphore(5)` 作为 defense-in-depth。slowapi 装饰器对 async def 的 signature introspection 有兼容性问题(PR #16 发现,详见 endpoint.py 模块 docstring),IP 桶粒度的 rate limit 留待 follow-up PR 解决
+- **Timeout**: 60 秒(`asyncio.wait_for`)
+- **Request**:
+  ```json
+  {"vps_ip": "1.2.3.4", "count": 5, "region": "auto"}
+  ```
+  - `vps_ip`: 必填,字符串,IPv4/IPv6 均可
+  - `count`: 1~50,默认 5
+  - `region`: `auto | global | jp | kr | us | eu`
+- **Response**: 与 CLI JSON 完全一致(`SelectorResult.to_dict()`),由 `test_output_json_schema_golden` 守护 schema
+- **错误码**:
+  - `401` — 未认证
+  - `403` — 非 sudo admin
+  - `422` — 请求体验证失败(例如 region 非白名单)
+  - `500` — seeds/blacklist.yaml 加载失败(`sni_seed_load_error: ...`)
+  - `504` — 60 秒探测超时(`sni_probe_timeout: ...`)
+
+**架构说明(SPEC 偏离)**: SPEC 原写"`app/routes/node.py` 加新端点",实际落在 `hardening/sni/endpoint.py` 并通过 `apply_panel_hardening()` 注册。目的:保持 `app/routes/*` 零修改,upstream-sync 冲突面继续 = 一行。这是 Round 1 "upstream 冲突面 = 一行"原则的延用,不是新决策。
+
 ## 后续 PR(SPEC follow-up)
 
-- PR #14: `feat(hardening): sni dashboard endpoint` — `app/routes/node.py` + dashboard 表单接入 "新建节点" 流程
-- PR #15: `docs(hardening): sni runbook` — `deploy/README.md` 加 "全部候选不合格" 的排查手册
+- ✅ PR #13: `feat(hardening): sni selector core + 6 indicators`(module + CLI + 41 测试)
+- 🔄 **当前 PR**: `feat(hardening): sni dashboard endpoint`(endpoint + 10 测试)
+- ⏳ 下一个: `feat(dashboard): 新建节点表单调用 /api/nodes/sni-suggest`(前端集成)
+- ⏳ `docs(hardening): sni runbook` — `deploy/README.md` 加 "全部候选不合格" 的排查手册
 - 未来 v0.3: live DPI 情报订阅 + `/24` scan mode + 持续健康度监控
