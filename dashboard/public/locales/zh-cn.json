@@ -242,6 +242,58 @@
           }
         }
       }
+    },
+    "billing": {
+      "plans": {
+        "title": "套餐",
+        "subtitle": "你卖给用户的产品。fixed = GB+天数的打包;flexible = 按单位计价的加购。",
+        "empty": "还没有套餐。点 '新建套餐' 配置第一个产品。",
+        "load_error": "加载套餐失败",
+        "create_button": "新建套餐",
+        "col": {
+          "code": "代号",
+          "name": "名称",
+          "kind": "类型",
+          "shape": "形态",
+          "price": "价格",
+          "enabled": "状态"
+        },
+        "status": {
+          "on": "开",
+          "off": "关"
+        },
+        "kind": {
+          "fixed": "固定(GB + 天数 打包)",
+          "flexible_traffic": "按 GB 加购",
+          "flexible_duration": "按天加购",
+          "fixed_short": "固定",
+          "flexible_traffic_short": "流量加购",
+          "flexible_duration_short": "时长加购"
+        },
+        "field": {
+          "operator_code": "运营代号",
+          "operator_code_lock": "创建后不可改。",
+          "display_name_en": "显示名(英)",
+          "kind": "类型",
+          "kind_lock": "创建后不可改。",
+          "data_limit_gb": "流量上限(GB)",
+          "duration_days": "时长(天)",
+          "price_cny": "价格(元)",
+          "enabled": "启用"
+        },
+        "dialog": {
+          "create_title": "新建套餐",
+          "edit_title": "编辑套餐",
+          "desc": "固定套餐包含 GB + 天数;按量套餐按单位(GB 或天)定价。",
+          "saving": "保存中..."
+        },
+        "toast": {
+          "create_success": "套餐 {{code}} 已创建",
+          "create_error": "创建失败:{{code}}",
+          "update_success": "套餐 {{code}} 已更新",
+          "update_error": "更新失败"
+        }
+      }
     }
   },
   "events": {
