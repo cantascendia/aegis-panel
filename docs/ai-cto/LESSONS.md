@@ -8,6 +8,19 @@
 
 ---
 
+## L-017 | Round 3 A.1.4.c | 注释里不能出现匹配 i18n 抽取正则的字面 —— drift-gate 会把它当 source key
+
+**现象**: A.1.4.c(PR #35)第一次 CI 失败:`run-script (en.json)` 报 `PR increases locale drift by 1 for dashboard/public/locales/en.json`,`missing=24` 比 base 的 `missing=23` 多 1,但我的所有 `page.billing.invoices.*` key 在 locale JSON 里都存在。
+
+**根因**: 为解决 biome 把 JSX 里的 `t("…")` 包裹到多行导致 `tools/check_translations.sh` 的行级正则抽不到 key,我把调用提到一个 `const notePlaceholder = t("…")`,并在上方写注释解释"让抽取正则能看到单行 t(\"...\") 调用"。抽取正则 `\Wt\(["']\K[\w.-]+(?=["'])` 完全不分代码 vs 注释,把注释里的 `t("...")` 抽成一个 "source key" 叫 `...`,而 locale JSON 自然没有这个 key → drift +1。
+
+**防线**:
+1. **写关于 i18n 抽取正则的注释时,别在注释里放能被正则匹配的示例**。要么改述("extraction regex sees a single-line call" / "sees the key with the quote right after paren"),要么把示例用 `// t` + 换行打断正则。
+2. 抽取脚本本身可以收紧,但收紧会增加别的假阳性。当前方案成本更低、更可靠,留作习惯即可
+3. 本地 drift preflight 现已能抓到这个 bug:`bash tools/check_translations.sh --base-source <base-worktree> --base-json <base>/dashboard/public/locales/en.json dashboard/public/locales/en.json` 出现 `::error::PR increases locale drift by N` 就是这类问题。在 push 前跑一次 diff-mode 可省一轮 CI 迭代
+
+---
+
 ## L-016 | Round 3 IP limiter follow-up | Fresh-DB CI 掩盖"已合并 migration 被 mutate" —— 绿灯是 false negative
 
 **现象**: PR #26 的 PG16 pytest job 全绿,以为 `aegis_iplimit_disabled_state` 表创建逻辑工作正常。实际上 CI 使用的是**每次 run 全新 DB**,从 revision `20faa9f18c0a` 开始跑完整 migration chain 一次性到 head,自然会执行 `4f7b7c8e9d10` 的 mutated `upgrade()` 并创建 3 张表。但**任何在 PR #24 merge 后、PR #26 merge 前跑过 `alembic upgrade head` 的环境**(本地 dev DB、staging、生产),`alembic_version.version_num` 已卡在 `4f7b7c8e9d10`,Alembic 不重跑已标记完成的 revision,**新表永远不被创建** → 运行时 `upsert_disabled_state` 抛 `relation does not exist`。CI 这种 "全流程 happy path" 根本触发不到这个分支。

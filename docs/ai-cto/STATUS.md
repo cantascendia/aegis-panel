@@ -1,44 +1,43 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-22(Round 2 v0.2 — SNI 用户可见闭环完成)
+> 最后更新:2026-04-23(Round 3 opener — iplimit MVP + billing 数据面/Admin 落地 + Alembic 不变性规则沉淀)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 2 v0.2 —— 差异化落地中**
+**Round 3 opener —— 商业化 MVP + 差异化 #2 同步推进中**
 
-状态:🔄 进行中。
-- ✅ SPEC-sni-selector.md 已合(PR #10)
-- ✅ Round 1 tail(LESSONS → rules + [tool.black] 清理,PR #9)
-- ✅ cryptography 46 迁移(PR #11)
-- ✅ L-009 教训记入 LESSONS.md(PR #12)
-- ✅ `app/utils/crypto.py` 单测补齐 128 行(PR #14)
-- ✅ **SNI 智能选型器 MVP**(差异化 #1)落地(PR #13,`6ade9bf`)
-  - 6 条硬指标 async 实现 + Team Cymru ASN 查询 + LRU 缓存
-  - 5 份区域 seeds + blacklist 零代码可编辑
-  - 41 个完全离线 mock 测试 + golden JSON schema drift guard
-  - CLI + 退出码契约完整
-- ✅ **SNI dashboard 端点**(SPEC follow-up #2)落地(PR #16,`c75359e`)
-  - `POST /api/nodes/sni-suggest` 通过 `apply_panel_hardening()` 注册,零 upstream 修改
-  - Pydantic 校验 + sudo-admin gate + 60s wall-clock + Semaphore(5) 防并发滥用
-  - 10 个 TestClient 测试(auth 401/403 + 422 validation x3 + happy x2 + 504 timeout + 500 seed-load + route contract + rejected section guard)
-  - Rate limit(slowapi 装饰器)因 async def 兼容性问题延后,见 LESSONS.md L-010
-- ✅ **SNI dashboard 前端集成**(SPEC follow-up #3)落地(PR #18,`efabf43`)
-  - `hardening/sni/endpoint.py` 的 REST API 现在有 UI 入口:新建节点对话框底部 "Suggest SNI" 按钮
-  - 独立 `SniSuggestDialog` 组件:VPS IP(默认从 address 字段同步)+ count(1-50)+ region(auto/global/jp/kr/us/eu)+ Probe 按钮
-  - 结果展示:ASN/国家/耗时 context 条 + 候选列表(score + 6 指标 ✓/✗ 图标 + 复制按钮)+ rejected 折叠区
-  - 全部 `t()` 调用配英文 defaultValue,不触发 locale parity CI 陷阱(见 L-012)
+状态:🔄 进行中。Round 2 v0.2 差异化 #1 SNI 三层闭环已在 PR #18 封顶,Round 3 开局同步推进两条线并沉淀基础设施债。
+
+**差异化 #2 (IP 限制 = Hiddify `shared_limit` 等价物) 已落地**:
+- ✅ **IP limiter MVP**(PR #24,`7b12085`)—— `hardening/iplimit/` 数据面 + policy 表 + REST + dashboard UI,按 BRIEF-codex-ip-limiter.md 执行
+- ✅ **Review blockers 修复**(PR #26,`b07e18c`)—— C-1(buffer replay → 日志时间戳)+ C-2(unconditional re-enable → 归属表 + data/expire gate)+ M-1 批量 policy resolve + M-2 gRPC 异常记录 + M-3 `SET NX` 原子 dedupe + 覆盖 5 个关键测试
+- ✅ **Migration safety-net + Alembic CI 门禁**(PR #31,`3b8cfe4` + `1c652d2`)—— PR #26 mutate 了已 merge 的 `4f7b7c8e9d10` 造成"已部署环境卡死"风险,safety-net 幂等恢复 + `test-alembic-stepped` CI job 防回归
+
+**商业化 MVP (Billing A.x) 数据面 + Admin UI 已落地**:
+- ✅ **SPEC billing MVP**(PR #25)—— 5 表骨架 + 状态机 + EPay 对接定义
+- ✅ **Billing data models (A.1.1)**(PR #28)—— `ops/billing/db.py` 5 张 `aegis_billing_*` 表 + Alembic
+- ✅ **Billing pricing + states (A.1.2)**(PR #29)—— 状态机 + webhook 去重 + 时区感知时间
+- ✅ **Billing admin REST (A.1.3)**(PR #30)—— sudo-admin CRUD 接口
+- ✅ **Billing admin dashboard (A.1.4.a)**(PR #32)—— 管理员入口
+- ✅ **Billing admin channels (A.1.4.b)**(PR #33)—— 码商(EPay)凭据管理页
+- ✅ **Billing admin invoices (A.1.4.c)**(PR #35,`a4e0c15`)—— 订单列表(state / user_id 过滤)+ 详情 dialog(summary grid + TRC20 相关字段 + lines + 审计事件)+ apply_manual / cancel 动作面板(note 门控,终态隐藏);新教训:注释内不得写出匹配 `t("...")` 正则的字面 —— drift-gate 会把它抽成 source key
+
+**基础设施沉淀 (Round 3 opener 债)**:
+- ✅ **`app/db/extra_models.py` aggregator + 硬规则**(PR #34,`f31db67`)—— 自研 SQLAlchemy model 单点注册,env.py 缩回 1 行 upstream 冲突面;`.agents/rules/python.md` 吸收 L-014(aggregator 强制)+ L-015(Alembic revision 不可 mutate)两条硬规则
+- ✅ **Round 2 tail CI 清债**(PR #20/#22/#23 批 1-3)—— UVICORN_HOST 默认 127.0.0.1 / TrustedProxyMiddleware / Chromatic token 处理等
+- ✅ **Translations drift gate 换成 diff-based**(PR #27)—— 不再因历史 drift 卡新 PR,只卡"新 PR 增加 drift"(解 L-012)
 
 ## 项目画像(一句话)
 
-Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 2 v0.2 差异化 #1 用户可见闭环完成**(SNI CLI + REST 端点 + 新建节点表单 UI 三层全通)。下一件:Round 2 后半 scope(计费 MVP vs SNI rate-limit 回填 vs CI infra 清债,待用户定 deadline 后决)。
+Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 3 opener 双线同步:差异化 #2 IP 限制 MVP 用户可见闭环 + 商业化 MVP 数据面/Admin UI A.1 全 5 个子 PR 落地**,下一件 A.2 EPay 网关对接 + A.3 TRC20 poller + 真实节点 iplimit E2E 验证。Alembic 不变性 + 自研 model aggregator 两条硬规则沉淀是 Round 3 最高价值 infra 动作。
 
 ## 产品完成度
 
 - 上游功能 6/6 保留(面板 / 多节点 / Reality / 订阅 / Telegram / 多语言)
-- 自研核心功能 **2/8** 落地(admin 速率限制,SNI 智能选型器 MVP)
+- 自研核心功能 **4/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**计费数据面 + Admin UI**)
 - 自研基础设施 **全部就绪**:
   - ✅ 安全基线(JWT 外置 / CORS 白名单 / bcrypt 固化 / JWT 时效 60min)
   - ✅ Auth 依赖升级(pyjwt 2.12 / pynacl 1.6.2 / cryptography 46.0.7)
@@ -46,29 +45,34 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
   - ✅ Redis 客户端(可选,默认禁用,fail-loud 模式)
   - ✅ PostgreSQL 16 compose profile(可选,零破坏)
   - ✅ 速率限制(slowapi + Redis 令牌桶,默认禁用)
-  - ✅ 测试基础设施(pytest + ruff + pip-audit CI,**78 个通过测试** + 1 个 SQLite skip):
+  - ✅ 测试基础设施(pytest + ruff + pip-audit CI,**171 个通过测试** + 1 个 SQLite skip):
     - Round 1: smoke / P0 security / cache redis / rate limit / compose profiles / migrations(22)
-    - Round 2 新增: sni_asn(6) + sni_checks(16) + sni_loaders(10) + sni_selector(9) + crypto(5) + sni_endpoint(10)
-    - Dashboard 单测仍为 2 个(`features/support-us/*.test.*`);SniSuggestDialog 单测留待专项前端 test infra PR(LESSONS L-010/L-012 记录了原因)
+    - Round 2: sni_asn(6) + sni_checks(16) + sni_loaders(10) + sni_selector(9) + crypto(5) + sni_endpoint(10)
+    - Round 3 opener: iplimit(~27,含 buffer-replay / 非归属 disable / data gate / 并发 dedupe / clear endpoint)+ billing_states / billing_invoices_admin / billing_channels_admin
+    - Dashboard 单测仍为 2 个(`features/support-us/*.test.*`);`SniSuggestDialog` + billing admin 单测留待专项前端 test infra PR
+  - ✅ **Alembic CI 门禁两道**:fresh-DB PG16 matrix(PR #4)+ `test-alembic-stepped`(PR #31,阻塞 mutated revision 类 bug)
+  - ✅ **自研 model 注册 aggregator**(PR #34):`app/db/extra_models.py` 是唯一注册点,env.py 对 upstream 同步区保持 1 行 diff
   - ✅ 目录骨架(`hardening/` + `deploy/` + `ops/` 各自 README)
   - ✅ **`hardening/sni/`**(Round 2)—— candidate / asn / checks / scoring / loaders / selector + seeds + blacklist + endpoint
-  - ✅ **`dashboard/src/modules/nodes/dialogs/sni-suggest/`** + API client(Round 2)—— SniSuggestDialog + useSniSuggestMutation
-- 关键缺口(Round 2+):计费 / IP 限制 / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC;小债:SNI rate-limit 回填 / locale drift 清理 / Chromatic token 配置
+  - ✅ **`hardening/iplimit/`**(Round 3)—— policy 表(config / override / disabled_state)+ Xray access 日志 parser(时间戳感知)+ Redis 滚动窗口 + detector + REST + Telegram 告警 + clear-disable endpoint
+  - ✅ **`ops/billing/`**(Round 3)—— 5 张 `aegis_billing_*` 表(plans / channels / invoices / invoice_lines / payment_events)+ 状态机 + webhook 去重 + 管理员 REST
+  - ✅ **`dashboard/src/modules/nodes/dialogs/sni-suggest/`**(Round 2)+ **`dashboard/src/modules/users/dialogs/iplimit/`**(Round 3)+ **`dashboard/src/modules/billing/`**(Round 3 in-progress)
+- 关键缺口(Round 3+):EPay 网关对接实现(A.2)/ TRC20 poller(A.3)/ 用户购买 UI(A.4)/ APScheduler 自动化(A.5)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC;小债:SNI rate-limit 回填 / `hardening/iplimit` 白名单 + Redis SCAN / TZ 对齐文档
 
 ## 当前代码质量评分
 
-**7.1 / 10**(R0 5.0 → R1 6.8 → R2 前半 +0.3)
+**7.6 / 10**(R0 5.0 → R1 6.8 → R2 前半 7.1 → R2 v0.2 7.3 → **R3 opener 7.6**)
 
-| 维度 | R0 | R1 | **R2 前半** | 变化驱动 |
-|---|---|---|---|---|
-| 架构 | 7 | 7 | **7** | SNI 模块做到了"upstream 冲突面零",验证了 hardening/ 隔离哲学 |
-| 代码质量 | 6 | 6 | **7** | `hardening/sni/` 是第一个完全符合 `.agents/rules/python.md` 的新模块 |
-| 性能 | 5 | 6 | **6** | LRU 缓存 ASN 查询是未来 SNI 健康度仪表盘的性能护城河 |
-| 安全 | 3 ⚠️ | 8 | **8** | Round 2 前半未改安全面 |
-| 测试 | 1 ⚠️ | 5 | **6** | 63 个通过测试(+41 SNI +5 crypto,全 mock 离线)|
-| DX | 6 | 8 | **8** | DEVELOPMENT.md 加 SNI 用法段,panel README 交叉引用 |
-| 功能完整性 | 4 | 4 | **5** | 自研核心 2/8(+SNI 选型器 MVP)|
-| UX | 7 | 7 | **7** | 未动(等 SNI dashboard 对接 PR)|
+| 维度 | R0 | R1 | R2 v0.2 | **R3 opener** | 变化驱动 |
+|---|---|---|---|---|---|
+| 架构 | 7 | 7 | 7 | **8** | aggregator + Alembic 不变性规则让 upstream 冲突面从"每次多一行"降到"1 行封顶",架构抽象升了一档 |
+| 代码质量 | 6 | 6 | 7 | **7** | iplimit / billing 模块基本符合 `.agents/rules/python.md`,但 iplimit 有白名单 / SCAN / TZ 等小 🟡 遗留 |
+| 性能 | 5 | 6 | 6 | **6** | iplimit N+1 已在 M-1 修掉;billing 查询未到性能瓶颈;未变化 |
+| 安全 | 3 ⚠️ | 8 | 8 | **8** | 保持 |
+| 测试 | 1 ⚠️ | 5 | 6 | **7** | 171 passed(R2 末 94 → R3 opener +77,主要来自 iplimit 5 个场景覆盖 + billing states/admin 覆盖) |
+| DX | 6 | 8 | 8 | **8** | LESSONS +L-014/15/16,rules +两条硬规则,CI +stepped-upgrade 门禁,DX 深化 |
+| 功能完整性 | 4 | 4 | 5 | **6** | 自研核心 4/8(+IP 限制 MVP +计费数据面/Admin) |
+| UX | 7 | 7 | 7 | **7** | 用户页加 IP limiter tab + billing admin 三页全通(plans / channels / invoices),invoices 详情 dialog 含 TRC20 字段与审计 audit log;用户侧购买 UI 未建,暂不升分 |
 
 ## 关键决策记录
 
@@ -88,7 +92,7 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | #6 | 修复 `_testcapi.INT_MAX` | ✅ 合并 | `f5188f2` |
 | #7 | Admin 登录速率限制 | ✅ 合并 | `482d2cc` |
 
-**Round 1 tail + Round 2**(6 个 PR):
+**Round 1 tail + Round 2**(11 个 PR):
 
 | PR | 内容 | 状态 | SHA |
 |---|---|---|---|
@@ -103,6 +107,28 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | #16 | **SNI dashboard 端点**(差异化 #1 REST 层) | ✅ 合并 | `c75359e` |
 | #17 | R2 endpoint wrap STATUS + L-010 / L-011 | ✅ 合并 | `672e67d` |
 | #18 | **SNI dashboard 前端集成**(差异化 #1 UI 层,闭环完成) | ✅ 合并 | `efabf43` |
+
+**Round 2 tail + Round 3 opener**(16 个 PR):
+
+| PR | 内容 | 状态 | SHA |
+|---|---|---|---|
+| #19 | R2 SNI loop closed STATUS refresh | ✅ 合并 | `4763743` |
+| #20 | CI 清债 batch 1(UVICORN_HOST / Chromatic token) | ✅ 合并 | `ddd1ea7` |
+| #21 | BRIEF-codex-ip-limiter.md(差异化 #2 委派骨架) | ✅ 合并 | `bc6935a` |
+| #22 | CI 清债 batch 2 | ✅ 合并 | `bf6e562` |
+| #23 | CI 清债 batch 3 | ✅ 合并 | `0208b4f` |
+| #24 | **IP limiter MVP**(差异化 #2) | ✅ 合并 | `7b12085` |
+| #25 | SPEC-billing.md(商业化 MVP opener) | ✅ 合并 | `8e305b4` |
+| #26 | **iplimit review blockers 修复**(C-1/2 + M-1/2/3/6) | ✅ 合并 | `b07e18c` |
+| #27 | Translations drift gate → diff-based(解 L-012) | ✅ 合并 | `67a8c3a` |
+| #28 | **Billing data models (A.1.1)** | ✅ 合并 | `b3cd98d` |
+| #29 | **Billing pricing + states (A.1.2)** | ✅ 合并 | `7a23ac0` |
+| #30 | **Billing admin REST (A.1.3)** | ✅ 合并 | `5b9170a` |
+| #31 | **iplimit safety-net migration + alembic CI 门禁** | ✅ 合并 | `3b8cfe4` / `1c652d2` |
+| #32 | **Billing admin dashboard (A.1.4.a)** | ✅ 合并 | `6b8149d` |
+| #33 | **Billing admin channels (A.1.4.b)** | ✅ 合并 | `a808e11` |
+| #34 | **extra_models.py aggregator + 硬规则 L-014/15** | ✅ 合并 | `f31db67` |
+| #35 | **Billing admin invoices (A.1.4.c)**(订单列表 + 详情 dialog + 动作面板) | ✅ 合并 | `a4e0c15` |
 
 ## 已部署配置文件
 
