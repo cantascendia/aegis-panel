@@ -414,6 +414,48 @@
           "update_success": "Plan {{code}} updated",
           "update_error": "Update failed"
         }
+      },
+      "channels": {
+        "title": "Payment channels",
+        "subtitle": "EPay 码商 aggregators. Multiple enabled at once = failover.",
+        "empty": "No channels configured yet. Click 'New channel' to add your first 码商.",
+        "load_error": "Failed to load channels",
+        "create_button": "New channel",
+        "col": {
+          "code": "Code",
+          "name": "Name",
+          "merchant_id": "Merchant ID",
+          "priority": "Priority",
+          "enabled": "Status"
+        },
+        "status": {
+          "on": "On",
+          "off": "Off"
+        },
+        "field": {
+          "channel_code": "Channel code",
+          "channel_code_lock": "Code is immutable after creation.",
+          "display_name": "Display name",
+          "gateway_url": "Gateway URL",
+          "merchant_id": "Merchant ID",
+          "priority": "Priority",
+          "secret_key": "Secret key",
+          "secret_key_rotate_placeholder": "Leave blank to keep current",
+          "secret_key_rotate_hint": "Providing a value rotates the secret; blank keeps the existing key.",
+          "enabled": "Enabled"
+        },
+        "dialog": {
+          "create_title": "New payment channel",
+          "edit_title": "Edit payment channel",
+          "desc": "Configure one EPay 码商. Multiple channels run in parallel; disable a broken one and the next enabled one takes over.",
+          "saving": "Saving..."
+        },
+        "toast": {
+          "create_success": "Channel {{code}} created",
+          "create_error": "Create failed: {{code}}",
+          "update_success": "Channel {{code}} updated",
+          "update_error": "Update failed"
+        }
       }
     }
   },

@@ -54,6 +54,9 @@ const DashboardAdminsLazyImport = createFileRoute('/_dashboard/admins')()
 const DashboardBillingPlansLazyImport = createFileRoute(
   '/_dashboard/billing/plans',
 )()
+const DashboardBillingChannelsLazyImport = createFileRoute(
+  '/_dashboard/billing/channels',
+)()
 
 // Create/Update Routes
 
@@ -136,6 +139,15 @@ const DashboardBillingPlansLazyRoute = DashboardBillingPlansLazyImport.update({
 } as any).lazy(() =>
   import('./routes/_dashboard/billing.plans.lazy').then((d) => d.Route),
 )
+
+const DashboardBillingChannelsLazyRoute =
+  DashboardBillingChannelsLazyImport.update({
+    id: '/billing/channels',
+    path: '/billing/channels',
+    getParentRoute: () => DashboardRoute,
+  } as any).lazy(() =>
+    import('./routes/_dashboard/billing.channels.lazy').then((d) => d.Route),
+  )
 
 const DashboardUsersCreateRoute = DashboardUsersCreateImport.update({
   id: '/create',
@@ -440,6 +452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardUsersCreateImport
       parentRoute: typeof DashboardUsersLazyImport
     }
+    '/_dashboard/billing/channels': {
+      id: '/_dashboard/billing/channels'
+      path: '/billing/channels'
+      fullPath: '/billing/channels'
+      preLoaderRoute: typeof DashboardBillingChannelsLazyImport
+      parentRoute: typeof DashboardImport
+    }
     '/_dashboard/billing/plans': {
       id: '/_dashboard/billing/plans'
       path: '/billing/plans'
@@ -731,6 +750,7 @@ interface DashboardRouteChildren {
   DashboardSettingsLazyRoute: typeof DashboardSettingsLazyRoute
   DashboardUsersLazyRoute: typeof DashboardUsersLazyRouteWithChildren
   DashboardIndexLazyRoute: typeof DashboardIndexLazyRoute
+  DashboardBillingChannelsLazyRoute: typeof DashboardBillingChannelsLazyRoute
   DashboardBillingPlansLazyRoute: typeof DashboardBillingPlansLazyRoute
 }
 
@@ -742,6 +762,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSettingsLazyRoute: DashboardSettingsLazyRoute,
   DashboardUsersLazyRoute: DashboardUsersLazyRouteWithChildren,
   DashboardIndexLazyRoute: DashboardIndexLazyRoute,
+  DashboardBillingChannelsLazyRoute: DashboardBillingChannelsLazyRoute,
   DashboardBillingPlansLazyRoute: DashboardBillingPlansLazyRoute,
 }
 
@@ -768,6 +789,7 @@ export interface FileRoutesByFullPath {
   '/services/create': typeof DashboardServicesCreateRoute
   '/users/$userId': typeof DashboardUsersUserIdRouteWithChildren
   '/users/create': typeof DashboardUsersCreateRoute
+  '/billing/channels': typeof DashboardBillingChannelsLazyRoute
   '/billing/plans': typeof DashboardBillingPlansLazyRoute
   '/admins/$adminId/delete': typeof DashboardAdminsAdminIdDeleteRoute
   '/admins/$adminId/edit': typeof DashboardAdminsAdminIdEditRoute
@@ -801,6 +823,7 @@ export interface FileRoutesByTo {
   '/nodes/create': typeof DashboardNodesCreateRoute
   '/services/create': typeof DashboardServicesCreateRoute
   '/users/create': typeof DashboardUsersCreateRoute
+  '/billing/channels': typeof DashboardBillingChannelsLazyRoute
   '/billing/plans': typeof DashboardBillingPlansLazyRoute
   '/admins/$adminId/delete': typeof DashboardAdminsAdminIdDeleteRoute
   '/admins/$adminId/edit': typeof DashboardAdminsAdminIdEditRoute
@@ -841,6 +864,7 @@ export interface FileRoutesById {
   '/_dashboard/services/create': typeof DashboardServicesCreateRoute
   '/_dashboard/users/$userId': typeof DashboardUsersUserIdRouteWithChildren
   '/_dashboard/users/create': typeof DashboardUsersCreateRoute
+  '/_dashboard/billing/channels': typeof DashboardBillingChannelsLazyRoute
   '/_dashboard/billing/plans': typeof DashboardBillingPlansLazyRoute
   '/_dashboard/admins/$adminId/delete': typeof DashboardAdminsAdminIdDeleteRoute
   '/_dashboard/admins/$adminId/edit': typeof DashboardAdminsAdminIdEditRoute
@@ -881,6 +905,7 @@ export interface FileRouteTypes {
     | '/services/create'
     | '/users/$userId'
     | '/users/create'
+    | '/billing/channels'
     | '/billing/plans'
     | '/admins/$adminId/delete'
     | '/admins/$adminId/edit'
@@ -913,6 +938,7 @@ export interface FileRouteTypes {
     | '/nodes/create'
     | '/services/create'
     | '/users/create'
+    | '/billing/channels'
     | '/billing/plans'
     | '/admins/$adminId/delete'
     | '/admins/$adminId/edit'
@@ -951,6 +977,7 @@ export interface FileRouteTypes {
     | '/_dashboard/services/create'
     | '/_dashboard/users/$userId'
     | '/_dashboard/users/create'
+    | '/_dashboard/billing/channels'
     | '/_dashboard/billing/plans'
     | '/_dashboard/admins/$adminId/delete'
     | '/_dashboard/admins/$adminId/edit'
@@ -1011,6 +1038,7 @@ export const routeTree = rootRoute
         "/_dashboard/settings",
         "/_dashboard/users",
         "/_dashboard/",
+        "/_dashboard/billing/channels",
         "/_dashboard/billing/plans"
       ]
     },
@@ -1126,6 +1154,10 @@ export const routeTree = rootRoute
     "/_dashboard/users/create": {
       "filePath": "_dashboard/users/create.tsx",
       "parent": "/_dashboard/users"
+    },
+    "/_dashboard/billing/channels": {
+      "filePath": "_dashboard/billing.channels.lazy.tsx",
+      "parent": "/_dashboard"
     },
     "/_dashboard/billing/plans": {
       "filePath": "_dashboard/billing.plans.lazy.tsx",
