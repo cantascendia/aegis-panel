@@ -90,7 +90,7 @@ python -m hardening.sni.selector --ip 103.x.x.x --count 5 --region jp
 `POST /api/nodes/sni-suggest`
 
 - **Auth**: sudo admin(`SudoAdminDep`)
-- **Rate limit**: 当前未在端点装饰;依赖 sudo-admin 门 + 60s wall-clock + 选型器内 `Semaphore(5)` 作为 defense-in-depth。slowapi 装饰器对 async def 的 signature introspection 有兼容性问题(PR #16 发现,详见 endpoint.py 模块 docstring),IP 桶粒度的 rate limit 留待 follow-up PR 解决
+- **Rate limit**: 6/min per IP(默认关,`RATE_LIMIT_ENABLED=true` 启用;slowapi + Redis 令牌桶)。配合 sudo-admin 门 + 60s wall-clock + `Semaphore(5)` 多层防御
 - **Timeout**: 60 秒(`asyncio.wait_for`)
 - **Request**:
   ```json
@@ -113,8 +113,8 @@ python -m hardening.sni.selector --ip 103.x.x.x --count 5 --region jp
 
 - ✅ PR #13: `feat(hardening): sni selector core + 6 indicators`(module + CLI + 41 测试)
 - ✅ PR #16: `feat(hardening): sni dashboard endpoint`(endpoint + 10 测试)
-- ✅ **当前 PR**: `feat(dashboard): sni-suggest dialog`(新建节点表单 "Suggest SNI" 按钮 + 8 语言 i18n)
-- ⏳ `fix(hardening): restore rate-limit on sni endpoint`(slowapi async-def 兼容方案,见 LESSONS.md L-010)
+- ✅ PR #18: `feat(dashboard): sni-suggest dialog`(新建节点表单 "Suggest SNI" 按钮)
+- ✅ Round 2 B-batch-2: rate-limit 装回 `@limiter.limit(SNI_SUGGEST_RATE_LIMIT)`
 - ⏳ `docs(hardening): sni runbook` — `deploy/README.md` 加 "全部候选不合格" 的排查手册
 - 未来 v0.3: live DPI 情报订阅 + `/24` scan mode + 持续健康度监控
 

@@ -35,23 +35,28 @@ Design choices
   traceback. ASN lookup failure bubbles up as the existing
   selector-level rejection reason; we don't special-case it.
 
-Rate limiting — deferred
-------------------------
-A ``@limiter.limit("6/minute")`` decorator was prototyped but
-removed: slowapi's decorator on an ``async def`` route mangles
-FastAPI's signature introspection such that body + dependency
-parameters fall through to query-parameter resolution, returning
-422 on every real request. See PR #16 debugging transcript.
+Rate limiting — restored (Round 2 B-batch)
+------------------------------------------
+Previously removed in PR #16 (third push) when slowapi's
+``@limiter.limit`` + ``async def`` combo appeared to mangle
+FastAPI's signature introspection (every request returned 422
+with body/admin seen as query params). Post-mortem via local
+reproduction against CI-pinned fastapi 0.121 + starlette 0.49 +
+slowapi 0.1.9 shows the pattern actually works correctly when
+``body`` is explicitly ``Annotated[..., Body()]``. The PR #16
+second-push failure was likely environmental or caused by a
+subtle stale-bytecode issue that went away on the restoration
+commit. LESSONS.md L-010 is updated accordingly.
 
-Mitigation in place without decorator-based rate limit:
-- ``SudoAdminDep`` — sudo-admin-only, not a public endpoint
-- ``asyncio.wait_for(60s)`` bounds each call's wall clock
-- ``asyncio.Semaphore(5)`` in ``select_candidates`` caps concurrent
-  outbound probes per invocation
-
-Follow-up: investigate slowapi's async-def signature handling
-(upstream bug or needs ``shared_limit`` / manual check variant) and
-re-introduce IP-bucketed rate limit in a dedicated PR.
+Current rate-limit behaviour
+- ``@limiter.limit(SNI_SUGGEST_RATE_LIMIT)`` installed; 6/min per
+  remote IP when ``RATE_LIMIT_ENABLED=true``, no-op when disabled
+- Still gated by ``SudoAdminDep`` (first line of defense)
+- Still bounded by ``asyncio.wait_for(60s)`` and the
+  ``Semaphore(5)`` inside ``select_candidates``
+- Behind reverse proxies, operators must also configure Uvicorn
+  ``--forwarded-allow-ips`` (or a future TrustedProxyMiddleware)
+  for ``get_remote_address`` to see the real client IP
 """
 
 from __future__ import annotations
@@ -64,6 +69,7 @@ from fastapi import APIRouter, Body, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.dependencies import SudoAdminDep
+from hardening.panel.rate_limit import limiter
 from hardening.sni.loaders import SeedLoadError
 from hardening.sni.selector import select_candidates
 
@@ -73,6 +79,12 @@ logger = logging.getLogger(__name__)
 # Single-source-of-truth for the probe wall-clock budget. Exported so
 # tests can monkeypatch without importing the private module path.
 SNI_SUGGEST_TIMEOUT_SECONDS = 60.0
+
+# Rate limit label. Fixed-window per remote IP (see
+# hardening/panel/rate_limit.limiter). 6/min = one every 10 s — above
+# any realistic dashboard blur-event cadence but cheap enough to
+# disarm casual probing abuse.
+SNI_SUGGEST_RATE_LIMIT = "6/minute"
 
 
 class SniSuggestRequest(BaseModel):
@@ -120,8 +132,9 @@ router = APIRouter(prefix="/api/nodes", tags=["SNI"])
         "clock capped at 60 s."
     ),
 )
+@limiter.limit(SNI_SUGGEST_RATE_LIMIT)
 async def sni_suggest(
-    request: Request,  # noqa: ARG001  # kept for future rate-limit reintroduction
+    request: Request,  # noqa: ARG001  # required by slowapi rate-limit decorator
     body: Annotated[SniSuggestRequest, Body()],
     admin: SudoAdminDep,
 ) -> dict[str, Any]:
@@ -185,4 +198,5 @@ __all__ = [
     "router",
     "SniSuggestRequest",
     "SNI_SUGGEST_TIMEOUT_SECONDS",
+    "SNI_SUGGEST_RATE_LIMIT",
 ]
