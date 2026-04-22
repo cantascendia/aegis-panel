@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from collections import defaultdict
@@ -13,20 +14,25 @@ from app import marznode
 from app.cache.redis import RedisDisabled, get_redis, is_redis_configured
 from app.db import GetDB, crud
 from app.db.models import User
-from app.marznode import operations as marznode_operations
+from app.models.user import User as MarznodeUser
 from app.notification.telegram import send_message
 from hardening.iplimit.config import (
     IPLIMIT_AUDIT_LIMIT,
     IPLIMIT_LOG_READ_LIMIT,
     IPLIMIT_LOG_READ_TIMEOUT_SECONDS,
 )
-from hardening.iplimit.db import resolve_policy
+from hardening.iplimit.db import (
+    clear_disabled_state,
+    get_disabled_state,
+    list_disabled_states,
+    resolve_policies,
+    upsert_disabled_state,
+)
 from hardening.iplimit.events import ConnectionEvent, collect_events_from_nodes
 from hardening.iplimit.store import (
     ViolationAuditEvent,
     clear_disabled_until,
     get_observed_ips,
-    list_disabled_user_ids,
     observe_events,
     push_audit_event,
     set_disabled_until,
@@ -47,7 +53,7 @@ async def run_iplimit_poll() -> None:
 
     now_ts = int(time.time())
     with GetDB() as db:
-        await _restore_expired_disables(db, redis, now_ts=now_ts)
+        await _restore_or_retry_disables(db, redis, now_ts=now_ts)
         users = _list_enabled_users(db)
         username_to_id = {user.username: user.id for user in users}
 
@@ -84,12 +90,16 @@ async def process_connection_events(
     for event in events:
         events_by_user[event.user_id].append(event)
 
+    user_ids = list(events_by_user)
+    users = _load_users_by_ids(db, user_ids)
+    policies = resolve_policies(db, list(users))
+
     violations: list[ViolationAuditEvent] = []
     for user_id, _user_events in events_by_user.items():
-        user = crud.get_user_by_id(db, user_id)
+        user = users.get(user_id)
         if not user or user.removed:
             continue
-        policy = resolve_policy(db, user_id)
+        policy = policies[user_id]
         observed_ips = await get_observed_ips(
             redis,
             user_id,
@@ -121,7 +131,12 @@ async def process_connection_events(
         if policy.violation_action == "disable":
             disabled_until = now_ts + policy.disable_duration_seconds
             await set_disabled_until(redis, user_id, disabled_until)
-            _disable_user(db, user)
+            _disable_user(
+                db,
+                user,
+                disabled_until=disabled_until,
+                disabled_at=now_ts,
+            )
         else:
             await _send_warning(event)
         violations.append(event)
@@ -156,33 +171,79 @@ def _list_enabled_users(db: Session) -> list[User]:
     )
 
 
-def _disable_user(db: Session, user: User) -> None:
+def _load_users_by_ids(db: Session, user_ids: list[int]) -> dict[int, User]:
+    if not user_ids:
+        return {}
+    users = db.query(User).filter(User.id.in_(user_ids)).all()
+    return {user.id: user for user in users}
+
+
+def _disable_user(
+    db: Session, user: User, *, disabled_until: int, disabled_at: int
+) -> None:
     if not user.enabled and not user.activated:
         return
+    state = get_disabled_state(db, user.id)
+    previous_enabled = state.previous_enabled if state else user.enabled
+    previous_activated = state.previous_activated if state else user.activated
+    upsert_disabled_state(
+        db,
+        user_id=user.id,
+        disabled_until=disabled_until,
+        disabled_at=disabled_at,
+        previous_enabled=previous_enabled,
+        previous_activated=previous_activated,
+        reason="iplimit_violation",
+    )
     user.enabled = False
     user.activated = False
     db.commit()
-    marznode_operations.update_user(user, remove=True)
+    _schedule_user_update(user, remove=True)
     logger.info("iplimit disabled user %s", user.username)
 
 
-async def _restore_expired_disables(
+async def _restore_or_retry_disables(
     db: Session, redis: object, *, now_ts: int
 ) -> None:
-    for user_id in await list_disabled_user_ids(redis):
-        disabled_until = await clear_if_expired(redis, user_id, now_ts=now_ts)
-        if disabled_until is None:
-            continue
-        user = crud.get_user_by_id(db, user_id)
+    for state in list_disabled_states(db):
+        user = crud.get_user_by_id(db, state.user_id)
         if not user or user.removed:
-            continue
-        if not user.enabled:
-            user.enabled = True
-            if user.is_active:
-                user.activated = True
-                marznode_operations.update_user(user)
+            clear_disabled_state(db, state.user_id)
+            await clear_disabled_until(redis, state.user_id)
             db.commit()
-            logger.info("iplimit re-enabled user %s", user.username)
+            continue
+
+        if state.disabled_until > now_ts:
+            if not user.enabled:
+                _schedule_user_update(user, remove=True)
+            continue
+
+        await clear_iplimit_disable(db, redis, user, now_ts=now_ts)
+
+
+async def clear_iplimit_disable(
+    db: Session, redis: object | None, user: User, *, now_ts: int
+) -> bool:
+    """Clear limiter-owned disable state and restore when policy gates allow."""
+
+    state = get_disabled_state(db, user.id)
+    if redis is not None:
+        await clear_disabled_until(redis, user.id)
+    if state is None:
+        return False
+
+    should_restore = (
+        state.previous_enabled and not user.enabled and _can_enable_now(user)
+    )
+    clear_disabled_state(db, user.id)
+    if should_restore:
+        user.enabled = True
+        user.activated = state.previous_activated
+        logger.info("iplimit re-enabled user %s", user.username)
+    db.commit()
+    if should_restore and user.is_active and user.activated:
+        _schedule_user_update(user)
+    return should_restore
 
 
 async def clear_if_expired(
@@ -195,6 +256,49 @@ async def clear_if_expired(
         return None
     await clear_disabled_until(redis, user_id)
     return disabled_until
+
+
+def _can_enable_now(user: User) -> bool:
+    return (
+        not user.removed and not user.expired and not user.data_limit_reached
+    )
+
+
+def _schedule_user_update(user: User, *, remove: bool = False) -> None:
+    node_inbounds: dict[int, list[str]] = defaultdict(list)
+    if remove:
+        for inbound in user.inbounds:
+            node_inbounds[inbound.node_id]
+    else:
+        for inbound in user.inbounds:
+            node_inbounds[inbound.node_id].append(inbound.tag)
+
+    payload = MarznodeUser.model_validate(user)
+    for node_id, tags in node_inbounds.items():
+        node = marznode.nodes.get(node_id)
+        if node is None:
+            continue
+        update_task = asyncio.ensure_future(
+            node.update_user(user=payload, inbounds=tags)
+        )
+        update_task.add_done_callback(
+            lambda done, node_id=node_id, username=user.username: (
+                _log_update_failure(done, node_id=node_id, username=username)
+            )
+        )
+
+
+def _log_update_failure(
+    done: asyncio.Future, *, node_id: int, username: str
+) -> None:
+    try:
+        done.result()
+    except Exception:
+        logger.exception(
+            "iplimit failed to push user %s update to node %s",
+            username,
+            node_id,
+        )
 
 
 async def _send_warning(event: ViolationAuditEvent) -> None:

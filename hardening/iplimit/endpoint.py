@@ -13,6 +13,7 @@ from app.db import crud
 from app.dependencies import DBDep, SudoAdminDep
 from hardening.iplimit.config import IPLIMIT_AUDIT_LIMIT
 from hardening.iplimit.db import (
+    get_disabled_state,
     get_user_override,
     resolve_policy,
     upsert_user_override,
@@ -22,6 +23,7 @@ from hardening.iplimit.store import (
     get_observed_ips,
     read_audit_events,
 )
+from hardening.iplimit.task import clear_iplimit_disable
 
 router = APIRouter(prefix="/api/users", tags=["IP Limit"])
 
@@ -92,6 +94,9 @@ async def get_user_iplimit_state(
             window_seconds=policy.window_seconds,
         )
         disabled_until = await get_disabled_until(redis, user.id)
+    state = get_disabled_state(db, user.id)
+    if disabled_until is None and state is not None:
+        disabled_until = state.disabled_until
 
     return IpLimitStateResponse(
         username=user.username,
@@ -136,6 +141,19 @@ async def patch_user_iplimit_override(
         window_seconds=override.window_seconds,
         violation_action=override.violation_action,
     )
+
+
+@router.delete(
+    "/{username}/iplimit/disable", response_model=IpLimitStateResponse
+)
+async def clear_user_iplimit_disable(
+    username: str, db: DBDep, admin: SudoAdminDep
+) -> IpLimitStateResponse:
+    _ = admin
+    user = _get_user_or_404(db, username)
+    redis = get_redis() if is_redis_configured() else None
+    await clear_iplimit_disable(db, redis, user, now_ts=int(time.time()))
+    return await get_user_iplimit_state(username, db, admin)
 
 
 @router.get("/{username}/iplimit/audit", response_model=IpLimitAuditResponse)

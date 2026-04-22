@@ -3,6 +3,7 @@ import { fetch, queryClient } from "@marzneshin/common/utils";
 import {
     type IpLimitAction,
     type IpLimitOverride,
+    type IpLimitState,
     IpLimitAuditQueryFetchKey,
     IpLimitQueryFetchKey,
 } from "@marzneshin/modules/users";
@@ -38,3 +39,26 @@ export const useIpLimitOverrideMutation = () =>
         },
     });
 
+export async function clearIpLimitDisable({
+    username,
+}: {
+    username: string;
+}): Promise<IpLimitState> {
+    return fetch(`/users/${username}/iplimit/disable`, {
+        method: "delete",
+    });
+}
+
+export const useIpLimitDisableClearMutation = () =>
+    useMutation({
+        mutationKey: ["users-iplimit-disable-clear"],
+        mutationFn: clearIpLimitDisable,
+        onSuccess: (_value, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: [IpLimitQueryFetchKey, variables.username],
+            });
+            queryClient.invalidateQueries({
+                queryKey: [IpLimitAuditQueryFetchKey, variables.username],
+            });
+        },
+    });
