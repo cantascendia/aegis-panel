@@ -10,7 +10,7 @@ const BillingPlansPage: FC = () => {
     const { t } = useTranslation();
     return (
         <Page
-            title={t("page.billing.plans.title", "Plans")}
+            title={t("page.billing.plans.title")}
             className="sm:w-screen md:w-full"
         >
             <PlansTable />

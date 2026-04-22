@@ -59,7 +59,7 @@ export const PlansTable: FC = () => {
     if (isError) {
         return (
             <div className="text-sm text-destructive p-3 rounded-md bg-destructive/10">
-                {t("page.billing.plans.load_error", "Failed to load plans")}
+                {t("page.billing.plans.load_error")}
                 : {(error as Error).message}
             </div>
         );
@@ -72,61 +72,43 @@ export const PlansTable: FC = () => {
             <div className="flex flex-row justify-between items-center">
                 <div>
                     <h2 className="text-lg font-semibold">
-                        {t("page.billing.plans.title", "Plans")}
+                        {t("page.billing.plans.title")}
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                        {t(
-                            "page.billing.plans.subtitle",
-                            "Products your users can purchase. Fixed = GB+days bundle; flexible = per-unit addon.",
-                        )}
+                        {t("page.billing.plans.subtitle")}
                     </p>
                 </div>
                 <Button onClick={openCreate}>
                     <Plus className="mr-2 h-4 w-4" />
-                    {t("page.billing.plans.create_button", "New plan")}
+                    {t("page.billing.plans.create_button")}
                 </Button>
             </div>
 
             {rows.length === 0 ? (
                 <div className="text-sm text-muted-foreground text-center py-10 border rounded-md">
-                    {t(
-                        "page.billing.plans.empty",
-                        "No plans yet. Click 'New plan' to configure your first product.",
-                    )}
+                    {t("page.billing.plans.empty")}
                 </div>
             ) : (
                 <Table>
                     <TableHeader>
                         <TableRow>
                             <TableHead>
-                                {t(
-                                    "page.billing.plans.col.code",
-                                    "Code",
-                                )}
+                                {t("page.billing.plans.col.code")}
                             </TableHead>
                             <TableHead>
-                                {t("page.billing.plans.col.name", "Name")}
+                                {t("page.billing.plans.col.name")}
                             </TableHead>
                             <TableHead>
-                                {t("page.billing.plans.col.kind", "Kind")}
+                                {t("page.billing.plans.col.kind")}
                             </TableHead>
                             <TableHead>
-                                {t(
-                                    "page.billing.plans.col.shape",
-                                    "Shape",
-                                )}
+                                {t("page.billing.plans.col.shape")}
                             </TableHead>
                             <TableHead className="text-right">
-                                {t(
-                                    "page.billing.plans.col.price",
-                                    "Price",
-                                )}
+                                {t("page.billing.plans.col.price")}
                             </TableHead>
                             <TableHead>
-                                {t(
-                                    "page.billing.plans.col.enabled",
-                                    "Status",
-                                )}
+                                {t("page.billing.plans.col.enabled")}
                             </TableHead>
                             <TableHead className="w-10" />
                         </TableRow>
@@ -140,10 +122,12 @@ export const PlansTable: FC = () => {
                                 <TableCell>{plan.display_name_en}</TableCell>
                                 <TableCell>
                                     <Badge variant="outline">
-                                        {t(
-                                            `page.billing.plans.kind.${plan.kind}_short`,
-                                            plan.kind,
-                                        )}
+                                        {/* Kind label uses a static map because check_translations.sh regex can't extract template-literal keys. Three explicit t() calls keeps the keys discoverable. */}
+                                        {plan.kind === "fixed"
+                                            ? t("page.billing.plans.kind.fixed_short")
+                                            : plan.kind === "flexible_traffic"
+                                              ? t("page.billing.plans.kind.flexible_traffic_short")
+                                              : t("page.billing.plans.kind.flexible_duration_short")}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>{formatShape(plan)}</TableCell>
@@ -159,14 +143,8 @@ export const PlansTable: FC = () => {
                                         }
                                     >
                                         {plan.enabled
-                                            ? t(
-                                                  "page.billing.plans.status.on",
-                                                  "On",
-                                              )
-                                            : t(
-                                                  "page.billing.plans.status.off",
-                                                  "Off",
-                                              )}
+                                            ? t("page.billing.plans.status.on")
+                                            : t("page.billing.plans.status.off")}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>

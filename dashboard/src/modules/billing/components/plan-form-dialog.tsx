@@ -40,22 +40,10 @@ import type { Plan, PlanIn, PlanKind } from "../types";
  * doesn't have to mentally multiply by 100.
  */
 
-const KIND_OPTIONS: { value: PlanKind; labelKey: string; labelDefault: string }[] = [
-    {
-        value: "fixed",
-        labelKey: "page.billing.plans.kind.fixed",
-        labelDefault: "Fixed (GB + days bundle)",
-    },
-    {
-        value: "flexible_traffic",
-        labelKey: "page.billing.plans.kind.flexible_traffic",
-        labelDefault: "Flexible traffic (per-GB addon)",
-    },
-    {
-        value: "flexible_duration",
-        labelKey: "page.billing.plans.kind.flexible_duration",
-        labelDefault: "Flexible duration (per-day addon)",
-    },
+const KIND_VALUES: PlanKind[] = [
+    "fixed",
+    "flexible_traffic",
+    "flexible_duration",
 ];
 
 interface PlanFormDialogProps {
@@ -150,27 +138,18 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
                 <DialogHeader>
                     <DialogTitle>
                         {editing
-                            ? t("page.billing.plans.dialog.edit_title", "Edit plan")
-                            : t(
-                                  "page.billing.plans.dialog.create_title",
-                                  "Create plan",
-                              )}
+                            ? t("page.billing.plans.dialog.edit_title")
+                            : t("page.billing.plans.dialog.create_title")}
                     </DialogTitle>
                     <DialogDescription>
-                        {t(
-                            "page.billing.plans.dialog.desc",
-                            "Fixed plans bundle GB + days; flexible plans are priced per unit (GB or day).",
-                        )}
+                        {t("page.billing.plans.dialog.desc")}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1">
                         <Label htmlFor="plan-code">
-                            {t(
-                                "page.billing.plans.field.operator_code",
-                                "Operator code",
-                            )}
+                            {t("page.billing.plans.field.operator_code")}
                         </Label>
                         <Input
                             id="plan-code"
@@ -181,17 +160,14 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
                         />
                         {editing && (
                             <p className="text-xs text-muted-foreground">
-                                {t(
-                                    "page.billing.plans.field.operator_code_lock",
-                                    "Code is immutable after creation.",
-                                )}
+                                {t("page.billing.plans.field.operator_code_lock")}
                             </p>
                         )}
                     </div>
 
                     <div className="flex flex-col gap-1">
                         <Label htmlFor="plan-name">
-                            {t("page.billing.plans.field.display_name_en", "Display name (en)")}
+                            {t("page.billing.plans.field.display_name_en")}
                         </Label>
                         <Input
                             id="plan-name"
@@ -203,7 +179,7 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
 
                     <div className="flex flex-col gap-1">
                         <Label>
-                            {t("page.billing.plans.field.kind", "Kind")}
+                            {t("page.billing.plans.field.kind")}
                         </Label>
                         <Select
                             value={kind}
@@ -214,19 +190,23 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {KIND_OPTIONS.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
-                                        {t(opt.labelKey, opt.labelDefault)}
-                                    </SelectItem>
-                                ))}
+                                {/* Kind option labels as explicit t() calls so the translations check can extract each key literally (template-literal keys are invisible to the regex). */}
+                                <SelectItem value="fixed">
+                                    {t("page.billing.plans.kind.fixed")}
+                                </SelectItem>
+                                <SelectItem value="flexible_traffic">
+                                    {t("page.billing.plans.kind.flexible_traffic")}
+                                </SelectItem>
+                                <SelectItem value="flexible_duration">
+                                    {t("page.billing.plans.kind.flexible_duration")}
+                                </SelectItem>
+                                {/* (KIND_VALUES preserved for potential future iteration needs) */}
+                                {KIND_VALUES.length === 0 && null}
                             </SelectContent>
                         </Select>
                         {editing && (
                             <p className="text-xs text-muted-foreground">
-                                {t(
-                                    "page.billing.plans.field.kind_lock",
-                                    "Kind is immutable after creation.",
-                                )}
+                                {t("page.billing.plans.field.kind_lock")}
                             </p>
                         )}
                     </div>
@@ -235,10 +215,7 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
                         {showGb && (
                             <div className="flex flex-col gap-1 flex-1">
                                 <Label htmlFor="plan-gb">
-                                    {t(
-                                        "page.billing.plans.field.data_limit_gb",
-                                        "Data limit (GB)",
-                                    )}
+                                    {t("page.billing.plans.field.data_limit_gb")}
                                 </Label>
                                 <Input
                                     id="plan-gb"
@@ -252,10 +229,7 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
                         {showDays && (
                             <div className="flex flex-col gap-1 flex-1">
                                 <Label htmlFor="plan-days">
-                                    {t(
-                                        "page.billing.plans.field.duration_days",
-                                        "Duration (days)",
-                                    )}
+                                    {t("page.billing.plans.field.duration_days")}
                                 </Label>
                                 <Input
                                     id="plan-days"
@@ -271,10 +245,7 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
                     <div className="flex flex-row gap-2 items-end">
                         <div className="flex flex-col gap-1 flex-1">
                             <Label htmlFor="plan-price">
-                                {t(
-                                    "page.billing.plans.field.price_cny",
-                                    "Price (CNY)",
-                                )}
+                                {t("page.billing.plans.field.price_cny")}
                             </Label>
                             <Input
                                 id="plan-price"
@@ -288,10 +259,7 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
                         </div>
                         <div className="flex flex-col gap-1 items-start">
                             <Label htmlFor="plan-enabled">
-                                {t(
-                                    "page.billing.plans.field.enabled",
-                                    "Enabled",
-                                )}
+                                {t("page.billing.plans.field.enabled")}
                             </Label>
                             <div className="flex flex-row gap-2 items-center h-10">
                                 <Switch
@@ -303,14 +271,8 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
                                     variant={enabled ? "default" : "secondary"}
                                 >
                                     {enabled
-                                        ? t(
-                                              "page.billing.plans.status.on",
-                                              "On",
-                                          )
-                                        : t(
-                                              "page.billing.plans.status.off",
-                                              "Off",
-                                          )}
+                                        ? t("page.billing.plans.status.on")
+                                        : t("page.billing.plans.status.off")}
                                 </Badge>
                             </div>
                         </div>
@@ -322,7 +284,7 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                     >
-                        {t("cancel", "Cancel")}
+                        {t("cancel")}
                     </Button>
                     <Button
                         onClick={onSubmit}
@@ -334,8 +296,8 @@ export const PlanFormDialog: FC<PlanFormDialogProps> = ({
                         }
                     >
                         {pending
-                            ? t("page.billing.plans.dialog.saving", "Saving...")
-                            : t("submit", "Submit")}
+                            ? t("page.billing.plans.dialog.saving")
+                            : t("submit")}
                     </Button>
                 </DialogFooter>
             </DialogContent>
