@@ -31,11 +31,10 @@ const handleError = (error: Error) => {
 
 const handleSuccess = (plan: Plan) => {
     toast.success(
-        i18n.t(
-            "page.billing.plans.toast.update_success",
-            "Plan {{code}} updated",
-            { code: plan.operator_code },
-        ),
+        i18n.t("page.billing.plans.toast.update_success", {
+            defaultValue: "Plan {{code}} updated",
+            code: plan.operator_code,
+        }),
     );
     queryClient.invalidateQueries({ queryKey: [BillingPlansQueryKey] });
 };

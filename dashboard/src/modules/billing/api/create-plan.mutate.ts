@@ -16,7 +16,8 @@ export async function fetchCreatePlan(plan: PlanIn): Promise<Plan> {
 
 const handleError = (error: Error, value: PlanIn) => {
     toast.error(
-        i18n.t("page.billing.plans.toast.create_error", "Create failed: {{code}}", {
+        i18n.t("page.billing.plans.toast.create_error", {
+            defaultValue: "Create failed: {{code}}",
             code: value.operator_code,
         }),
         { description: error.message },
@@ -25,11 +26,10 @@ const handleError = (error: Error, value: PlanIn) => {
 
 const handleSuccess = (plan: Plan) => {
     toast.success(
-        i18n.t(
-            "page.billing.plans.toast.create_success",
-            "Plan {{code}} created",
-            { code: plan.operator_code },
-        ),
+        i18n.t("page.billing.plans.toast.create_success", {
+            defaultValue: "Plan {{code}} created",
+            code: plan.operator_code,
+        }),
     );
     queryClient.invalidateQueries({ queryKey: [BillingPlansQueryKey] });
 };
