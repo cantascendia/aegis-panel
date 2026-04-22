@@ -5,6 +5,40 @@
 
 ---
 
+## D-010 | 2026-04-22 | 计费 MVP 支付策略:易支付 + TRC20 双轨,放弃 Stripe
+
+**决策**: Round 2 path A(计费 MVP)只做两个支付通道:
+
+1. **易支付(EPay)协议** 作为**主通道**,对接中国码商。面板实现通用协议适配器(兼容 SSPanel / Xboard / v2board 生态中的标准 易支付 接口),管理员在后台填 `merchant_code` + `merchant_key` + `gateway_url` 即启用,支持多家码商并行
+2. **USDT TRC20 自建轮询** 作为**副通道**,零第三方依赖,运营方只配置一个公开收款地址,后端每 30 秒轮询 Tronscan 公开 API 匹配订单
+3. **明确放弃**:Stripe、NOWPayments 等需要实体/KYC 的支付通道。**不写 stub**
+
+**Why**:
+
+- 运营方条件:**无公司实体、无启动资金、中国用户占多数(~70%)**(见本轮用户确认)
+- 中国普通用户 70%+ 无法持有 USDT(2021 "924 通知" 后 fiat-on-ramp 基本关闭,剩余路径对普通用户门槛过高)→ 没有 易支付 通道 = 直接失去大多数市场
+- 易支付 是 Chinese 机场生态的**事实标准**,一套适配器 = 兼容数十家码商,可根据需要随时切换运营方
+- TRC20 直付作为副通道提供两层价值:(a) 对懂 crypto 的用户提供无中介选项,(b) 当主通道(码商)被冻或跑路时的保险机制
+- Stripe 无实体 = 永不可启用。写 stub 让代码假装有选项 = **误导性代码**,有人会以为快启用就试,腐烂没人维护。未来真有实体再专门开一个 PR 加 Stripe,比延续一年半旧 stub 干净
+
+**How to apply**:
+
+- `ops/billing/providers/epay.py` 实现通用 易支付 协议
+- `ops/billing/providers/trc20.py` 实现 Tronscan 轮询 + 订单匹配
+- `BasePaymentProvider` 抽象封装,未来 BTCPay Server / NOWPayments / Stripe 追加不影响状态机
+- 配置硬约束:`BILLING_TRC20_ENABLED` + `BILLING_EPAY_ENABLED` 独立默认关,不启用则对应通道不暴露给用户
+- 面板 checkout UI 展示两个 tab(易支付默认、USDT 第二),**不是选单**,让用户明确看到"还有一条路"
+- 收款资金路径由用户在**码商后台**选 USDT 结算 → 汇到运营方 TRC20 钱包 → 运营方手动 OTC 换 JPY(见 `OPS-jpy-cashout.md`)
+- 码商选择与合作规范见 `OPS-epay-vendor-guide.md`
+- Aegis Panel 代码只管"到 USDT 为止";JPY 换汇是**运营过程**不是产品功能,不进代码
+
+**推翻条件**:
+- 运营方注册了日本法人且 Stripe 批准了商业类目(极罕见,VPN 类目 AUP 明令禁止) → 追加 Stripe provider(独立 PR)
+- 中国码商生态集体崩溃 / 易支付协议变更 → 重新评估通道策略
+- 运营方转目标市场(例:转欧洲) → 重新从零设计通道(本决策不再适用)
+
+---
+
 ## D-009 | 2026-04-21 | CI 门禁:自研目录扫,upstream 不扫;pip-audit 非阻塞但可视
 
 **决策**: 本项目 CI 的三档硬门禁:
