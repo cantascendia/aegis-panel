@@ -46,16 +46,30 @@ import {
  *      via a simple toggle) explains why other seeds didn't make it.
  *   4. Errors surface as a short inline message (no toast; user is
  *      already looking at the dialog).
+ *
+ * i18n strategy
+ * -------------
+ * Every t() call passes an English default as the second argument.
+ * Locale JSON files are intentionally NOT modified by this PR — the
+ * project's `tools/check_translations.sh` CI gate enforces strict
+ * parity that's long out of sync (hundreds of pre-existing "extra"
+ * and "missing" keys across all 8 locales). Adding my keys to one
+ * locale while pre-existing drift stays red would block this PR on
+ * debt that isn't ours. Defaults-in-source keeps the UI usable in
+ * every language via i18next's `fallbackLng: 'en'` behaviour. A
+ * dedicated follow-up PR should either fix the drift cross-locale
+ * or soften the CI gate. Until then, defaults in source are the
+ * right trade.
  */
 
-type Region = { value: SniRegion; labelKey: string };
+type Region = { value: SniRegion; labelKey: string; label: string };
 const REGIONS: Region[] = [
-    { value: "auto", labelKey: "page.nodes.sni-suggest.region.auto" },
-    { value: "global", labelKey: "page.nodes.sni-suggest.region.global" },
-    { value: "jp", labelKey: "page.nodes.sni-suggest.region.jp" },
-    { value: "kr", labelKey: "page.nodes.sni-suggest.region.kr" },
-    { value: "us", labelKey: "page.nodes.sni-suggest.region.us" },
-    { value: "eu", labelKey: "page.nodes.sni-suggest.region.eu" },
+    { value: "auto", labelKey: "page.nodes.sni-suggest.region.auto", label: "Auto" },
+    { value: "global", labelKey: "page.nodes.sni-suggest.region.global", label: "Global" },
+    { value: "jp", labelKey: "page.nodes.sni-suggest.region.jp", label: "Japan" },
+    { value: "kr", labelKey: "page.nodes.sni-suggest.region.kr", label: "Korea" },
+    { value: "us", labelKey: "page.nodes.sni-suggest.region.us", label: "United States" },
+    { value: "eu", labelKey: "page.nodes.sni-suggest.region.eu", label: "Europe" },
 ];
 
 interface SniSuggestDialogProps {
@@ -101,10 +115,16 @@ export const SniSuggestDialog: FC<SniSuggestDialogProps> = ({
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>
-                        {t("page.nodes.sni-suggest.title")}
+                        {t(
+                            "page.nodes.sni-suggest.title",
+                            "SNI Intelligent Selector",
+                        )}
                     </DialogTitle>
                     <DialogDescription>
-                        {t("page.nodes.sni-suggest.desc")}
+                        {t(
+                            "page.nodes.sni-suggest.desc",
+                            "Probes seed domains against six hard indicators (DPI blacklist / no-redirect / same-ASN / TLS 1.3 / ALPN h2 / X25519) and returns the top-scored candidates.",
+                        )}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -113,7 +133,10 @@ export const SniSuggestDialog: FC<SniSuggestDialogProps> = ({
                     <div className="flex flex-row gap-2 items-end">
                         <div className="flex flex-col gap-1 flex-1">
                             <Label htmlFor="sni-vps-ip">
-                                {t("page.nodes.sni-suggest.vps_ip")}
+                                {t(
+                                    "page.nodes.sni-suggest.vps_ip",
+                                    "VPS Egress IP",
+                                )}
                             </Label>
                             <Input
                                 id="sni-vps-ip"
@@ -124,7 +147,7 @@ export const SniSuggestDialog: FC<SniSuggestDialogProps> = ({
                         </div>
                         <div className="flex flex-col gap-1 w-20">
                             <Label htmlFor="sni-count">
-                                {t("page.nodes.sni-suggest.count")}
+                                {t("page.nodes.sni-suggest.count", "Count")}
                             </Label>
                             <Input
                                 id="sni-count"
@@ -139,7 +162,10 @@ export const SniSuggestDialog: FC<SniSuggestDialogProps> = ({
                         </div>
                         <div className="flex flex-col gap-1 w-28">
                             <Label>
-                                {t("page.nodes.sni-suggest.region.label")}
+                                {t(
+                                    "page.nodes.sni-suggest.region.label",
+                                    "Region",
+                                )}
                             </Label>
                             <Select
                                 value={region}
@@ -153,7 +179,7 @@ export const SniSuggestDialog: FC<SniSuggestDialogProps> = ({
                                 <SelectContent>
                                     {REGIONS.map((r) => (
                                         <SelectItem key={r.value} value={r.value}>
-                                            {t(r.labelKey)}
+                                            {t(r.labelKey, r.label)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -167,8 +193,11 @@ export const SniSuggestDialog: FC<SniSuggestDialogProps> = ({
                         className="w-full"
                     >
                         {mutation.isPending
-                            ? t("page.nodes.sni-suggest.probing")
-                            : t("page.nodes.sni-suggest.probe")}
+                            ? t(
+                                  "page.nodes.sni-suggest.probing",
+                                  "Probing (up to 60s)...",
+                              )
+                            : t("page.nodes.sni-suggest.probe", "Probe")}
                     </Button>
                 </div>
 
@@ -177,7 +206,8 @@ export const SniSuggestDialog: FC<SniSuggestDialogProps> = ({
                 {/* Results area */}
                 {error && (
                     <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                        {t("page.nodes.sni-suggest.error")}: {error.message}
+                        {t("page.nodes.sni-suggest.error", "Error")}:{" "}
+                        {error.message}
                     </div>
                 )}
 
@@ -185,15 +215,16 @@ export const SniSuggestDialog: FC<SniSuggestDialogProps> = ({
                     <ResultsSection
                         result={result}
                         showRejected={showRejected}
-                        onToggleRejected={() =>
-                            setShowRejected((s) => !s)
-                        }
+                        onToggleRejected={() => setShowRejected((s) => !s)}
                     />
                 )}
 
                 {!result && !error && !mutation.isPending && (
                     <div className="text-sm text-muted-foreground text-center py-4">
-                        {t("page.nodes.sni-suggest.awaiting")}
+                        {t(
+                            "page.nodes.sni-suggest.awaiting",
+                            "Enter a VPS IP and click Probe.",
+                        )}
                     </div>
                 )}
 
@@ -202,7 +233,7 @@ export const SniSuggestDialog: FC<SniSuggestDialogProps> = ({
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                     >
-                        {t("close")}
+                        {t("close", "Close")}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -227,15 +258,13 @@ const ResultsSection: FC<ResultsSectionProps> = ({
         <div className="flex flex-col gap-2">
             {/* VPS context strip */}
             <div className="text-xs text-muted-foreground flex flex-row gap-3">
+                <span>ASN: {result.vps_asn ?? "—"}</span>
                 <span>
-                    ASN: {result.vps_asn ?? "—"}
-                </span>
-                <span>
-                    {t("page.nodes.sni-suggest.country")}:{" "}
+                    {t("page.nodes.sni-suggest.country", "Country")}:{" "}
                     {result.vps_country ?? "—"}
                 </span>
                 <span>
-                    {t("page.nodes.sni-suggest.elapsed", {
+                    {t("page.nodes.sni-suggest.elapsed", "{{seconds}}s", {
                         seconds: result.elapsed_seconds.toFixed(1),
                     })}
                 </span>
@@ -244,7 +273,10 @@ const ResultsSection: FC<ResultsSectionProps> = ({
             {/* Candidates list */}
             {result.candidates.length === 0 ? (
                 <div className="text-sm text-destructive p-3 rounded-md bg-destructive/10">
-                    {t("page.nodes.sni-suggest.no_candidates")}
+                    {t(
+                        "page.nodes.sni-suggest.no_candidates",
+                        "No candidates passed all six indicators. Check the rejected list below for reasons.",
+                    )}
                 </div>
             ) : (
                 <ScrollArea className="h-72 border rounded-md">
@@ -265,10 +297,15 @@ const ResultsSection: FC<ResultsSectionProps> = ({
                         className="text-xs text-muted-foreground hover:text-foreground underline"
                     >
                         {showRejected
-                            ? t("page.nodes.sni-suggest.hide_rejected")
-                            : t("page.nodes.sni-suggest.show_rejected", {
-                                  count: result.rejected.length,
-                              })}
+                            ? t(
+                                  "page.nodes.sni-suggest.hide_rejected",
+                                  "Hide rejected",
+                              )
+                            : t(
+                                  "page.nodes.sni-suggest.show_rejected",
+                                  "Show {{count}} rejected",
+                                  { count: result.rejected.length },
+                              )}
                     </button>
                     {showRejected && (
                         <ScrollArea className="h-32 mt-2 border rounded-md">
@@ -304,12 +341,48 @@ const CandidateRow: FC<{ cand: SniCandidate }> = ({ cand }) => {
     // soft signals (ocsp_stapling, rtt_ms) would noise the row;
     // surfaced in tooltip-free mode for now.
     const indicators: { key: string; pass: boolean; label: string }[] = [
-        { key: "bl", pass: checks.blacklist_ok, label: t("page.nodes.sni-suggest.ind.blacklist") },
-        { key: "nr", pass: checks.no_redirect, label: t("page.nodes.sni-suggest.ind.no_redirect") },
-        { key: "asn", pass: checks.same_asn, label: t("page.nodes.sni-suggest.ind.same_asn") },
-        { key: "tls", pass: checks.tls13_ok, label: t("page.nodes.sni-suggest.ind.tls13") },
-        { key: "h2", pass: checks.alpn_h2_ok, label: t("page.nodes.sni-suggest.ind.h2") },
-        { key: "x", pass: checks.x25519_ok, label: t("page.nodes.sni-suggest.ind.x25519") },
+        {
+            key: "bl",
+            pass: checks.blacklist_ok,
+            label: t(
+                "page.nodes.sni-suggest.ind.blacklist",
+                "Not on DPI blacklist",
+            ),
+        },
+        {
+            key: "nr",
+            pass: checks.no_redirect,
+            label: t(
+                "page.nodes.sni-suggest.ind.no_redirect",
+                "No cross-domain redirect",
+            ),
+        },
+        {
+            key: "asn",
+            pass: checks.same_asn,
+            label: t(
+                "page.nodes.sni-suggest.ind.same_asn",
+                "Same ASN as VPS",
+            ),
+        },
+        {
+            key: "tls",
+            pass: checks.tls13_ok,
+            label: t("page.nodes.sni-suggest.ind.tls13", "TLS 1.3 handshake"),
+        },
+        {
+            key: "h2",
+            pass: checks.alpn_h2_ok,
+            label: t("page.nodes.sni-suggest.ind.h2", "ALPN negotiates h2"),
+        },
+        {
+            key: "x",
+            pass: checks.x25519_ok,
+            label: t(
+                "page.nodes.sni-suggest.ind.x25519",
+                "X25519 curve in ECDHE",
+            ),
+        },
     ];
 
     return (
@@ -337,8 +410,11 @@ const CandidateRow: FC<{ cand: SniCandidate }> = ({ cand }) => {
             </div>
             <CopyToClipboardButton
                 text={cand.host}
-                successMessage={t("page.nodes.sni-suggest.copied")}
-                tooltipMsg={t("page.nodes.sni-suggest.copy_sni")}
+                successMessage={t(
+                    "page.nodes.sni-suggest.copied",
+                    "SNI copied to clipboard",
+                )}
+                tooltipMsg={t("page.nodes.sni-suggest.copy_sni", "Copy SNI")}
             />
         </div>
     );

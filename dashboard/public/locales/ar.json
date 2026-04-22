@@ -164,41 +164,6 @@
         "title": "تكوين شهادة العقد",
         "desc": "إذا كنت تهدف إلى تكوين شهادة العقد، تحقق من صفحة الإعدادات.",
         "click": "انقر هنا"
-      },
-      "sni-suggest": {
-        "open_button": "Suggest SNI",
-        "title": "SNI Intelligent Selector",
-        "desc": "Probes seed domains against six hard indicators (DPI blacklist / no-redirect / same-ASN / TLS 1.3 / ALPN h2 / X25519) and returns the top-scored candidates.",
-        "vps_ip": "VPS Egress IP",
-        "count": "Count",
-        "probe": "Probe",
-        "probing": "Probing (up to 60s)...",
-        "awaiting": "Enter a VPS IP and click Probe.",
-        "error": "Error",
-        "country": "Country",
-        "elapsed": "{{seconds}}s",
-        "no_candidates": "No candidates passed all six indicators. Check the rejected list below for reasons.",
-        "show_rejected": "Show {{count}} rejected",
-        "hide_rejected": "Hide rejected",
-        "copied": "SNI copied to clipboard",
-        "copy_sni": "Copy SNI",
-        "region": {
-          "label": "Region",
-          "auto": "Auto",
-          "global": "Global",
-          "jp": "Japan",
-          "kr": "Korea",
-          "us": "United States",
-          "eu": "Europe"
-        },
-        "ind": {
-          "blacklist": "Not on DPI blacklist",
-          "no_redirect": "No cross-domain redirect",
-          "same_asn": "Same ASN as VPS",
-          "tls13": "TLS 1.3 handshake",
-          "h2": "ALPN negotiates h2",
-          "x25519": "X25519 curve in ECDHE"
-        }
       }
     },
     "services": {

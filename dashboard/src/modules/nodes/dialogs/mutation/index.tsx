@@ -134,7 +134,10 @@ export const MutationDialog: FC<MutationDialogProps<NodeType>> = ({
                             onClick={() => setSniDialogOpen(true)}
                             disabled={!addressFieldValue}
                         >
-                            {t("page.nodes.sni-suggest.open_button")}
+                            {t(
+                                "page.nodes.sni-suggest.open_button",
+                                "Suggest SNI",
+                            )}
                         </Button>
                         <HStack>
                             <FormField
