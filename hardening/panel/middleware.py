@@ -19,6 +19,7 @@ from hardening.iplimit.endpoint import router as iplimit_router
 from hardening.iplimit.scheduler import install_iplimit_scheduler
 from hardening.panel.rate_limit import limiter
 from hardening.sni.endpoint import router as sni_router
+from ops.billing.endpoint import router as billing_admin_router
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -58,4 +59,5 @@ def apply_panel_hardening(app: FastAPI) -> None:
     # under ``/nodes``; ours is ``/api/nodes/sni-suggest``).
     app.include_router(sni_router)
     app.include_router(iplimit_router)
+    app.include_router(billing_admin_router)
     install_iplimit_scheduler(app)
