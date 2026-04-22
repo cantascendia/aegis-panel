@@ -21,6 +21,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base
 from ops.billing.db import (
@@ -53,7 +54,16 @@ def billing_engine():
             "aegis_billing_payment_events",
         )
     ]
-    engine = create_engine("sqlite:///:memory:")
+    # StaticPool + check_same_thread=False so the TestClient worker
+    # thread and the fixture-seeding thread share one connection,
+    # hence one in-memory DB. Without this, TestClient opens its
+    # own connection → new empty in-memory DB → "no such table"
+    # on every request.
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(engine, tables=billing_tables)
     yield engine
     engine.dispose()
