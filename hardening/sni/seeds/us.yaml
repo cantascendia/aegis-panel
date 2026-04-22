@@ -1,0 +1,14 @@
+# US-region candidate SNIs. Use when the VPS egress IP is in the US.
+
+hosts:
+  - host: swdist.apple.com
+    category: software-update
+    notes: "Apple software distribution; compass-cited"
+
+  - host: www.bing.com
+    category: search-engine
+    notes: "Microsoft anycast; compass-cited"
+
+  - host: dl.google.com
+    category: software-update
+    notes: "Compass gold standard - fast handshake + OCSP stapling"

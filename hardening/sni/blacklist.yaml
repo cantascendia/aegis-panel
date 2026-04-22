@@ -1,0 +1,40 @@
+# Known-bad SNIs. Do NOT use as Reality serverName — these entries
+# are either on active DPI block lists, routinely unreachable in
+# censored regions (which defeats Reality's fallback), or have other
+# documented operational issues.
+#
+# Update process: PR to this file. Each entry must cite a source.
+# Future (v0.3): subscribe to an external intelligence feed; for
+# MVP this list is manually curated and intentionally small.
+#
+# Format:
+#   - host: <fqdn>
+#     reason: <short story>
+#     source: <url-or-doc>
+#     added: <YYYY-MM-DD>
+
+blocked:
+  - host: speedtest.net
+    reason: "Iran MCCI DPI mass-block Nov 2024"
+    source: "compass_artifact_wf-5103cc40-b39f-4d20-9217-61987475be44_text_markdown.md"
+    added: "2026-04-22"
+
+  - host: www.speedtest.net
+    reason: "Same as speedtest.net"
+    source: "compass_artifact_*.md"
+    added: "2026-04-22"
+
+  - host: www.google.com
+    reason: "Unreachable in CN/IR - Reality fallback fails + handshake probe timeout"
+    source: "compass_artifact_*.md"
+    added: "2026-04-22"
+
+  - host: google.com
+    reason: "Same as www.google.com"
+    source: "compass_artifact_*.md"
+    added: "2026-04-22"
+
+  - host: www.youtube.com
+    reason: "Unreachable in CN - same fallback risk as google.com"
+    source: "compass_artifact_*.md"
+    added: "2026-04-22"

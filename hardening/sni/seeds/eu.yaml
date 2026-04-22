@@ -1,0 +1,14 @@
+# EU-region candidate SNIs. Use when the VPS egress IP is in Europe.
+
+hosts:
+  - host: www.microsoft.com
+    category: anycast-cdn
+    notes: "Microsoft anycast; EU-terminated"
+
+  - host: addons.mozilla.org
+    category: browser-update
+    notes: "Mozilla EU mirrors; browser update infra"
+
+  - host: www.bbc.com
+    category: regional-media
+    notes: "BBC; UK/EU CDN typical"

@@ -130,6 +130,29 @@ RATE_LIMIT_ADMIN_LOGIN=5/minute  # 可选,默认值
 
 期间面板下线。如果数据量大、停机不可接受,在 `deploy/README.md` 规划的 Ansible playbook 里会有一个蓝绿流程,Round 2 落地。
 
+### SNI 智能选型器(hardening/sni)
+
+新节点的 Reality `serverName` 候选自动选型,把原本 30-60 分钟的手工流程(TLS 1.3/H2/X25519 验证 + 同 ASN 邻居确认 + DPI 黑名单规避)压到一次命令。详见 `hardening/sni/README.md` 和 `docs/ai-cto/SPEC-sni-selector.md`。
+
+```bash
+# 从全球种子池选 10 条候选(默认区域 auto)
+python -m hardening.sni.selector --ip <vps-egress-ip> --count 10
+
+# 从日本区域池选 5 条(全球 + jp 种子合并去重)
+python -m hardening.sni.selector --ip 103.x.x.x --count 5 --region jp
+```
+
+输出 JSON 到 stdout,含:
+
+- `candidates[]` —— 按 score 降序,每条含 6 条硬指标 pass/fail + 分值来源
+- `rejected[]` —— 被拒候选 + 原因(方便运营排查"为什么列表是空的")
+
+退出码:`0` = 至少 1 个候选通过;`1` = 零候选(检查 `rejected[]`);`2` = VPS ASN 查不到(致命)。
+
+本地跑要求 Python 3.12+(3.13 + OpenSSL 3.2+ 精确检测 X25519,3.12 走 fallback,准确度 ≥95%)。`blacklist.yaml` 和 `seeds/*.yaml` 不改代码直接编辑,加载时 fail-loud 验证。
+
+CI 的 `test_sni_*.py`(41 个测试)完全 mock 网络,离线可跑。
+
 ## 目录速查
 
 | 目录 | 性质 | 修改策略 |
@@ -193,7 +216,7 @@ fixture 约定(建立中):
 
 ## 更多
 
-- CTO 手册:`C:\projects\ai-playbook\playbook\handbook.md`
+- CTO 手册:`C:\projects\ai-guidebook\playbook\handbook.md`
 - 路线图与轮次:`docs/ai-cto/ROADMAP.md` + `docs/ai-cto/STATUS.md`
 - 竞品与偷学:`docs/ai-cto/COMPETITORS.md`
 - AGPL 合规检查:`.agents/skills/agpl-compliance/SKILL.md`

@@ -1,0 +1,42 @@
+# Global candidate SNIs. Anycast / global-CDN domains useful from any
+# region. For JP/KR/US/EU-specific picks see the sibling regional files.
+#
+# Each entry must have `host` and `category`. `notes` is free text and
+# shows up in the selector's rejection reasons when a candidate fails
+# a probe check.
+#
+# Editing: PR to this file, one host per entry. No code change needed;
+# the loader re-reads on each CLI invocation.
+
+hosts:
+  - host: www.microsoft.com
+    category: anycast-cdn
+    notes: "Global CDN, broad TLS 1.3 / H2 / X25519 support"
+
+  - host: www.apple.com
+    category: anycast-cdn
+    notes: "Akamai-backed; stable Reality candidate"
+
+  - host: addons.mozilla.org
+    category: browser-update
+    notes: "Browser update infra; unusual to block"
+
+  - host: itunes.apple.com
+    category: anycast-cdn
+    notes: "Same CDN family as www.apple.com"
+
+  - host: gateway.icloud.com
+    category: apple-services
+    notes: "Apple services backend; low-profile"
+
+  - host: www.bing.com
+    category: search-engine
+    notes: "Microsoft anycast; uncommon Reality pick (less-overused)"
+
+  - host: swdist.apple.com
+    category: software-update
+    notes: "Apple software distribution; compass-recommended"
+
+  - host: dl.google.com
+    category: software-update
+    notes: "Fast handshake + OCSP stapling; compass-cited gold standard"
