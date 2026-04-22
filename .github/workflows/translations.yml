@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       files: ${{ steps.find.outputs.files }}
+      base-ref: ${{ steps.find.outputs.base-ref }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -26,12 +27,15 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
             files=$(git diff --name-only FETCH_HEAD...HEAD -- 'dashboard/public/locales/*.json')
+            echo "base-ref=${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
           else
             before="${{ github.event.before }}"
             if [[ -n "$before" && "$before" != "0000000000000000000000000000000000000000" ]]; then
               files=$(git diff --name-only "$before" HEAD -- 'dashboard/public/locales/*.json')
+              echo "base-ref=$before" >> "$GITHUB_OUTPUT"
             else
               files=$(git diff --name-only HEAD^ HEAD -- 'dashboard/public/locales/*.json' || true)
+              echo "base-ref=HEAD^" >> "$GITHUB_OUTPUT"
             fi
           fi
           files=$(printf '%s\n' "$files" | sed '/^$/d' | jq -R -s -c 'split("\n")[:-1]')
@@ -43,14 +47,43 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         locale-file: ${{ fromJson(needs.find-locales.outputs.files) }}
 
     steps:
-      - name: Checkout repository
+      # Check out PR head tree as the active worktree (cwd = head).
+      - name: Checkout PR head
         uses: actions/checkout@v3
+        with:
+          path: head
+          fetch-depth: 0
 
-      - name: Run script with locale file
+      # Check out PR base tree into a sibling dir. check_translations.sh
+      # --base-source points at this dir so it can grep the base's
+      # dashboard/ for t() keys.
+      - name: Checkout PR base
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.find-locales.outputs.base-ref }}
+          path: base
+          fetch-depth: 0
+
+      - name: Diff-based drift check
+        # Per LESSONS L-012: instead of the legacy strict "drift == 0"
+        # gate, this compares drift on base vs head for the changed
+        # locale file. Fails only if the PR INCREASES drift, letting
+        # pre-existing parity debt coexist with normal development.
+        # A dedicated future "locale cleanup" PR can reduce drift
+        # back toward 0 without every feature PR having to clean up
+        # first.
+        working-directory: head
         run: |
-          bash tools/check_translations.sh "${{ matrix.locale-file }}"
+          locale_file="${{ matrix.locale-file }}"
+          echo "::group::Drift check: $locale_file"
+          bash tools/check_translations.sh \
+            --base-source ../base \
+            --base-json "../base/$locale_file" \
+            "$locale_file"
+          echo "::endgroup::"
         shell: bash
