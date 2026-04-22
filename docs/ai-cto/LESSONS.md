@@ -8,6 +8,34 @@
 
 ---
 
+## L-011 | Round 2 中段 | 本地 ruff 与 `requirements-dev.txt` pinned 版本必须一致
+
+**现象**: PR #16 第一次 CI 挂掉在 `ruff format --check`,说 `tests/test_sni_endpoint.py` 需要 reformat。本地先用的是系统装的 ruff 0.15.6,而项目 `requirements-dev.txt` 固定 `ruff==0.7.3`。两者的 formatter 输出不一致(长函数参数的括号换行策略变了),我基于 0.15.6 看到的 "already formatted" 在 0.7.3 下立刻失效。
+
+**根因**: Ruff 这种快迭代的工具在小版本之间 formatter 输出会变。CI 使用 pinned 版本,本地没有对齐。
+
+**防线**: 编辑 `hardening/ deploy/ ops/ tests/` 任何 `.py` 前,跑一次 `pip install 'ruff==0.7.3' && python -m ruff --version` 确认。或者用项目的 `requirements-dev.txt` 装 venv,别用系统/全局 Python 的 ruff。
+
+**沉淀**: 未转 rule(单次出现),如果 Round 3 再跌一次 → 转 `.agents/rules/python.md` "格式化与 lint" 段。暂存为 LESSONS,加到 `DEVELOPMENT.md` "代码风格" 段一句话提醒。
+
+---
+
+## L-010 | Round 2 中段 | slowapi `@limiter.limit` on `async def` 破坏 FastAPI signature introspection
+
+**现象**: PR #16 一路 8/10 测试返回 422,body + `Annotated[..., Depends(sudo_admin)]` 均被 FastAPI 误判为 query 参数(`{"loc": ["query", "body"], "msg": "Field required"}`)。只有 `request: Request` 被识别。加 `Annotated[..., Body()]` 显式标注**没有修好**。
+
+**根因**: slowapi 的 `@limiter.limit(...)` 装饰器对 `async def` 路由函数的签名保留(`__wrapped__` / `inspect.signature(follow_wrapped=True)`)在当前版本 + fastapi 0.121 的组合下不完整。FastAPI 看到的 annotations 只剩 `(request,)`,其余参数按 query 查不到 → 422。同项目里 `/api/admins/token`(`def`, 同步)用相同装饰器是 OK 的,所以只有 async 路由命中这个坑。
+
+**防线**:
+1. 新增 `async def` FastAPI 路由时,**不要**直接用 `@limiter.limit()` 装饰。验证一下或走变通
+2. 变通方案(未实施,follow-up 确认):尝试 `limiter.shared_limit` 或在函数体内手工调用 rate-limit 检查 API
+3. 至少保留这些防线:auth 门 + `asyncio.wait_for()` 全局 timeout + `Semaphore(N)` 外调并发封顶 —— 这三条即使无 rate limit 也能顶住单次滥用
+4. 真正的 rate limit 必须等 slowapi+async 行为确认后再加
+
+**沉淀**: 🟡 半沉淀。`.agents/rules/python.md` "Marzneshin 特定" 段应加一条 "新增 async 路由不要直接套 slowapi 装饰器,先看 LESSONS.md L-010"。下轮开始前补上。
+
+---
+
 ## L-009 | Round 2 开场 | "`foo` deprecated in favour of `foo_utc`" 改名不可全局套用 —— 读 vs 写可能是两个对象
 
 **现象**: PR #11 第一次 commit 把 `CertificateBuilder.not_valid_before()` / `.not_valid_after()` 改成 `*_utc` 版本,CI 30 秒抓到 `AttributeError: 'CertificateBuilder' object has no attribute 'not_valid_before_utc'`。

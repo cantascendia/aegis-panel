@@ -1,6 +1,6 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-22(Round 2 v0.2 前半段)
+> 最后更新:2026-04-22(Round 2 v0.2 中段 — SNI 闭环已合入)
 > 更新频率:每 3 轮或重大节点
 
 ---
@@ -20,10 +20,15 @@
   - 5 份区域 seeds + blacklist 零代码可编辑
   - 41 个完全离线 mock 测试 + golden JSON schema drift guard
   - CLI + 退出码契约完整
+- ✅ **SNI dashboard 端点**(SPEC follow-up #2)落地(PR #16,`c75359e`)
+  - `POST /api/nodes/sni-suggest` 通过 `apply_panel_hardening()` 注册,零 upstream 修改
+  - Pydantic 校验 + sudo-admin gate + 60s wall-clock + Semaphore(5) 防并发滥用
+  - 10 个 TestClient 测试(auth 401/403 + 422 validation x3 + happy x2 + 504 timeout + 500 seed-load + route contract + rejected section guard)
+  - Rate limit(slowapi 装饰器)因 async def 兼容性问题延后,见 LESSONS.md L-010
 
 ## 项目画像(一句话)
 
-Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 2 v0.2 差异化 #1 MVP 已落地**(SNI 选型器),下一步 follow-up:dashboard 端点对接 + runbook。
+Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 2 v0.2 差异化 #1 闭环完成**(SNI 选型器 MVP + dashboard REST 端点),下一步:前端表单集成 + runbook。
 
 ## 产品完成度
 
@@ -36,12 +41,12 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
   - ✅ Redis 客户端(可选,默认禁用,fail-loud 模式)
   - ✅ PostgreSQL 16 compose profile(可选,零破坏)
   - ✅ 速率限制(slowapi + Redis 令牌桶,默认禁用)
-  - ✅ 测试基础设施(pytest + ruff + pip-audit CI,**63 个通过测试** + 1 个 SQLite skip):
-    - Round 1: smoke / P0 security / cache redis / rate limit / compose profiles / migrations
-    - Round 2 新增: sni_asn(6) + sni_checks(16) + sni_loaders(10) + sni_selector(9) + crypto(~5)
+  - ✅ 测试基础设施(pytest + ruff + pip-audit CI,**78 个通过测试** + 1 个 SQLite skip):
+    - Round 1: smoke / P0 security / cache redis / rate limit / compose profiles / migrations(22)
+    - Round 2 新增: sni_asn(6) + sni_checks(16) + sni_loaders(10) + sni_selector(9) + crypto(5) + **sni_endpoint(10)**
   - ✅ 目录骨架(`hardening/` + `deploy/` + `ops/` 各自 README)
-  - ✅ **`hardening/sni/`**(Round 2)—— candidate / asn / checks / scoring / loaders / selector + seeds + blacklist
-- 关键缺口(Round 2+):SNI dashboard 对接 / 计费 / IP 限制 / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC
+  - ✅ **`hardening/sni/`**(Round 2)—— candidate / asn / checks / scoring / loaders / selector + seeds + blacklist + **endpoint**
+- 关键缺口(Round 2+):SNI dashboard **前端**集成 / 计费 / IP 限制 / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC
 
 ## 当前代码质量评分
 
@@ -87,6 +92,8 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | #12 | L-009 教训(API read vs write-side trap) | ✅ 合并 | `94b5baf` |
 | #13 | **SNI 选型器 core + docs**(差异化 #1 MVP) | ✅ 合并 | `6ade9bf` |
 | #14 | `app/utils/crypto.py` 128 行单测 | ✅ 合并 | `efcfd9e` |
+| #15 | Round 2 mid-point STATUS refresh | ✅ 合并 | `bd81a54` |
+| #16 | **SNI dashboard 端点**(差异化 #1 闭环) | ✅ 合并 | `c75359e` |
 
 ## 已部署配置文件
 
@@ -104,7 +111,9 @@ Round 0 列表的全部 + Round 1 新增:
 
 - **差异化核心**:
   - ✅ SNI 智能选型器 MVP(差异化 #1,PR #13 落地)
-  - ⏳ SNI dashboard 对接(SPEC follow-up #2:`POST /api/nodes/sni-suggest` + 新建节点表单对接)
+  - ✅ SNI dashboard REST 端点(SPEC follow-up #2,PR #16 落地)
+  - ⏳ SNI dashboard **前端表单集成**(dashboard/ 新建节点表单调用 `/api/nodes/sni-suggest`)
+  - ⏳ SNI rate-limit 回填(slowapi async-def 兼容方案,LESSONS.md L-010)
   - ⏳ SNI runbook(SPEC follow-up #3:"全部候选不合格"排查手册)
   - Reality 配置审计器(Skill 已定义,代码未起)
   - Reality 健康度仪表盘(差异化 #3,v0.3)
@@ -141,12 +150,12 @@ Round 0 列表的全部 + Round 1 新增:
 
 ## 📅 最后同步确认
 
-**Round 2 前半段**(2026-04-22):
-- **13 个 PR 合入**(#1~#14,#8 已合为 `940622a`)
-- **63 个通过测试**(+41 SNI +5 crypto),CI 三门禁全绿
-- `hardening/sni/` 模块就位:1795 行新增,含 4 个测试文件
-- DEVELOPMENT.md + `hardening/panel/README.md` 建立与 SNI 的文档交叉引用
-- CLAUDE.md / DEVELOPMENT.md 修正 handbook 路径(`ai-playbook` → `ai-guidebook` typo 修复)
+**Round 2 中段**(2026-04-22,SNI 闭环合入):
+- **16 个 PR 合入**(#1~#16 全绿)
+- **78 个通过测试** + 1 skip(+10 sni_endpoint tests)
+- `hardening/sni/` 模块闭环:candidate/asn/checks/scoring/loaders/selector + **endpoint** + 5 tests 文件
+- `apply_panel_hardening()` 扩展为 middleware + limiter + **自研 routers** 三位一体入口,`app/marzneshin.py` 仍只有一行 diff
+- 新教训 L-010(slowapi async 兼容)+ L-011(本地 ruff 版本漂移)记入 LESSONS.md
 
 ## 💭 最新想法(给未来的 CTO)
 
