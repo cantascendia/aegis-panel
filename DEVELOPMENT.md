@@ -211,7 +211,7 @@ fixture 约定(建立中):
 |---|---|
 | `alembic upgrade head` 报外键冲突 | 多半是多人同时迁移,先 `alembic heads` 看分叉,必要时 `alembic merge` |
 | dashboard 开发跑不起来 | 确认 pnpm 版本 ≥ 8,删 `node_modules` 后 `pnpm install --force` |
-| 启动绑 0.0.0.0 失败 | `.env` 没配 SSL 证书时,`UVICORN_HOST` 被强制覆盖为 127.0.0.1,这是特性 |
+| 面板外网访问不到 | `UVICORN_HOST` 默认 127.0.0.1(仅本机)。外网访问必须 (a) CF Tunnel / Nginx 前置反代,或 (b) 显式 `UVICORN_HOST=0.0.0.0` 且同时配 `UVICORN_SSL_CERTFILE`;`main.py` 无 SSL 时会强制覆盖回 127.0.0.1 |
 | `ImportError: grpcio` | `requirements.txt` 的 grpcio 1.69 对 Python 3.13 有兼容问题,固定 3.12 |
 
 ## 更多

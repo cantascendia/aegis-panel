@@ -12,8 +12,36 @@ permissions:
   contents: read
 
 jobs:
+  # Graceful skip when CHROMATIC_PROJECT_TOKEN is not configured on the
+  # repo. Previously this job hard-failed with "Missing project token"
+  # on every dashboard PR, producing a red non-required check that made
+  # mergeStateStatus=UNSTABLE for no real reason (see LESSONS.md L-013).
+  #
+  # Pattern: the `chromatic` job is `needs: gate` and only runs when the
+  # gate job sets `run=true`. The gate itself trivially succeeds, so
+  # workflows where the token is absent simply show "chromatic" as
+  # skipped (green-ish) rather than failed (red).
+  gate:
+    name: Check Chromatic config
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::CHROMATIC_PROJECT_TOKEN not set on this repo — visual tests skipped. See LESSONS.md L-013 for how to enable."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
   chromatic:
     name: Chromatic
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     env:
       CI: true
@@ -55,7 +83,7 @@ jobs:
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           exitZeroOnChanges: true
-          workingDir: ./dashboard 
+          workingDir: ./dashboard
           autoAcceptChanges: "main"
           exitOnceUploaded: true
           onlyChanged: true
