@@ -8,6 +8,66 @@
 
 ---
 
+## L-016 | Round 3 IP limiter follow-up | Fresh-DB CI 掩盖"已合并 migration 被 mutate" —— 绿灯是 false negative
+
+**现象**: PR #26 的 PG16 pytest job 全绿,以为 `aegis_iplimit_disabled_state` 表创建逻辑工作正常。实际上 CI 使用的是**每次 run 全新 DB**,从 revision `20faa9f18c0a` 开始跑完整 migration chain 一次性到 head,自然会执行 `4f7b7c8e9d10` 的 mutated `upgrade()` 并创建 3 张表。但**任何在 PR #24 merge 后、PR #26 merge 前跑过 `alembic upgrade head` 的环境**(本地 dev DB、staging、生产),`alembic_version.version_num` 已卡在 `4f7b7c8e9d10`,Alembic 不重跑已标记完成的 revision,**新表永远不被创建** → 运行时 `upsert_disabled_state` 抛 `relation does not exist`。CI 这种 "全流程 happy path" 根本触发不到这个分支。
+
+**根因**: Alembic 的增量迁移语义是 "revision id 级别的 at-most-once",`alembic_version` 表只记 revision id 不记内容。fresh-DB CI 永远走 "从零一次性到 head" 的路径,**天然无法发现** "已 merge 的 revision 被修改后还能跑" 这类事故。要测出 bug 必须构造 "卡在旧 head 的 DB + 拉新代码" 的场景。
+
+**防线**:
+1. **API CI 增加一个 "upgrade-then-upgrade" job**:先用 base commit(main 的上一个提交)的代码跑 `alembic upgrade head`,再切到 PR 代码跑 `alembic upgrade head`,同时跑 metadata-vs-DDL 校验(`pytest-alembic --test=model-definitions-match-ddl`)。这能把"已 merge revision 被 mutate"的 bug 抓到 CI 上
+2. **本地 smoke** 至少手工模拟一次:`git checkout main~1 && alembic upgrade head && git checkout PR-branch && alembic upgrade head`,有问题的 PR 第二次 upgrade 会 no-op,metadata 校验会抓到 DDL 缺失
+3. 补救 migration 要写成 **幂等 safety net**:用 `sqlalchemy.inspect(bind).get_table_names()` 先查,已存在就 return。参见 `20260423_44c0b755e487_iplimit_disabled_state_safety_net.py` 的实现
+
+**沉淀**: 未转硬 rule(需要实际加 CI job 才算落地)。转 `.agents/rules/ci-workflows.md` 的 action item:加一条 "Alembic migration PR 必须有 stepped-upgrade job"。Round 3 infra 清债时做。
+
+---
+
+## L-015 | Round 3 IP limiter follow-up | 已 merge 的 Alembic revision 不可 mutate —— 必须新建下游 revision
+
+**现象**: PR #26 为补 C-2 review blocker 新增 `aegis_iplimit_disabled_state` 表时,直接把 `op.create_table(...)` 追加到**已随 PR #24 合并进 main 的** revision `4f7b7c8e9d10` 的 `upgrade()` body 里。Alembic 不会检测到内容变化(它只按 revision id 判 at-most-once),已跑过 `4f7b7c8e9d10` 的环境永远不会创建新表。CI 绿灯是假象(见 L-016)。
+
+**根因**: Alembic 的 "revision 已应用即冻结" 是硬语义,不是约定。migration 文件在 merge 到 main 的瞬间就应视为 **append-only 历史记录**,任何对已应用 revision 的内容修改等同于创造一个**幽灵改动**:新环境看得到,老环境看不到,DB schema 和代码永久脱钩。这是所有 schema-migration 工具(Alembic / Flyway / Rails migrations)的通病。
+
+**防线**:
+1. **硬规则**:一旦一个 Alembic revision commit 到 main,**它的 `upgrade()` / `downgrade()` / `revision` / `down_revision` 四个字段永不修改**。文件里的 docstring / 注释可以改,schema 操作不能动
+2. **Code review checklist**:看 migration PR 时必看 `git log <filename>`,只有 "新文件"(第一次出现)才允许修 `upgrade()` body。已存在的 migration 只允许改文档
+3. **修复已 mutate 的 migration**:用**幂等 safety net** 作为新下游 revision,用 `inspect(bind).get_table_names()` 判存在再 `create_table`。不要回去改原文件。参见本仓 `20260423_44c0b755e487_iplimit_disabled_state_safety_net.py`
+4. **命名惯例建议**:补救 migration 文件名带 `_safety_net` / `_backfill` / `_repair` 后缀,docstring 第一段说明为什么存在,链接到原事故的 PR / revision id
+
+**沉淀**: ✅ 已沉淀到本仓的补救 migration 代码里(docstring 解释完整上下文)。转 `.agents/rules/python.md` "Marzneshin 特定" 段 **必做**:加硬条 "Alembic migration merge 后不改 schema 操作,补救走新 revision"。这是 Round 3 开始前最高优先级的 rule 沉淀,比其他条都重要(跟 DB 一致性挂钩)。
+
+---
+
+## L-014 | Round 3 IP limiter | `hardening/*` 自有 SQLAlchemy model 不被 Alembic metadata 感知 —— 需在 env.py 显式 import
+
+**现象**: PR #24 `hardening/iplimit/db.py` 定义 `IPLimitPolicy` / `IPLimitOverride` / `IPLimitEvent` 三张表并有对应 Alembic revision `7b12085`,但 `app/db/migrations/env.py` 的 `target_metadata = Base.metadata` 不会自动发现它们 —— 模块没被任何 production 代码路径 import,`Base` 注册表里就没它们的 mapping。pytest-alembic 的 "model vs DDL" 校验或 `autogenerate` 会出现 false positive(DB 有表但 metadata 里没、或反过来)。
+
+**根因**: SQLAlchemy 的 declarative `Base` 注册表是**副作用**机制 —— 只有在 Python 解释器执行过 `class Foo(Base)` 语句之后,`Base.metadata.tables` 里才有 `foo` 表。Alembic `env.py` 只 `from app.db.base import Base`,如果自研模块(`hardening/` / `ops/`)的 model 定义文件**没被任何代码路径 import**,Alembic 就看不见它们。upstream 的 `app/models/*.py` 会被业务代码主动 import 所以自动注册,自研模块放在 `app/` 之外必须手工 wire。
+
+**严重度升级 (2026-04-23)**: cross-review(PR #24)的 sub-agent 独立判定为 🟠 Major,理由:
+- `env.py` 是 upstream 同步区文件,每次 `git fetch marzneshin-upstream` rebase 都可能冲突,多加一行多一次人工 reconcile
+- 模块 #3 (`ops/billing/` 已 land,`hardening/sni/` / `hardening/reality/` 在后面)会让 env.py 积累 4-5 行散装 import,隐式耦合 Alembic 启动顺序 vs hardening/ops 包导入
+- `ops/billing/db.py` **已经**在 env.py 多加了一行 import(PR #28),事实证明这是重复出现的模式 → 规则必须立即沉淀
+
+**防线**(升级版):
+1. **短期(已应用)**:新增 `hardening/<module>/db.py` / `ops/<module>/db.py` 时,同步在 [env.py](app/db/migrations/env.py) 加 `import <module>  # noqa: F401`
+2. **强制 review checklist**:新 Alembic revision 里有 `create_table` 时,PR 必须同时包含 env.py 的 import 增补。metadata 与 DDL 不匹配 = merge blocker
+3. **中期目标(下一个 non-rush PR)**:建 aggregator `app/db/extra_models.py`:
+   ```python
+   # app/db/extra_models.py — Aegis self-owned model registry.
+   # env.py imports only this file; add new model modules here.
+   from hardening.iplimit import db as _iplimit  # noqa: F401
+   from ops.billing import db as _billing  # noqa: F401
+   # Future: hardening.sni, hardening.reality, ops.audit ...
+   ```
+   env.py 改成 `import app.db.extra_models  # noqa: F401`。单一 upstream 冲突面,self-owned 注册表在本 fork 目录
+4. **长期(可选)**:自动发现 —— `pkgutil.walk_packages(hardening.__path__)` 扫所有 `*/db.py` 自动 import。更干净但增加 import 时反射开销,规模 >10 个模块后考虑
+
+**沉淀**: 🟠 **必做**转 rule。`.agents/rules/python.md` 的 "Marzneshin 特定" 段加:"自研模块新增 SQLAlchemy model 必须注册到 `app/db/extra_models.py` aggregator;env.py 保持只 import aggregator 一个文件"。Round 3 开始前优先级仅次于 L-015。
+
+---
+
 ## L-013 | Round 2 UI 集成 | Chromatic job 无 token 必 fail —— 不是代码问题,是 infra 债
 
 **现象**: PR #18 触碰 `dashboard/` 任何文件 → `Visual tests / Chromatic` job 运行 → `Error: ✖ Missing project token` 导致 fail。核心三门禁(Lint/Test/pip-audit)全绿,`mergeStateStatus=UNSTABLE` 但非 required → GH 仍允许 merge。
