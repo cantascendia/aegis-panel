@@ -141,6 +141,133 @@ jobs:
           SQLALCHEMY_DATABASE_URL: 'postgresql+psycopg://aegis_test:aegis_test@localhost:5432/aegis_test'
         run: pytest --no-cov
 
+  # Stepped-upgrade check — catches "already-merged Alembic revision
+  # was mutated" bugs that fresh-DB CI (test-postgres above) cannot see.
+  #
+  # Context: fresh-DB CI runs the full migration chain from init on
+  # every PR, so even if a PR rewrites an already-merged revision's
+  # upgrade() body, CI still creates the new tables because it runs
+  # the mutated body from scratch. Environments that already ran the
+  # old body are stuck — alembic_version tracks revision IDs, not
+  # content, so the mutated upgrade() never reruns.
+  #
+  # This job simulates that stuck state: apply the base branch's
+  # migrations first, then apply the PR's migrations on top. If the
+  # PR mutated an existing revision, alembic will skip it on the
+  # second upgrade and the metadata-vs-DDL check will surface the
+  # schema gap. See docs/ai-cto/LESSONS.md L-015 / L-016.
+  test-alembic-stepped:
+    name: Test (alembic stepped upgrade)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: aegis_test
+          POSTGRES_PASSWORD: aegis_test
+          POSTGRES_DB: aegis_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SQLALCHEMY_DATABASE_URL: 'postgresql+psycopg://aegis_test:aegis_test@localhost:5432/aegis_test'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so we can resolve base branch commits.
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Resolve base commit
+        id: base
+        # For pull_request events use the PR base; for push events
+        # use the previous commit on main.
+        run: |
+          if [ -n "${{ github.event.pull_request.base.sha }}" ]; then
+            echo "sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=$(git rev-parse HEAD~1)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout base migrations
+        # Replace only the migration tree with the base's version.
+        # Env code stays on PR HEAD so alembic can import the latest
+        # target_metadata; the schema it applies is the base's.
+        run: |
+          git checkout ${{ steps.base.outputs.sha }} -- \
+            app/db/migrations/versions/
+
+      - name: Upgrade to base head
+        run: alembic upgrade head
+
+      - name: Restore PR migrations
+        run: git checkout HEAD -- app/db/migrations/versions/
+
+      - name: Upgrade to PR head
+        # If a PR mutated an already-applied revision, this second
+        # upgrade is a no-op — alembic skips revisions it thinks are
+        # done. The metadata-vs-DDL check below will catch it.
+        run: alembic upgrade head
+
+      - name: Metadata vs DDL parity check
+        # Compare SQLAlchemy Base.metadata against the live DB schema.
+        # If a PR mutated an already-applied revision, metadata will
+        # reference a table/column that the DB doesn't have (because
+        # the mutated upgrade was skipped above) → diff includes
+        # add_table / add_column → job fails.
+        #
+        # We DO NOT use pytest-alembic's test_upgrade here — it does
+        # `downgrade base` then `upgrade head`, which would wipe the
+        # stepped state and redo from scratch, defeating this job.
+        run: |
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine
+          from alembic.migration import MigrationContext
+          from alembic.autogenerate import compare_metadata
+
+          # Import Base with all self-owned models registered.
+          # Mirrors app/db/migrations/env.py imports.
+          from app.db.base import Base
+          import hardening.iplimit.db  # noqa: F401
+          try:
+              import ops.billing.db  # noqa: F401
+          except ImportError:
+              pass
+
+          engine = create_engine(os.environ['SQLALCHEMY_DATABASE_URL'])
+          with engine.connect() as conn:
+              ctx = MigrationContext.configure(conn)
+              diff = compare_metadata(ctx, Base.metadata)
+
+          # Only fail on tables/columns the ORM expects but DB lacks.
+          # Ignore remove_* diffs (upstream leftover tables not in our metadata).
+          missing = [d for d in diff if d[0] in ('add_table', 'add_column')]
+          if missing:
+              print('METADATA references schema not in DB (mutated migration?):')
+              for d in missing:
+                  print(' ', d)
+              raise SystemExit(1)
+          print('metadata matches DB schema')
+          PY
+
   security:
     name: Dependency audit (pip-audit)
     runs-on: ubuntu-latest
