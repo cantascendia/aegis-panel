@@ -15,6 +15,8 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from hardening.iplimit.endpoint import router as iplimit_router
+from hardening.iplimit.scheduler import install_iplimit_scheduler
 from hardening.panel.rate_limit import limiter
 from hardening.sni.endpoint import router as sni_router
 
@@ -55,3 +57,5 @@ def apply_panel_hardening(app: FastAPI) -> None:
     # upstream — they don't (upstream ``app/routes/node.py`` mounts
     # under ``/nodes``; ours is ``/api/nodes/sni-suggest``).
     app.include_router(sni_router)
+    app.include_router(iplimit_router)
+    install_iplimit_scheduler(app)
