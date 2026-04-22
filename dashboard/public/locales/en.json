@@ -363,6 +363,58 @@
           }
         }
       }
+    },
+    "billing": {
+      "plans": {
+        "title": "Plans",
+        "subtitle": "Products your users can purchase. Fixed = GB+days bundle; flexible = per-unit addon.",
+        "empty": "No plans yet. Click 'New plan' to configure your first product.",
+        "load_error": "Failed to load plans",
+        "create_button": "New plan",
+        "col": {
+          "code": "Code",
+          "name": "Name",
+          "kind": "Kind",
+          "shape": "Shape",
+          "price": "Price",
+          "enabled": "Status"
+        },
+        "status": {
+          "on": "On",
+          "off": "Off"
+        },
+        "kind": {
+          "fixed": "Fixed (GB + days bundle)",
+          "flexible_traffic": "Flexible traffic (per-GB addon)",
+          "flexible_duration": "Flexible duration (per-day addon)",
+          "fixed_short": "Fixed",
+          "flexible_traffic_short": "Traffic addon",
+          "flexible_duration_short": "Duration addon"
+        },
+        "field": {
+          "operator_code": "Operator code",
+          "operator_code_lock": "Code is immutable after creation.",
+          "display_name_en": "Display name (en)",
+          "kind": "Kind",
+          "kind_lock": "Kind is immutable after creation.",
+          "data_limit_gb": "Data limit (GB)",
+          "duration_days": "Duration (days)",
+          "price_cny": "Price (CNY)",
+          "enabled": "Enabled"
+        },
+        "dialog": {
+          "create_title": "Create plan",
+          "edit_title": "Edit plan",
+          "desc": "Fixed plans bundle GB + days; flexible plans are priced per unit (GB or day).",
+          "saving": "Saving..."
+        },
+        "toast": {
+          "create_success": "Plan {{code}} created",
+          "create_error": "Create failed: {{code}}",
+          "update_success": "Plan {{code}} updated",
+          "update_error": "Update failed"
+        }
+      }
     }
   },
   "events": {
