@@ -92,6 +92,55 @@ jobs:
           path: coverage.xml
           if-no-files-found: ignore
 
+  # PostgreSQL matrix — catches PG-specific DDL / dialect drift in
+  # Alembic migrations and raw-query code paths. Kept as a separate
+  # job (not a matrix on `test`) so branch protection rules that
+  # require "Test (pytest)" by name don't need rewiring.
+  #
+  # Intentionally uses the same pytest invocation as the SQLite job,
+  # just with a PG connection URL. Tests that need a real PG (e.g.
+  # the existing migrations test that skips on SQLite) will run here
+  # for real coverage; the rest simply execute under PG and catch any
+  # dialect-specific surprises.
+  test-postgres:
+    name: Test (pytest, PostgreSQL 16)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: aegis_test
+          POSTGRES_PASSWORD: aegis_test
+          POSTGRES_DB: aegis_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run pytest against PostgreSQL 16
+        env:
+          SQLALCHEMY_DATABASE_URL: 'postgresql+psycopg://aegis_test:aegis_test@localhost:5432/aegis_test'
+        run: pytest --no-cov
+
   security:
     name: Dependency audit (pip-audit)
     runs-on: ubuntu-latest
