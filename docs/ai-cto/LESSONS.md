@@ -8,6 +8,36 @@
 
 ---
 
+## L-013 | Round 2 UI 集成 | Chromatic job 无 token 必 fail —— 不是代码问题,是 infra 债
+
+**现象**: PR #18 触碰 `dashboard/` 任何文件 → `Visual tests / Chromatic` job 运行 → `Error: ✖ Missing project token` 导致 fail。核心三门禁(Lint/Test/pip-audit)全绿,`mergeStateStatus=UNSTABLE` 但非 required → GH 仍允许 merge。
+
+**根因**: repo secrets 里没配 `CHROMATIC_PROJECT_TOKEN`,但 `.github/workflows/chromatic.yml` 没做"token 缺失时跳过"的保护,每次都跑 + 每次都红。历史上 dashboard PR 不多,这个红一直被忽略。
+
+**防线**:
+1. 合 PR 前看清 **mergeStateStatus=UNSTABLE** 的原因是"非 required failing check"还是"required failing check"。前者允许 merge,后者不允许
+2. dashboard 有变更的 PR 正常推进,Chromatic 红可忽略(不要因为它就 revert 或 hotfix)
+3. **清 infra 债时** 修:要么去 chromatic.com 注册项目 + 把 token 加 repo secret,要么改 workflow `if: secrets.CHROMATIC_PROJECT_TOKEN != ''` 条件跳过
+
+**沉淀**: 未转 rule(infra 配置债,解决了就没后续)。记入 STATUS.md "Round 2 后半" B 项的 CI 清债清单。
+
+---
+
+## L-012 | Round 2 UI 集成 | `tools/check_translations.sh` 严格 parity + pre-existing drift = 新 PR 踩坑
+
+**现象**: PR #18 第一版向 8 个 locale JSON 加了 `page.nodes.sni-suggest.*` 子树。CI 的 `run-script (dashboard/public/locales/*.json)` matrix 8 个 job 全 fail —— 但报的错几乎全是 **pre-existing drift**(例如 en.json 缺 `Mode` / `Noise` / `page.hosts.padding` / `remark` / `sni` / `split_http` / `wireguard`,zh-cn 缺几十条,kur 缺 400+ 条)。我的 28 新 key 只是触发了严格检查,真正该修的是 main 上长期未维护的 parity debt。
+
+**根因**: `tools/check_translations.sh` 对每个被 PR 修改的 locale 文件执行双向 strict 检查(源码 `t()` keys ↔ locale JSON paths)。Path-filter 让 "未被 PR 修改的 locale" 不跑这个检查,所以历史累积的 drift 一直隐藏。第一次动 locale 的 PR 就整个暴露。这是 **渐进式腐烂的 CI**:只在 "有人终于动这块" 时爆炸,平时无声。
+
+**防线**:
+1. **feature PR 不要碰 locale 文件**。新 `t()` 调用全部配 `defaultValue` 第二参数,走 i18next native fallback 路径(`t("key", "English default", { interpolationOpts })`)。零 locale 改动 → path-filter matrix 空 → run-script 不跑 → CI 清洁
+2. 真正的 locale 翻译应该单独开一个 **"locale parity cleanup" PR**:先跑 `check_translations.sh` 一次,拿到各 locale 的 drift 清单,批量修齐,然后才能再做增量添加
+3. 作为中期债:考虑软化 CI gate —— 例如从 "drift > 0 就 fail" 改成 "drift 增加就 fail" —— 这样增量 PR 不被历史拖累。不是本 PR 的事
+
+**沉淀**: 半转 rule。`GEMINI.md` 的 "通用代码质量" 段落应该加一条 "新增 i18n 字符串时配 defaultValue,不要仅靠 locale 文件";下轮批量转 rule 时做。
+
+---
+
 ## L-011 | Round 2 中段 | 本地 ruff 与 `requirements-dev.txt` pinned 版本必须一致
 
 **现象**: PR #16 第一次 CI 挂掉在 `ruff format --check`,说 `tests/test_sni_endpoint.py` 需要 reformat。本地先用的是系统装的 ruff 0.15.6,而项目 `requirements-dev.txt` 固定 `ruff==0.7.3`。两者的 formatter 输出不一致(长函数参数的括号换行策略变了),我基于 0.15.6 看到的 "already formatted" 在 0.7.3 下立刻失效。
