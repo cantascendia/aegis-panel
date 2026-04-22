@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import asyncio
+import time
 from collections.abc import Generator
+from datetime import datetime
 
 import pytest
 from sqlalchemy import create_engine, text
@@ -11,11 +14,14 @@ from app.models.user import UserExpireStrategy
 from hardening.iplimit import task
 from hardening.iplimit.db import (
     IpLimitConfig,
+    IpLimitDisabledState,
     UserIpLimitOverride,
     resolve_policy,
+    upsert_disabled_state,
 )
 from hardening.iplimit.endpoint import (
     IpLimitOverridePatch,
+    clear_user_iplimit_disable,
     get_user_iplimit_audit,
     get_user_iplimit_state,
     patch_user_iplimit_override,
@@ -32,6 +38,7 @@ from hardening.iplimit.store import (
     push_audit_event,
     read_audit_events,
     set_disabled_until,
+    should_emit_violation,
 )
 from hardening.iplimit.task import process_connection_events
 
@@ -68,9 +75,18 @@ class FakeRedis:
     async def get(self, key: str) -> str | None:
         return self.strings.get(key)
 
-    async def set(self, key: str, value: str, ex: int | None = None) -> None:
+    async def set(
+        self,
+        key: str,
+        value: str,
+        ex: int | None = None,
+        nx: bool = False,
+    ) -> bool:
         _ = ex
+        if nx and key in self.strings:
+            return False
         self.strings[key] = value
+        return True
 
     async def delete(self, key: str) -> None:
         self.strings.pop(key, None)
@@ -154,6 +170,7 @@ def db() -> Generator[Session, None, None]:
         )
     IpLimitConfig.__table__.create(engine)
     UserIpLimitOverride.__table__.create(engine)
+    IpLimitDisabledState.__table__.create(engine)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
     try:
@@ -198,6 +215,13 @@ def add_config(
 
 
 def test_parse_xray_access_line_extracts_known_user_ip() -> None:
+    expected_ts = int(
+        time.mktime(
+            datetime.strptime(
+                "2026/04/22 01:02:03", "%Y/%m/%d %H:%M:%S"
+            ).timetuple()
+        )
+    )
     line = (
         "2026/04/22 01:02:03 from tcp:203.0.113.9:51234 "
         "accepted tcp:example.com:443 email: alice"
@@ -209,6 +233,7 @@ def test_parse_xray_access_line_extracts_known_user_ip() -> None:
         user_id=10,
         username="alice",
         source_ip="203.0.113.9",
+        observed_at=expected_ts,
     )
 
 
@@ -243,6 +268,67 @@ async def test_collect_events_from_nodes_is_bounded() -> None:
     assert events == [
         ConnectionEvent(user_id=7, username="alice", source_ip="203.0.113.1")
     ]
+
+
+@pytest.mark.asyncio
+async def test_buffer_replay_does_not_disable_with_stale_log_timestamp(
+    db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user = add_user(db)
+    add_config(
+        db,
+        max_concurrent_ips=1,
+        window_seconds=300,
+        violation_action="disable",
+    )
+    redis = FakeRedis()
+    pushes: list[bool] = []
+    log_ts = int(
+        time.mktime(
+            datetime.strptime(
+                "2026/04/22 01:02:03", "%Y/%m/%d %H:%M:%S"
+            ).timetuple()
+        )
+    )
+
+    class FakeNode:
+        async def get_logs(self, name: str, include_buffer: bool):
+            assert name == "xray"
+            assert include_buffer is True
+            yield (
+                "2026/04/22 01:02:03 from tcp:203.0.113.1:1 "
+                "accepted tcp:x:443 email: alice"
+            )
+            yield (
+                "2026/04/22 01:02:03 from tcp:203.0.113.2:2 "
+                "accepted tcp:x:443 email: alice"
+            )
+
+    monkeypatch.setattr(
+        task,
+        "_schedule_user_update",
+        lambda user, remove=False: pushes.append(remove),
+    )
+
+    for _ in range(2):
+        events = await collect_events_from_nodes(
+            {1: FakeNode()},
+            {user.username: user.id},
+            max_lines_per_node=10,
+            read_timeout_seconds=1,
+        )
+        violations = await process_connection_events(
+            db,
+            redis,
+            events,
+            now_ts=log_ts + 301,
+            audit_limit=10,
+        )
+        assert violations == []
+
+    db.refresh(user)
+    assert user.enabled is True
+    assert pushes == []
 
 
 @pytest.mark.asyncio
@@ -321,12 +407,12 @@ async def test_disable_action_marks_user_disabled(
     redis = FakeRedis()
     pushed: list[bool] = []
 
-    def fake_update_user(user, remove: bool = False) -> None:
+    def fake_schedule_user_update(user, remove: bool = False) -> None:
         _ = user
         pushed.append(remove)
 
     monkeypatch.setattr(
-        task.marznode_operations, "update_user", fake_update_user
+        task, "_schedule_user_update", fake_schedule_user_update
     )
 
     violations = await process_connection_events(
@@ -357,12 +443,12 @@ async def test_disable_action_is_idempotent_for_same_ip_set(
     redis = FakeRedis()
     pushes: list[bool] = []
 
-    def fake_update_user(user, remove: bool = False) -> None:
+    def fake_schedule_user_update(user, remove: bool = False) -> None:
         _ = user
         pushes.append(remove)
 
     monkeypatch.setattr(
-        task.marznode_operations, "update_user", fake_update_user
+        task, "_schedule_user_update", fake_schedule_user_update
     )
     events = [
         ConnectionEvent(user.id, user.username, "203.0.113.1"),
@@ -461,6 +547,83 @@ async def test_expired_disable_key_is_cleared() -> None:
 
 
 @pytest.mark.asyncio
+async def test_restore_skips_user_disabled_by_other_means(
+    db: Session,
+) -> None:
+    user = add_user(db)
+    user.enabled = False
+    user.activated = False
+    db.commit()
+    redis = FakeRedis()
+    await set_disabled_until(redis, user.id, 99)
+
+    await task._restore_or_retry_disables(db, redis, now_ts=100)
+
+    db.refresh(user)
+    assert user.enabled is False
+    assert user.activated is False
+
+
+@pytest.mark.asyncio
+async def test_restore_clears_owned_disable_but_respects_data_gate(
+    db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user = add_user(db)
+    user.enabled = False
+    user.activated = False
+    user.used_traffic = 10
+    user.data_limit = 1
+    upsert_disabled_state(
+        db,
+        user_id=user.id,
+        disabled_until=99,
+        disabled_at=50,
+        previous_enabled=True,
+        previous_activated=True,
+        reason="iplimit_violation",
+    )
+    db.commit()
+    redis = FakeRedis()
+    pushes: list[bool] = []
+    monkeypatch.setattr(
+        task,
+        "_schedule_user_update",
+        lambda user, remove=False: pushes.append(remove),
+    )
+
+    await task._restore_or_retry_disables(db, redis, now_ts=100)
+
+    db.refresh(user)
+    assert user.enabled is False
+    assert user.activated is False
+    assert pushes == []
+
+
+@pytest.mark.asyncio
+async def test_concurrent_should_emit_violation_only_one_wins() -> None:
+    redis = FakeRedis()
+
+    results = await asyncio.gather(
+        should_emit_violation(
+            redis,
+            user_id=1,
+            ip_list=["203.0.113.1", "203.0.113.2"],
+            action="disable",
+            window_seconds=300,
+        ),
+        should_emit_violation(
+            redis,
+            user_id=1,
+            ip_list=["203.0.113.2", "203.0.113.1"],
+            action="disable",
+            window_seconds=300,
+        ),
+    )
+
+    assert sorted(results) == [False, True]
+
+
+@pytest.mark.asyncio
 async def test_patch_override_endpoint_persists_nullable_fields(
     db: Session,
 ) -> None:
@@ -512,3 +675,39 @@ async def test_audit_endpoint_returns_empty_when_redis_disabled(
 
     assert response.redis_configured is False
     assert response.events == []
+
+
+@pytest.mark.asyncio
+async def test_clear_disable_endpoint_restores_owned_disable(
+    db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user = add_user(db)
+    user.enabled = False
+    user.activated = False
+    upsert_disabled_state(
+        db,
+        user_id=user.id,
+        disabled_until=200,
+        disabled_at=100,
+        previous_enabled=True,
+        previous_activated=True,
+        reason="iplimit_violation",
+    )
+    db.commit()
+    redis = FakeRedis()
+    await set_disabled_until(redis, user.id, 200)
+    monkeypatch.setattr(
+        "hardening.iplimit.endpoint.is_redis_configured", lambda: True
+    )
+    monkeypatch.setattr("hardening.iplimit.endpoint.get_redis", lambda: redis)
+    monkeypatch.setattr(
+        task, "_schedule_user_update", lambda user, remove=False: None
+    )
+
+    response = await clear_user_iplimit_disable(user.username, db, object())
+
+    db.refresh(user)
+    assert user.enabled is True
+    assert user.activated is True
+    assert response.disabled_until is None
+    assert f"aegis:iplimit:violation:{user.id}" not in redis.strings

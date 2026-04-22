@@ -6,11 +6,14 @@ import asyncio
 import ipaddress
 import logging
 import re
+import time
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+_TIMESTAMP_RE = re.compile(r"^(?P<ts>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})\b")
 _EMAIL_RE = re.compile(r"\bemail:\s*(?P<username>[\w.-]{1,128})\b")
 _FROM_RE = re.compile(
     r"\bfrom\s+(?:(?:tcp|udp):)?(?P<host>\[[0-9a-fA-F:.]+\]|[^:\s]+)"
@@ -24,6 +27,7 @@ class ConnectionEvent:
     user_id: int
     username: str
     source_ip: str
+    observed_at: int | None = None
 
 
 def parse_xray_access_line(
@@ -55,7 +59,19 @@ def parse_xray_access_line(
         user_id=user_id,
         username=username,
         source_ip=str(ip),
+        observed_at=_parse_xray_timestamp(line),
     )
+
+
+def _parse_xray_timestamp(line: str) -> int | None:
+    match = _TIMESTAMP_RE.search(line)
+    if not match:
+        return None
+    try:
+        parsed = datetime.strptime(match.group("ts"), "%Y/%m/%d %H:%M:%S")
+    except ValueError:
+        return None
+    return int(time.mktime(parsed.timetuple()))
 
 
 async def collect_events_from_nodes(

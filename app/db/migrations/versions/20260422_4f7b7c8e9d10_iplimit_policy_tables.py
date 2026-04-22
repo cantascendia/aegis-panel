@@ -6,9 +6,8 @@ Create Date: 2026-04-22 00:00:00.000000
 
 """
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "4f7b7c8e9d10"
 down_revision = "57eba0a293f2"
@@ -51,6 +50,17 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
         sa.PrimaryKeyConstraint("user_id"),
     )
+    op.create_table(
+        "aegis_iplimit_disabled_state",
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("disabled_until", sa.Integer(), nullable=False),
+        sa.Column("disabled_at", sa.Integer(), nullable=False),
+        sa.Column("previous_enabled", sa.Boolean(), nullable=False),
+        sa.Column("previous_activated", sa.Boolean(), nullable=False),
+        sa.Column("reason", sa.String(length=64), nullable=False),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+        sa.PrimaryKeyConstraint("user_id"),
+    )
     op.bulk_insert(
         sa.table(
             "aegis_iplimit_config",
@@ -73,6 +83,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_table("aegis_iplimit_disabled_state")
     op.drop_table("aegis_iplimit_override")
     op.drop_table("aegis_iplimit_config")
-

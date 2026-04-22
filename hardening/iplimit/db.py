@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from sqlalchemy import ForeignKey, Integer, String, select
+from sqlalchemy import Boolean, ForeignKey, Integer, String, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.db.base import Base
@@ -31,6 +31,25 @@ class IpLimitConfig(Base):
     disable_duration_seconds: Mapped[int] = mapped_column(
         Integer, nullable=False, default=3600
     )
+
+
+class IpLimitDisabledState(Base):
+    """Rows owned by the IP limiter for temporary disable recovery."""
+
+    __tablename__ = "aegis_iplimit_disabled_state"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), primary_key=True
+    )
+    disabled_until: Mapped[int] = mapped_column(Integer, nullable=False)
+    disabled_at: Mapped[int] = mapped_column(Integer, nullable=False)
+    previous_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+    previous_activated: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+    reason: Mapped[str] = mapped_column(String(64), nullable=False)
 
 
 class UserIpLimitOverride(Base):
@@ -71,48 +90,31 @@ def get_user_override(db: Session, user_id: int) -> UserIpLimitOverride | None:
 def resolve_policy(db: Session, user_id: int) -> IpLimitPolicy:
     """Resolve effective policy for one user."""
 
-    base = get_global_config(db)
-    policy = IpLimitPolicy(
-        max_concurrent_ips=(
-            base.max_concurrent_ips
-            if base
-            else IpLimitPolicy().max_concurrent_ips
-        ),
-        window_seconds=(
-            base.window_seconds if base else IpLimitPolicy().window_seconds
-        ),
-        violation_action=_normalize_action(
-            base.violation_action if base else IpLimitPolicy().violation_action
-        ),
-        disable_duration_seconds=(
-            base.disable_duration_seconds
-            if base
-            else IpLimitPolicy().disable_duration_seconds
-        ),
-    )
+    base = _policy_from_config(get_global_config(db))
+    return _apply_override(base, get_user_override(db, user_id))
 
-    override = get_user_override(db, user_id)
-    if not override:
-        return policy
 
-    return IpLimitPolicy(
-        max_concurrent_ips=(
-            override.max_concurrent_ips
-            if override.max_concurrent_ips is not None
-            else policy.max_concurrent_ips
-        ),
-        window_seconds=(
-            override.window_seconds
-            if override.window_seconds is not None
-            else policy.window_seconds
-        ),
-        violation_action=_normalize_action(
-            override.violation_action
-            if override.violation_action is not None
-            else policy.violation_action
-        ),
-        disable_duration_seconds=policy.disable_duration_seconds,
-    )
+def resolve_policies(
+    db: Session, user_ids: list[int]
+) -> dict[int, IpLimitPolicy]:
+    """Resolve effective policies for a batch of users."""
+
+    if not user_ids:
+        return {}
+
+    base = _policy_from_config(get_global_config(db))
+    overrides = {
+        override.user_id: override
+        for override in db.execute(
+            select(UserIpLimitOverride).where(
+                UserIpLimitOverride.user_id.in_(user_ids)
+            )
+        ).scalars()
+    }
+    return {
+        user_id: _apply_override(base, overrides.get(user_id))
+        for user_id in user_ids
+    }
 
 
 def upsert_user_override(
@@ -135,6 +137,82 @@ def upsert_user_override(
     db.commit()
     db.refresh(override)
     return override
+
+
+def get_disabled_state(
+    db: Session, user_id: int
+) -> IpLimitDisabledState | None:
+    return db.get(IpLimitDisabledState, user_id)
+
+
+def list_disabled_states(db: Session) -> list[IpLimitDisabledState]:
+    return list(db.execute(select(IpLimitDisabledState)).scalars())
+
+
+def upsert_disabled_state(
+    db: Session,
+    *,
+    user_id: int,
+    disabled_until: int,
+    disabled_at: int,
+    previous_enabled: bool,
+    previous_activated: bool,
+    reason: str,
+) -> IpLimitDisabledState:
+    state = get_disabled_state(db, user_id)
+    if state is None:
+        state = IpLimitDisabledState(user_id=user_id)
+        db.add(state)
+
+    state.disabled_until = disabled_until
+    state.disabled_at = disabled_at
+    state.previous_enabled = previous_enabled
+    state.previous_activated = previous_activated
+    state.reason = reason
+    return state
+
+
+def clear_disabled_state(db: Session, user_id: int) -> None:
+    state = get_disabled_state(db, user_id)
+    if state is not None:
+        db.delete(state)
+
+
+def _policy_from_config(config: IpLimitConfig | None) -> IpLimitPolicy:
+    default = IpLimitPolicy()
+    if config is None:
+        return default
+    return IpLimitPolicy(
+        max_concurrent_ips=config.max_concurrent_ips,
+        window_seconds=config.window_seconds,
+        violation_action=_normalize_action(config.violation_action),
+        disable_duration_seconds=config.disable_duration_seconds,
+    )
+
+
+def _apply_override(
+    policy: IpLimitPolicy, override: UserIpLimitOverride | None
+) -> IpLimitPolicy:
+    if override is None:
+        return policy
+    return IpLimitPolicy(
+        max_concurrent_ips=(
+            override.max_concurrent_ips
+            if override.max_concurrent_ips is not None
+            else policy.max_concurrent_ips
+        ),
+        window_seconds=(
+            override.window_seconds
+            if override.window_seconds is not None
+            else policy.window_seconds
+        ),
+        violation_action=_normalize_action(
+            override.violation_action
+            if override.violation_action is not None
+            else policy.violation_action
+        ),
+        disable_duration_seconds=policy.disable_duration_seconds,
+    )
 
 
 def _normalize_action(value: str) -> ViolationAction:

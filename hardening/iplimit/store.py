@@ -49,9 +49,8 @@ async def observe_events(
     """Upsert last-seen timestamps for source IP observations."""
 
     for event in events:
-        await redis.zadd(
-            observed_key(event.user_id), {event.source_ip: now_ts}
-        )
+        score = event.observed_at if event.observed_at is not None else now_ts
+        await redis.zadd(observed_key(event.user_id), {event.source_ip: score})
 
 
 async def get_observed_ips(
@@ -136,12 +135,8 @@ async def should_emit_violation(
     """Return True once per unchanged violation fingerprint."""
 
     fingerprint = _fingerprint(ip_list, action)
-    key = dedupe_key(user_id)
-    previous = await redis.get(key)
-    if previous == fingerprint:
-        return False
-    await redis.set(key, fingerprint, ex=window_seconds)
-    return True
+    key = f"{dedupe_key(user_id)}:{fingerprint}"
+    return bool(await redis.set(key, fingerprint, nx=True, ex=window_seconds))
 
 
 def _fingerprint(ip_list: Sequence[str], action: str) -> str:

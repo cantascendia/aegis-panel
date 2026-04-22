@@ -1,6 +1,6 @@
 import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { RefreshCw, Save, ShieldAlert } from "lucide-react";
+import { RefreshCw, Save, ShieldAlert, Unlock } from "lucide-react";
 import {
     Badge,
     Button,
@@ -25,6 +25,7 @@ import {
     type IpLimitAction,
     type IpLimitState,
     useIpLimitAuditQuery,
+    useIpLimitDisableClearMutation,
     useIpLimitOverrideMutation,
     useIpLimitQuery,
 } from "@marzneshin/modules/users";
@@ -40,6 +41,7 @@ export const UserIpLimitSection: FC<UserIpLimitSectionProps> = ({
     const stateQuery = useIpLimitQuery({ username });
     const auditQuery = useIpLimitAuditQuery({ username });
     const mutation = useIpLimitOverrideMutation();
+    const clearMutation = useIpLimitDisableClearMutation();
 
     if (stateQuery.isPending) {
         return (
@@ -68,7 +70,12 @@ export const UserIpLimitSection: FC<UserIpLimitSectionProps> = ({
 
     return (
         <div className="flex flex-col gap-4 p-1">
-            <RuntimeState state={stateQuery.data} onRefresh={onRefresh} />
+            <RuntimeState
+                state={stateQuery.data}
+                clearing={clearMutation.isPending}
+                onClear={() => clearMutation.mutate({ username })}
+                onRefresh={onRefresh}
+            />
             <OverrideForm
                 state={stateQuery.data}
                 saving={mutation.isPending}
@@ -84,10 +91,17 @@ export const UserIpLimitSection: FC<UserIpLimitSectionProps> = ({
 
 interface RuntimeStateProps {
     state: IpLimitState;
+    clearing: boolean;
+    onClear: () => void;
     onRefresh: () => void;
 }
 
-const RuntimeState: FC<RuntimeStateProps> = ({ state, onRefresh }) => {
+const RuntimeState: FC<RuntimeStateProps> = ({
+    state,
+    clearing,
+    onClear,
+    onRefresh,
+}) => {
     const { t } = useTranslation();
     const disabledUntil = state.disabled_until
         ? new Date(state.disabled_until * 1000).toLocaleString()
@@ -119,15 +133,37 @@ const RuntimeState: FC<RuntimeStateProps> = ({ state, onRefresh }) => {
                         </p>
                     </div>
                 </div>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={onRefresh}
-                >
-                    <RefreshCw className="mr-2 size-4" />
-                    {t("page.users.iplimit.refresh", "Refresh")}
-                </Button>
+                <div className="flex flex-wrap justify-end gap-2">
+                    {disabledUntil && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onClear}
+                            disabled={clearing}
+                        >
+                            <Unlock className="mr-2 size-4" />
+                            {clearing
+                                ? t(
+                                      "page.users.iplimit.runtime.clearing",
+                                      "Clearing...",
+                                  )
+                                : t(
+                                      "page.users.iplimit.runtime.clear_disable",
+                                      "Clear disable",
+                                  )}
+                        </Button>
+                    )}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={onRefresh}
+                    >
+                        <RefreshCw className="mr-2 size-4" />
+                        {t("page.users.iplimit.refresh", "Refresh")}
+                    </Button>
+                </div>
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2">
