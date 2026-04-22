@@ -6,8 +6,11 @@ from sqlalchemy import pool
 
 from app.config.env import SQLALCHEMY_DATABASE_URL
 from app.db.base import Base
-import hardening.iplimit.db  # noqa: F401
-import ops.billing.db  # noqa: F401
+
+# Register fork-owned SQLAlchemy models (hardening/*, ops/*) into
+# Base.metadata via one aggregator import. See app/db/extra_models.py
+# for the rationale and the rule preventing individual imports here.
+import app.db.extra_models  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

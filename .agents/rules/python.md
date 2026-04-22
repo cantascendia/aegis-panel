@@ -80,6 +80,70 @@ except:
 - 事务边界明确:每个业务动作一个事务,不跨动作
 - Alembic 迁移必须幂等:`op.execute("IF NOT EXISTS ...")` 或等价语法
 
+## Alembic migrations(硬规则)
+
+### 1. 已 merge 的 revision 不可 mutate
+
+**一条 Alembic revision 一旦 commit 到 main,它的 `upgrade()` / `downgrade()` / `revision` / `down_revision` 四个字段永不修改**。文件的 docstring / 注释可以改,schema 操作不能动。
+
+**理由**: Alembic 只按 revision id 判 at-most-once —— `alembic_version` 表不比对内容。任何已跑过该 revision 的环境(开发机 / staging / 生产)**永远不会重跑被修改的 `upgrade()`**,导致 DB schema 与代码永久脱钩。CI 的 fresh-DB 跑从零到 head 看不到这个 bug(见 LESSONS L-016 的 stepped-upgrade CI job)。
+
+**需要给已 merge 的 migration 增加 schema 操作时**:
+
+- ✅ 新建下游 revision,`down_revision = <上一个 head>`
+- ✅ 如果补救的是"已部署环境 schema 缺失",用幂等 safety-net 模式:
+  ```python
+  from sqlalchemy import inspect
+  def upgrade() -> None:
+      bind = op.get_bind()
+      if "my_table" in inspect(bind).get_table_names():
+          return  # clean env already has it
+      op.create_table("my_table", ...)
+  ```
+- ✅ safety-net 的 downgrade 一般设为 no-op,避免与被 mutated 的老 revision 的 drop 冲突(参见 `20260423_44c0b755e487_iplimit_disabled_state_safety_net.py`)
+- ❌ 不要回去改原 revision 文件里的 `op.create_table` / `op.add_column` 等
+- ❌ 不要修改已发布 revision 的 `revision` 或 `down_revision` 字段(会让整个 chain 错乱)
+
+**Code review checklist**: 看 migration PR 时必看 `git log <filename>` —— 只有 "新文件"(第一次出现)允许修 `upgrade()` body,已存在的 migration 只允许改文档/注释。
+
+**CI 门禁**: `.github/workflows/api-ci.yml` 的 `test-alembic-stepped` job 模拟"环境卡在 base head"的场景,mutated revision 过不了 metadata-vs-DDL 校验,merge 前被拦下。
+
+参见 LESSONS L-015(规则) + L-016(CI 防线)。
+
+### 2. 自研模块 SQLAlchemy model 必须注册到 aggregator
+
+**所有 `hardening/*/db.py` / `ops/*/db.py` 里定义的 `class Foo(Base)` 必须通过 `app/db/extra_models.py` 统一注册**,**不要**直接改 `app/db/migrations/env.py`。
+
+```python
+# ✅ 好 —— 注册到 aggregator
+# app/db/extra_models.py
+import hardening.iplimit.db  # noqa: F401
+import hardening.sni.db      # noqa: F401   ← 新模块加这里
+import ops.billing.db        # noqa: F401
+
+# app/db/migrations/env.py 保持单行:
+import app.db.extra_models  # noqa: F401
+
+
+# ❌ 不好 —— 在 env.py 里散装加 import
+# app/db/migrations/env.py
+import hardening.iplimit.db  # noqa: F401
+import hardening.sni.db      # noqa: F401
+import ops.billing.db        # noqa: F401
+```
+
+**理由**:
+- `env.py` 是 upstream 同步区文件,每次 `git fetch marzneshin-upstream` rebase,多一行 import 多一次人工冲突 reconcile
+- 模型散装在 env.py 读者难发现 "这个 fork 到底加了哪些自研表",aggregator 提供单一 grep 入口
+- SQLAlchemy 的 `Base.metadata` 是**副作用注册**机制 —— `class Foo(Base)` 必须被执行过才进 metadata;aggregator 保证 Alembic `target_metadata = Base.metadata` 看到完整视图
+
+**强制 review checklist**: 新 PR 如果包含 `hardening/*/db.py` 或 `ops/*/db.py` 的 `class Foo(Base)`,必须同时:
+1. 把该文件 import 加到 `app/db/extra_models.py`
+2. **禁止**再修 `app/db/migrations/env.py`(aggregator 已在那里 import)
+3. 配套 Alembic migration 走新 revision(见上一条规则)
+
+参见 LESSONS L-014。
+
 ## 测试
 
 - `pytest tests/` 是 CI 必跑项
