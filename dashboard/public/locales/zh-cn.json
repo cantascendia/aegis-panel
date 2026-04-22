@@ -132,6 +132,41 @@
         "title": "配置节点证书",
         "desc": "如果您希望配置节点证书，请查看设置页面。",
         "click": "点击此处"
+      },
+      "sni-suggest": {
+        "open_button": "推荐 SNI",
+        "title": "SNI 智能选型器",
+        "desc": "针对种子域名执行 6 条硬指标(DPI 黑名单 / 非跳转 / 同 ASN / TLS 1.3 / ALPN h2 / X25519),返回打分最高的候选列表。",
+        "vps_ip": "VPS 出口 IP",
+        "count": "数量",
+        "probe": "开始探测",
+        "probing": "探测中(最多 60 秒)...",
+        "awaiting": "输入 VPS IP 后点击开始探测。",
+        "error": "错误",
+        "country": "国家",
+        "elapsed": "{{seconds}} 秒",
+        "no_candidates": "无候选通过全部 6 条指标。请查看下方 rejected 列表分析原因。",
+        "show_rejected": "显示 {{count}} 条被拒",
+        "hide_rejected": "隐藏被拒列表",
+        "copied": "SNI 已复制到剪贴板",
+        "copy_sni": "复制 SNI",
+        "region": {
+          "label": "区域",
+          "auto": "自动",
+          "global": "全球",
+          "jp": "日本",
+          "kr": "韩国",
+          "us": "美国",
+          "eu": "欧洲"
+        },
+        "ind": {
+          "blacklist": "不在 DPI 黑名单",
+          "no_redirect": "无跨域跳转",
+          "same_asn": "与 VPS 同 ASN",
+          "tls13": "TLS 1.3 握手成功",
+          "h2": "ALPN 协商到 h2",
+          "x25519": "ECDHE 使用 X25519"
+        }
       }
     },
     "services": {

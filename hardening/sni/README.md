@@ -112,7 +112,23 @@ python -m hardening.sni.selector --ip 103.x.x.x --count 5 --region jp
 ## 后续 PR(SPEC follow-up)
 
 - ✅ PR #13: `feat(hardening): sni selector core + 6 indicators`(module + CLI + 41 测试)
-- 🔄 **当前 PR**: `feat(hardening): sni dashboard endpoint`(endpoint + 10 测试)
-- ⏳ 下一个: `feat(dashboard): 新建节点表单调用 /api/nodes/sni-suggest`(前端集成)
+- ✅ PR #16: `feat(hardening): sni dashboard endpoint`(endpoint + 10 测试)
+- ✅ **当前 PR**: `feat(dashboard): sni-suggest dialog`(新建节点表单 "Suggest SNI" 按钮 + 8 语言 i18n)
+- ⏳ `fix(hardening): restore rate-limit on sni endpoint`(slowapi async-def 兼容方案,见 LESSONS.md L-010)
 - ⏳ `docs(hardening): sni runbook` — `deploy/README.md` 加 "全部候选不合格" 的排查手册
 - 未来 v0.3: live DPI 情报订阅 + `/24` scan mode + 持续健康度监控
+
+## Dashboard 集成(v0.2 尾段)
+
+前端通过 `dashboard/src/modules/nodes/dialogs/sni-suggest/` 调用此端点:
+
+- 新建节点对话框底部加一颗 "Suggest SNI" 按钮(`address` 填了才可点)
+- 弹出独立 dialog,默认 VPS IP = node address,用户可改
+- 参数:count(1-50,默认 5)+ region(auto / global / jp / kr / us / eu)
+- 结果:按 score 降序,每行显示 6 条硬指标 ✓/✗ + 复制按钮
+- Rejected 折叠区帮助运营排查 "为什么候选空"
+- 全流程 i18n(8 语言,英文 canonical + 中文完整翻译)
+
+**不做**的事:
+- 不在 IP 输入时自动触发探测(每次 blur 都打第三方 CDN 握手太粗暴)
+- 不自动把选中的 SNI 填进某个字段 —— Node 模型没有 SNI 字段,SNI 属于 inbound/service Reality 配置,让用户拷贝到真正需要的地方
