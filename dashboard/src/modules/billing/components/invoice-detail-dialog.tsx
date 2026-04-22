@@ -193,9 +193,10 @@ const DetailBody: FC<DetailBodyProps> = ({
 }) => {
     const { t } = useTranslation();
     const isTerminal = INVOICE_TERMINAL_STATES.includes(invoice.state);
-    // Extract to a const so the extractor regex sees a single-line t("...") call;
-    // biome wraps long t() calls inside JSX attributes across lines, which hides
-    // the key from the line-based scanner in scripts/check_translations.sh.
+    // Extract to a const so the extraction regex sees a single-line call;
+    // biome wraps long i18n calls inside JSX attributes across multiple
+    // lines, which hides the key from the line-based scanner in
+    // tools/check_translations.sh (regex requires quote right after paren).
     const notePlaceholder = t("page.billing.invoices.action.note_placeholder");
 
     return (
