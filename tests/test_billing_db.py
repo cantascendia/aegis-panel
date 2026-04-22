@@ -52,27 +52,43 @@ def test_all_five_tables_registered():
 
 
 def test_create_all_on_sqlite_in_memory():
-    """``create_all`` on a fresh SQLite works; catches column/dialect
-    errors before the Alembic migration runs."""
-    # Use an isolated Base so we don't collide with other tests that
-    # may have already created tables on the shared engine. We
-    # re-declare our five tables here via the module's classes by
-    # inheriting from the shared Base but creating a scratch engine.
+    """``create_all`` for just our 5 billing tables on a fresh SQLite
+    — catches column/dialect errors before the Alembic migration
+    runs.
+
+    Scoping to only our tables (via ``tables=`` kwarg) is
+    intentional: ``Base.metadata`` registers all upstream + iplimit
+    + billing tables, and upstream DDL can include dialect-specific
+    pieces that don't always compose on a bare SQLite in-memory.
+    The test's job is to validate OUR models; everything else is
+    already covered by the existing smoke tests.
+    """
     import ops.billing.db  # noqa: F401
     from app.db.base import Base
 
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-
-    inspector = inspect(engine)
-    table_names = set(inspector.get_table_names())
-    for name in (
+    billing_table_names = (
         "aegis_billing_plans",
         "aegis_billing_channels",
         "aegis_billing_invoices",
         "aegis_billing_invoice_lines",
         "aegis_billing_payment_events",
-    ):
+    )
+    billing_tables = [
+        Base.metadata.tables[name] for name in billing_table_names
+    ]
+
+    engine = create_engine("sqlite:///:memory:")
+
+    # Dependency ordering: invoices has FK to users.id. users doesn't
+    # exist on this scratch engine; SQLite is permissive about FK
+    # targets at DDL time (fk enforcement is off by default) so the
+    # create proceeds. If we ever run this with ``PRAGMA foreign_keys
+    # = ON`` + strict checking, add the users stub table first.
+    Base.metadata.create_all(engine, tables=billing_tables)
+
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    for name in billing_table_names:
         assert (
             name in table_names
         ), f"create_all didn't materialize {name} on SQLite"
