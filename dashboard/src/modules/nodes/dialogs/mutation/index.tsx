@@ -1,4 +1,4 @@
-import { type FC, useMemo } from "react";
+import { type FC, useMemo, useState } from "react";
 import {
     DialogTitle,
     DialogContent,
@@ -28,6 +28,7 @@ import {
 } from "../..";
 import type { NodeType } from "../..";
 import { useMutationDialog, MutationDialogProps } from "@marzneshin/common/hooks";
+import { SniSuggestDialog } from "../sni-suggest";
 
 export const MutationDialog: FC<MutationDialogProps<NodeType>> = ({
     entity,
@@ -55,6 +56,13 @@ export const MutationDialog: FC<MutationDialogProps<NodeType>> = ({
         updateMutation,
         defaultValue,
     });
+
+    // SNI suggest side dialog — user-initiated tool, not auto-probed.
+    // Takes the current `address` field as default VPS IP; user can
+    // override in the dialog (e.g. for NAT VPSes where address is a
+    // hostname but egress IP differs).
+    const [sniDialogOpen, setSniDialogOpen] = useState(false);
+    const addressFieldValue = form.watch("address") ?? "";
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange} defaultOpen={true}>
@@ -109,6 +117,28 @@ export const MutationDialog: FC<MutationDialogProps<NodeType>> = ({
                                 )}
                             />
                         </div>
+                        {/*
+                          * SNI suggest opener. Defense-in-depth: the
+                          * backend endpoint requires sudo-admin, so
+                          * non-sudo operators clicking this will get
+                          * a 403 on Probe. Kept visible regardless —
+                          * hiding it would leak whether the viewer
+                          * is sudo (not a real secret, but keeps the
+                          * UI consistent and discoverable).
+                          */}
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="self-start"
+                            onClick={() => setSniDialogOpen(true)}
+                            disabled={!addressFieldValue}
+                        >
+                            {t(
+                                "page.nodes.sni-suggest.open_button",
+                                "Suggest SNI",
+                            )}
+                        </Button>
                         <HStack>
                             <FormField
                                 control={form.control}
@@ -161,6 +191,11 @@ export const MutationDialog: FC<MutationDialogProps<NodeType>> = ({
                     </form>
                 </Form>
             </DialogContent>
+            <SniSuggestDialog
+                open={sniDialogOpen}
+                onOpenChange={setSniDialogOpen}
+                defaultVpsIp={addressFieldValue}
+            />
         </Dialog>
     );
 };
