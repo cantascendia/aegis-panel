@@ -35,23 +35,38 @@ Design choices
   traceback. ASN lookup failure bubbles up as the existing
   selector-level rejection reason; we don't special-case it.
 
-Rate limiting — deferred
-------------------------
-A ``@limiter.limit("6/minute")`` decorator was prototyped but
-removed: slowapi's decorator on an ``async def`` route mangles
-FastAPI's signature introspection such that body + dependency
-parameters fall through to query-parameter resolution, returning
-422 on every real request. See PR #16 debugging transcript.
+Rate limiting — confirmed deferred (PR #22 post-mortem)
+-------------------------------------------------------
+Attempted to restore ``@limiter.limit("6/minute")`` on this route in
+PR #22 (Round 2 B-batch-2). Local reproduction against the exact
+CI-pinned versions (``fastapi==0.121.0``, ``starlette==0.49.1``,
+``pydantic==2.10``, ``slowapi==0.1.9``) returned 200 OK with proper
+body + dep resolution — so the decorator pattern APPEARS correct.
 
-Mitigation in place without decorator-based rate limit:
-- ``SudoAdminDep`` — sudo-admin-only, not a public endpoint
-- ``asyncio.wait_for(60s)`` bounds each call's wall clock
-- ``asyncio.Semaphore(5)`` in ``select_candidates`` caps concurrent
-  outbound probes per invocation
+But the same code in **CI on Ubuntu** reproduced the original 422
+with ``body`` + ``admin`` falling through to query resolution,
+identical to PR #16. Conclusion: the incompatibility is real but
+platform- or environment-specific in a way we can't reproduce on
+Windows local tooling. Not worth continuing to debug slowapi
+internals on Linux CI blindly — the ROI is negative compared to
+other Round 2 work.
 
-Follow-up: investigate slowapi's async-def signature handling
-(upstream bug or needs ``shared_limit`` / manual check variant) and
-re-introduce IP-bucketed rate limit in a dedicated PR.
+So rate-limit stays OFF on this route. Defense-in-depth remains:
+- ``SudoAdminDep`` — authenticated, sudo-only callers
+- ``asyncio.wait_for(60s)`` — per-call wall clock
+- ``asyncio.Semaphore(5)`` inside ``select_candidates`` — outbound
+  probe concurrency cap
+
+Path forward when someone returns to this
+- Reproduce in a Linux VM or Docker with ``python:3.12-slim``,
+  the exact ``requirements-dev.txt`` pins, and a minimal FastAPI
+  test harness
+- Consider alternatives: manual ``_check_request_limit`` call
+  inside the handler body (sidestepping the decorator signature
+  path), or ``shared_limit`` variant
+- LESSONS.md L-010 stays accurate — do NOT blindly re-apply
+  ``@limiter.limit`` to new async def routes in this repo without
+  the above investigation landing first
 """
 
 from __future__ import annotations
@@ -125,7 +140,7 @@ async def sni_suggest(
     body: Annotated[SniSuggestRequest, Body()],
     admin: SudoAdminDep,
 ) -> dict[str, Any]:
-    """Probe + rank SNI candidates. Sudo-admin only, rate-limited."""
+    """Probe + rank SNI candidates. Sudo-admin only."""
     logger.info(
         "sni_suggest invoked by admin=%s vps_ip=%s count=%d region=%s",
         admin.username,
