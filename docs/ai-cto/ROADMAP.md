@@ -59,11 +59,12 @@
 
 ### 必做
 
-1. **SNI 智能选型器 MVP**(2-3 周)
-   - `hardening/sni/selector.py` CLI:输入 VPS IP → 输出候选 SNI 列表(JSON)
-   - 实现 6 条硬指标验证(TLS 1.3/H2/X25519/非跳转域/同 ASN/非 DPI 黑名单)
-   - 集成到 dashboard "新建节点" 流程 — 创建节点时调一次,预填 serverName
-   - 单元测试 + mock 网络调用
+1. **SNI 智能选型器 MVP** ✅(2026-04-22 达成,差异化 #1 用户可见闭环)
+   - ✅ `hardening/sni/selector.py` CLI + 6 硬指标(PR #13)
+   - ✅ `POST /api/nodes/sni-suggest` REST 端点,`apply_panel_hardening()` 注册(PR #16)
+   - ✅ Dashboard 新建节点对话框 "Suggest SNI" 按钮 + 独立对话框(PR #18)
+   - ✅ 41 + 10 单测 mock 网络,CI 离线可跑
+   - ⏳ 遗留:SNI rate-limit(slowapi async-def 兼容,LESSONS L-010)/ runbook / 前端单测
 
 2. **一键部署引擎 v1**(2-3 周)
    - `deploy/install.sh` — 单节点一键(幂等):apt / docker / compose / 初始化 DB / 生成 .env / 启动

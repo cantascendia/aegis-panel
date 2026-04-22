@@ -1,6 +1,6 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-22(Round 2 v0.2 中段 — SNI 闭环已合入)
+> 最后更新:2026-04-22(Round 2 v0.2 — SNI 用户可见闭环完成)
 > 更新频率:每 3 轮或重大节点
 
 ---
@@ -25,10 +25,15 @@
   - Pydantic 校验 + sudo-admin gate + 60s wall-clock + Semaphore(5) 防并发滥用
   - 10 个 TestClient 测试(auth 401/403 + 422 validation x3 + happy x2 + 504 timeout + 500 seed-load + route contract + rejected section guard)
   - Rate limit(slowapi 装饰器)因 async def 兼容性问题延后,见 LESSONS.md L-010
+- ✅ **SNI dashboard 前端集成**(SPEC follow-up #3)落地(PR #18,`efabf43`)
+  - `hardening/sni/endpoint.py` 的 REST API 现在有 UI 入口:新建节点对话框底部 "Suggest SNI" 按钮
+  - 独立 `SniSuggestDialog` 组件:VPS IP(默认从 address 字段同步)+ count(1-50)+ region(auto/global/jp/kr/us/eu)+ Probe 按钮
+  - 结果展示:ASN/国家/耗时 context 条 + 候选列表(score + 6 指标 ✓/✗ 图标 + 复制按钮)+ rejected 折叠区
+  - 全部 `t()` 调用配英文 defaultValue,不触发 locale parity CI 陷阱(见 L-012)
 
 ## 项目画像(一句话)
 
-Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 2 v0.2 差异化 #1 闭环完成**(SNI 选型器 MVP + dashboard REST 端点),下一步:前端表单集成 + runbook。
+Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 2 v0.2 差异化 #1 用户可见闭环完成**(SNI CLI + REST 端点 + 新建节点表单 UI 三层全通)。下一件:Round 2 后半 scope(计费 MVP vs SNI rate-limit 回填 vs CI infra 清债,待用户定 deadline 后决)。
 
 ## 产品完成度
 
@@ -43,10 +48,12 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
   - ✅ 速率限制(slowapi + Redis 令牌桶,默认禁用)
   - ✅ 测试基础设施(pytest + ruff + pip-audit CI,**78 个通过测试** + 1 个 SQLite skip):
     - Round 1: smoke / P0 security / cache redis / rate limit / compose profiles / migrations(22)
-    - Round 2 新增: sni_asn(6) + sni_checks(16) + sni_loaders(10) + sni_selector(9) + crypto(5) + **sni_endpoint(10)**
+    - Round 2 新增: sni_asn(6) + sni_checks(16) + sni_loaders(10) + sni_selector(9) + crypto(5) + sni_endpoint(10)
+    - Dashboard 单测仍为 2 个(`features/support-us/*.test.*`);SniSuggestDialog 单测留待专项前端 test infra PR(LESSONS L-010/L-012 记录了原因)
   - ✅ 目录骨架(`hardening/` + `deploy/` + `ops/` 各自 README)
-  - ✅ **`hardening/sni/`**(Round 2)—— candidate / asn / checks / scoring / loaders / selector + seeds + blacklist + **endpoint**
-- 关键缺口(Round 2+):SNI dashboard **前端**集成 / 计费 / IP 限制 / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC
+  - ✅ **`hardening/sni/`**(Round 2)—— candidate / asn / checks / scoring / loaders / selector + seeds + blacklist + endpoint
+  - ✅ **`dashboard/src/modules/nodes/dialogs/sni-suggest/`** + API client(Round 2)—— SniSuggestDialog + useSniSuggestMutation
+- 关键缺口(Round 2+):计费 / IP 限制 / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC;小债:SNI rate-limit 回填 / locale drift 清理 / Chromatic token 配置
 
 ## 当前代码质量评分
 
@@ -93,7 +100,9 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | #13 | **SNI 选型器 core + docs**(差异化 #1 MVP) | ✅ 合并 | `6ade9bf` |
 | #14 | `app/utils/crypto.py` 128 行单测 | ✅ 合并 | `efcfd9e` |
 | #15 | Round 2 mid-point STATUS refresh | ✅ 合并 | `bd81a54` |
-| #16 | **SNI dashboard 端点**(差异化 #1 闭环) | ✅ 合并 | `c75359e` |
+| #16 | **SNI dashboard 端点**(差异化 #1 REST 层) | ✅ 合并 | `c75359e` |
+| #17 | R2 endpoint wrap STATUS + L-010 / L-011 | ✅ 合并 | `672e67d` |
+| #18 | **SNI dashboard 前端集成**(差异化 #1 UI 层,闭环完成) | ✅ 合并 | `efabf43` |
 
 ## 已部署配置文件
 
@@ -110,11 +119,11 @@ Round 0 列表的全部 + Round 1 新增:
 ## 未解决问题 / Round 2 后半待做
 
 - **差异化核心**:
-  - ✅ SNI 智能选型器 MVP(差异化 #1,PR #13 落地)
-  - ✅ SNI dashboard REST 端点(SPEC follow-up #2,PR #16 落地)
-  - ⏳ SNI dashboard **前端表单集成**(dashboard/ 新建节点表单调用 `/api/nodes/sni-suggest`)
+  - ✅ SNI 智能选型器 MVP(差异化 #1 CLI 层,PR #13)
+  - ✅ SNI dashboard REST 端点(差异化 #1 API 层,PR #16)
+  - ✅ SNI dashboard 前端集成(差异化 #1 UI 层,PR #18)→ **用户可见闭环完成**
   - ⏳ SNI rate-limit 回填(slowapi async-def 兼容方案,LESSONS.md L-010)
-  - ⏳ SNI runbook(SPEC follow-up #3:"全部候选不合格"排查手册)
+  - ⏳ SNI runbook(`deploy/README.md` "全部候选不合格" 排查手册)
   - Reality 配置审计器(Skill 已定义,代码未起)
   - Reality 健康度仪表盘(差异化 #3,v0.3)
 - **商业化基础**:
@@ -146,16 +155,17 @@ Round 0 列表的全部 + Round 1 新增:
   - `origin/fix/marznode-testcapi-import` — 内容已作为 PR #6 合入,base 旧于 PR #7 rate-limit,merge 会删除速率限制配置
   - `origin/chore/deps-audit-2026-04` — 3 个 deps 升级已与 main 一致(cryptography 46 / fastapi 0.121 / starlette 0.49),merge 会删除 main 上 800+ 行自研代码
   - 建议:用户运行 `git push origin --delete fix/marznode-testcapi-import chore/deps-audit-2026-04` 或在 GitHub UI 删
-- 下一个建议分支:`feat/sni-dashboard-endpoint`(SPEC follow-up #2)
+- 下一个建议分支:取决于用户下一步选择(Round 2 后半 scope:计费 MVP / SNI rate-limit 回填 / CI infra 清债)
 
 ## 📅 最后同步确认
 
-**Round 2 中段**(2026-04-22,SNI 闭环合入):
-- **16 个 PR 合入**(#1~#16 全绿)
-- **78 个通过测试** + 1 skip(+10 sni_endpoint tests)
-- `hardening/sni/` 模块闭环:candidate/asn/checks/scoring/loaders/selector + **endpoint** + 5 tests 文件
+**Round 2 v0.2 差异化 #1 用户可见闭环完成**(2026-04-22):
+- **18 个 PR 合入**(#1~#18 全绿或核心三门禁全绿)
+- **78 个后端通过测试** + 1 skip;dashboard 2 个(未扩)
+- SNI 三层全通:CLI(PR #13)→ REST(PR #16)→ UI(PR #18)
 - `apply_panel_hardening()` 扩展为 middleware + limiter + **自研 routers** 三位一体入口,`app/marzneshin.py` 仍只有一行 diff
-- 新教训 L-010(slowapi async 兼容)+ L-011(本地 ruff 版本漂移)记入 LESSONS.md
+- `dashboard/src/modules/nodes/dialogs/sni-suggest/` 新增,对 upstream `dashboard/src/` 其它路径零修改(同样的"冲突面 = 一行"哲学现在也适用前端)
+- 四条新教训入库:L-010(slowapi async 兼容)/ L-011(ruff 版本漂移)/ L-012(locale drift CI 陷阱)/ L-013(Chromatic token 缺失)
 
 ## 💭 最新想法(给未来的 CTO)
 
@@ -169,6 +179,18 @@ Round 0 列表的全部 + Round 1 新增:
 - **测试覆盖曲线**:Round 1 新增 22 测试,Round 2 前半又 +46 测试,到 63 个。关键是 `hardening/sni/` 的 4 个测试文件全部完全 mock 网络,CI 离线可跑。这是正确的测试哲学,要坚持
 - **文档交叉引用习惯**:每个新模块都在 DEVELOPMENT.md + 同层 README + 上级 README 三处互链。这条没写进 rule,但成了事实标准,下轮考虑沉淀
 
-**Round 2 后半决策**:
-- **先做 SNI dashboard 对接还是先做计费 MVP?** SPEC follow-up #2 (dashboard endpoint) 是 SNI 闭环,1-2 天能完成。计费 MVP 需要新数据模型 + 支付流程设计,5-7 天。建议先 dashboard 对接闭环 SNI(让其从"能 CLI 跑"变"运营真能用"),再启计费
-- **商业化 MVP scope 仍待对齐** —— ROADMAP 路径 SNI → 一键部署 → 计费 是"技术优先",但若商业 deadline 紧,计费可前置。下次 CTO 与运营方沟通时主动提出
+**Round 2 后半反思 + 决策**:
+
+- **差异化 #1 的三层闭环验证了"upstream 冲突面 = 一行"不仅适用后端**:前端 SNI 集成也落在新独立目录 `dashboard/src/modules/nodes/dialogs/sni-suggest/`,对 upstream 其它代码零修改。这个哲学从后端扩到前端后,upstream-sync 的风险面进一步收窄
+- **CI 基础设施的隐性 debt 比想象中多**:Round 2 PR #18 第一次触碰 locale JSON 就引爆了 `tools/check_translations.sh` 全局 drift(每 locale >100 key),同时发现 Chromatic 没有 project token。这些都是 main 上躺了很久的 debt,只是之前没 PR 去碰它们。CTO 决策:不把清 debt 捆在 feature PR 里(那样 PR 永远合不上),独立一轮 "CI infra cleanup" 清一次
+- **新教训落入 rule 的节奏再评估**:LESSONS 现有 13 条(L-001 到 L-013),其中 8 条已沉淀为 `.agents/rules/*.md`。剩下 5 条都是"单次事件 + 判断题"型,暂不转 rule。下轮开始前再扫一遍,看是否有趋势性重复
+
+**Round 2 后半的三条路径**:
+
+| 路径 | 选 | 预计 | 推进哪个商业目标 |
+|---|---|---|---|
+| A | **计费 MVP**(Subscription/Payment/Invoice 模型 + 管理员手动激活订阅) | 5-7 天 | 能变现 |
+| B | **SNI rate-limit 回填 + CI infra 清债**(locale drift / Chromatic token / UVICORN_HOST 默认值)| 1-2 天 | 稳定性 + 工具链 |
+| C | **IP 限制(防账号共享)自研**(Hiddify `shared_limit` 算法 port 到 Marzneshin API) | 3-5 天 | 差异化 #2 |
+
+**CTO 建议**:B → A 串行。B 一两天清掉 CI 债让未来每一个 PR 更爽;然后 A 专注商业化 MVP。C 可以委派 Codex worktree 并行做(IP 限制有明确算法参考,适合 Agent 隔离执行)。但最终选哪个应由用户的**运营 deadline** 决定,而不是技术偏好。下轮开工前 CTO 主动问一次
