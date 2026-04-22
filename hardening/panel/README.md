@@ -9,7 +9,7 @@
 | 模块 | 阶段 | 说明 |
 |---|---|---|
 | `jwt_secret.py` | v0.1 | 从 `.env` 读 HMAC_SECRET,禁止库存储(AUDIT.md ④ 🔴) |
-| `rate_limit.py` | ✅ v0.1 + R2 B-batch-2 | slowapi + Redis 令牌桶,已装在 `/api/admins/token`(sync def,PR #7)和 `/api/nodes/sni-suggest`(async def,Round 2 B-batch-2)。默认关,`RATE_LIMIT_ENABLED=true` 启用,**必须** 配 `REDIS_URL`,否则启动 fail-loud |
+| `rate_limit.py` | ✅ v0.1(PR #7) | slowapi + Redis 令牌桶,已装在 `/api/admins/token`(sync def)。默认关,`RATE_LIMIT_ENABLED=true` 启用,**必须** 配 `REDIS_URL`,否则启动 fail-loud。SNI async 端点装回失败(PR #22 Linux CI 422 实锤,L-010 确认),等 reproducer |
 | `middleware.py` | ✅ v0.1+v0.2 | `apply_panel_hardening(app)` 一键装 Limiter + 429 handler + SlowAPIMiddleware + **自研 routers**(SNI endpoint 等),与 upstream `app/marzneshin.py` 耦合面仅一行 |
 | `cors_policy.py` | v0.1 | 从 `.env` 读 CORS 白名单,禁止 `*` + `allow_credentials=True` 组合 |
 | `dashboard_path.py` | v0.2 | 随机化 `DASHBOARD_PATH`,避免扫描器命中默认 `/dashboard/` |

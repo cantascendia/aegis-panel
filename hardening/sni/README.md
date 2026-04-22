@@ -90,7 +90,7 @@ python -m hardening.sni.selector --ip 103.x.x.x --count 5 --region jp
 `POST /api/nodes/sni-suggest`
 
 - **Auth**: sudo admin(`SudoAdminDep`)
-- **Rate limit**: 6/min per IP(默认关,`RATE_LIMIT_ENABLED=true` 启用;slowapi + Redis 令牌桶)。配合 sudo-admin 门 + 60s wall-clock + `Semaphore(5)` 多层防御
+- **Rate limit**: **当前未装**(async def + slowapi 在 Linux CI 上真实触发 422,见 endpoint.py 模块 docstring 和 LESSONS.md L-010)。依靠 sudo-admin 门 + 60s wall-clock + `Semaphore(5)` 多层防御;Linux 环境下的 reproducer 搞定后再装回
 - **Timeout**: 60 秒(`asyncio.wait_for`)
 - **Request**:
   ```json
@@ -114,7 +114,7 @@ python -m hardening.sni.selector --ip 103.x.x.x --count 5 --region jp
 - ✅ PR #13: `feat(hardening): sni selector core + 6 indicators`(module + CLI + 41 测试)
 - ✅ PR #16: `feat(hardening): sni dashboard endpoint`(endpoint + 10 测试)
 - ✅ PR #18: `feat(dashboard): sni-suggest dialog`(新建节点表单 "Suggest SNI" 按钮)
-- ✅ Round 2 B-batch-2: rate-limit 装回 `@limiter.limit(SNI_SUGGEST_RATE_LIMIT)`
+- ⏳ rate-limit 装回 —— PR #22 尝试失败(Linux CI 422 实锤),延后到有 Linux Docker reproducer 再处理
 - ⏳ `docs(hardening): sni runbook` — `deploy/README.md` 加 "全部候选不合格" 的排查手册
 - 未来 v0.3: live DPI 情报订阅 + `/24` scan mode + 持续健康度监控
 

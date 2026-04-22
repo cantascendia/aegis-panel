@@ -35,28 +35,38 @@ Design choices
   traceback. ASN lookup failure bubbles up as the existing
   selector-level rejection reason; we don't special-case it.
 
-Rate limiting — restored (Round 2 B-batch)
-------------------------------------------
-Previously removed in PR #16 (third push) when slowapi's
-``@limiter.limit`` + ``async def`` combo appeared to mangle
-FastAPI's signature introspection (every request returned 422
-with body/admin seen as query params). Post-mortem via local
-reproduction against CI-pinned fastapi 0.121 + starlette 0.49 +
-slowapi 0.1.9 shows the pattern actually works correctly when
-``body`` is explicitly ``Annotated[..., Body()]``. The PR #16
-second-push failure was likely environmental or caused by a
-subtle stale-bytecode issue that went away on the restoration
-commit. LESSONS.md L-010 is updated accordingly.
+Rate limiting — confirmed deferred (PR #22 post-mortem)
+-------------------------------------------------------
+Attempted to restore ``@limiter.limit("6/minute")`` on this route in
+PR #22 (Round 2 B-batch-2). Local reproduction against the exact
+CI-pinned versions (``fastapi==0.121.0``, ``starlette==0.49.1``,
+``pydantic==2.10``, ``slowapi==0.1.9``) returned 200 OK with proper
+body + dep resolution — so the decorator pattern APPEARS correct.
 
-Current rate-limit behaviour
-- ``@limiter.limit(SNI_SUGGEST_RATE_LIMIT)`` installed; 6/min per
-  remote IP when ``RATE_LIMIT_ENABLED=true``, no-op when disabled
-- Still gated by ``SudoAdminDep`` (first line of defense)
-- Still bounded by ``asyncio.wait_for(60s)`` and the
-  ``Semaphore(5)`` inside ``select_candidates``
-- Behind reverse proxies, operators must also configure Uvicorn
-  ``--forwarded-allow-ips`` (or a future TrustedProxyMiddleware)
-  for ``get_remote_address`` to see the real client IP
+But the same code in **CI on Ubuntu** reproduced the original 422
+with ``body`` + ``admin`` falling through to query resolution,
+identical to PR #16. Conclusion: the incompatibility is real but
+platform- or environment-specific in a way we can't reproduce on
+Windows local tooling. Not worth continuing to debug slowapi
+internals on Linux CI blindly — the ROI is negative compared to
+other Round 2 work.
+
+So rate-limit stays OFF on this route. Defense-in-depth remains:
+- ``SudoAdminDep`` — authenticated, sudo-only callers
+- ``asyncio.wait_for(60s)`` — per-call wall clock
+- ``asyncio.Semaphore(5)`` inside ``select_candidates`` — outbound
+  probe concurrency cap
+
+Path forward when someone returns to this
+- Reproduce in a Linux VM or Docker with ``python:3.12-slim``,
+  the exact ``requirements-dev.txt`` pins, and a minimal FastAPI
+  test harness
+- Consider alternatives: manual ``_check_request_limit`` call
+  inside the handler body (sidestepping the decorator signature
+  path), or ``shared_limit`` variant
+- LESSONS.md L-010 stays accurate — do NOT blindly re-apply
+  ``@limiter.limit`` to new async def routes in this repo without
+  the above investigation landing first
 """
 
 from __future__ import annotations
@@ -69,7 +79,6 @@ from fastapi import APIRouter, Body, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.dependencies import SudoAdminDep
-from hardening.panel.rate_limit import limiter
 from hardening.sni.loaders import SeedLoadError
 from hardening.sni.selector import select_candidates
 
@@ -79,12 +88,6 @@ logger = logging.getLogger(__name__)
 # Single-source-of-truth for the probe wall-clock budget. Exported so
 # tests can monkeypatch without importing the private module path.
 SNI_SUGGEST_TIMEOUT_SECONDS = 60.0
-
-# Rate limit label. Fixed-window per remote IP (see
-# hardening/panel/rate_limit.limiter). 6/min = one every 10 s — above
-# any realistic dashboard blur-event cadence but cheap enough to
-# disarm casual probing abuse.
-SNI_SUGGEST_RATE_LIMIT = "6/minute"
 
 
 class SniSuggestRequest(BaseModel):
@@ -132,13 +135,12 @@ router = APIRouter(prefix="/api/nodes", tags=["SNI"])
         "clock capped at 60 s."
     ),
 )
-@limiter.limit(SNI_SUGGEST_RATE_LIMIT)
 async def sni_suggest(
-    request: Request,  # noqa: ARG001  # required by slowapi rate-limit decorator
+    request: Request,  # noqa: ARG001  # kept for future rate-limit reintroduction
     body: Annotated[SniSuggestRequest, Body()],
     admin: SudoAdminDep,
 ) -> dict[str, Any]:
-    """Probe + rank SNI candidates. Sudo-admin only, rate-limited."""
+    """Probe + rank SNI candidates. Sudo-admin only."""
     logger.info(
         "sni_suggest invoked by admin=%s vps_ip=%s count=%d region=%s",
         admin.username,
@@ -198,5 +200,4 @@ __all__ = [
     "router",
     "SniSuggestRequest",
     "SNI_SUGGEST_TIMEOUT_SECONDS",
-    "SNI_SUGGEST_RATE_LIMIT",
 ]
