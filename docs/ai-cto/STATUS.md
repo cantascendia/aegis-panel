@@ -142,81 +142,81 @@ Round 0 列表的全部 + Round 1 新增:
 - ✅ `hardening/panel/{__init__,middleware,rate_limit}.py`(PR #7 落地)
 - ✅ `docs/ai-cto/LESSONS.md`(Round 1 CI / 工具链经验沉淀)
 
-## 未解决问题 / Round 2 后半待做
+## 未解决问题 / Round 3 后续待做
 
 - **差异化核心**:
-  - ✅ SNI 智能选型器 MVP(差异化 #1 CLI 层,PR #13)
-  - ✅ SNI dashboard REST 端点(差异化 #1 API 层,PR #16)
-  - ✅ SNI dashboard 前端集成(差异化 #1 UI 层,PR #18)→ **用户可见闭环完成**
+  - ✅ SNI 智能选型器 MVP(差异化 #1 三层全通,PR #13/#16/#18)
+  - ✅ IP 限制 MVP(差异化 #2 三层全通,PR #24/#26 + 补丁 #31)→ **用户可见闭环完成**
+  - ⏳ **IP 限制真实节点 E2E**(本地 fake Redis + fake Marznode 已覆盖,未验证真 Xray access.log 格式、容器 TZ 一致性、生产 Redis 规模)
+  - ⏳ **IP 限制白名单 CIDR + Redis SCAN**(cross-review M-5 / T-1,CGNAT 移动网络误杀防线 + 2000 用户规模防 KEYS block)
   - ⏳ SNI rate-limit 回填(slowapi async-def 兼容方案,LESSONS.md L-010)
   - ⏳ SNI runbook(`deploy/README.md` "全部候选不合格" 排查手册)
   - Reality 配置审计器(Skill 已定义,代码未起)
   - Reality 健康度仪表盘(差异化 #3,v0.3)
-- **商业化基础**:
-  - 计费系统 MVP(`Subscription` / `Payment` / `Invoice` 模型)
-  - 审计日志(`AuditLog` 表 + 中间件)
+- **商业化 MVP(A 线 Round 3 opener 已完成数据面 + Admin UI)**:
+  - ✅ 数据面 + 状态机 + Webhook 去重(PR #28/#29)
+  - ✅ Admin REST + dashboard + channels + invoices(PR #30/#32/#33/#35)
+  - ⏳ **A.2 EPay 网关对接实现**(发起支付 / 接收 webhook 的实际 code 未落,目前只有凭据管理 + 状态机)
+  - ⏳ **A.3 TRC20 poller**(USDT 链上入账轮询 + 对账)
+  - ⏳ **订阅模型**(`Subscription` 表 + 流水 + 到期动作 + 用户订阅面板)
   - 告警系统(超额 / 临期 / 异常登录)
   - RBAC(v0.3)
+  - 审计日志(`AuditLog` 表 + 中间件)
 - **部署**:
   - `deploy/install.sh` 一键单节点
   - `deploy/cloudflare/` CF Tunnel 自动化
   - Ansible 多节点 playbook
-- **Round 1 遗留小事**:
-  - `UVICORN_HOST` 默认 `0.0.0.0` → `127.0.0.1`(CLAUDE.md 铁律要求,需带 deprecation)
-  - `pyproject.toml` 的 `[tool.black]` 块清理(已被 ruff format 替代)
-  - `v2share==0.1.0b31` beta 替代评估
-  - CI 加 PostgreSQL matrix(捕获 Round 2 新迁移的 PG 兼容)
-  - TrustedProxyMiddleware(反代场景下的 X-Forwarded-For 支持,速率限制真实落地依赖这个)
-  - `datetime.utcnow()` 迁移到 timezone-aware(PyJWT 2.10+ 触发 DeprecationWarning)
-  - cryptography 46 的 x509 `not_valid_before_utc` / `not_valid_after_utc` 迁移
+- **基础设施遗留**(Round 2 tail + Round 3 opener 已清大部分):
+  - ✅ `UVICORN_HOST` 默认 127.0.0.1 / [tool.black] 清理 / CI PostgreSQL matrix / TrustedProxyMiddleware
+  - ✅ CI stepped-upgrade alembic gate(PR #31)/ 自研 model aggregator(PR #34)/ Translations drift gate → diff-based(PR #27)
+  - ⏳ `datetime.utcnow()` → timezone-aware(`ops/billing/states.py` 等处仍有 DeprecationWarning)
+  - ⏳ `v2share==0.1.0b31` beta 替代评估
+  - ⏳ cryptography 46 的 x509 `not_valid_before_utc` / `not_valid_after_utc` 迁移
 
 ## 竞品关键发现
 
-不变 —— 见 `docs/ai-cto/COMPETITORS.md`。Round 1 未做竞品跟踪刷新,下次 STATUS 更新(Round 2 末)做。
+不变 —— 见 `docs/ai-cto/COMPETITORS.md`。Round 3 末建议补一轮刷新,重点看 Hiddify 最近的 `shared_limit` 变动是否引入我们未覆盖的场景。
 
 ## 🔀 分支状态
 
-- `main` — PR #1~#14 全部合入(SHA `94b5baf`)
-- **Stale 远端分支**(待授权删):
-  - `origin/fix/marznode-testcapi-import` — 内容已作为 PR #6 合入,base 旧于 PR #7 rate-limit,merge 会删除速率限制配置
-  - `origin/chore/deps-audit-2026-04` — 3 个 deps 升级已与 main 一致(cryptography 46 / fastapi 0.121 / starlette 0.49),merge 会删除 main 上 800+ 行自研代码
-  - 建议:用户运行 `git push origin --delete fix/marznode-testcapi-import chore/deps-audit-2026-04` 或在 GitHub UI 删
-- 下一个建议分支:取决于用户下一步选择(Round 2 后半 scope:计费 MVP / SNI rate-limit 回填 / CI infra 清债)
+- `main` — PR #1~#35 全部合入,head `a4e0c15`(Round 3 opener PR #35 合并点)
+- **Stale 远端分支**(2026-04-23 同步后大批已清):已 auto-delete `feat/billing-data-models`、`feat/billing-pricing-and-states`、`feat/dashboard-sni-suggest`、`feat/sni-dashboard-endpoint`、`feat/sni-selector-core` 等合并后分支
+- **本地可清理**:`hardening/ip-limiter`(PR #24/#26 已合)、`fix/iplimit-disabled-state-safety-net`(PR #31 已合)、`chore/extra-models-aggregator`(PR #34 已合)—— `git branch -D` 即可,origin 对应 ref 也可删
+- 下一个建议分支:取决于用户下一步选择(A.2 EPay / A.3 TRC20 / iplimit E2E / SNI rate-limit 回填)
 
 ## 📅 最后同步确认
 
-**Round 2 v0.2 差异化 #1 用户可见闭环完成**(2026-04-22):
-- **18 个 PR 合入**(#1~#18 全绿或核心三门禁全绿)
-- **78 个后端通过测试** + 1 skip;dashboard 2 个(未扩)
-- SNI 三层全通:CLI(PR #13)→ REST(PR #16)→ UI(PR #18)
-- `apply_panel_hardening()` 扩展为 middleware + limiter + **自研 routers** 三位一体入口,`app/marzneshin.py` 仍只有一行 diff
-- `dashboard/src/modules/nodes/dialogs/sni-suggest/` 新增,对 upstream `dashboard/src/` 其它路径零修改(同样的"冲突面 = 一行"哲学现在也适用前端)
-- 四条新教训入库:L-010(slowapi async 兼容)/ L-011(ruff 版本漂移)/ L-012(locale drift CI 陷阱)/ L-013(Chromatic token 缺失)
+**Round 3 opener —— 差异化 #2 + 商业化 MVP 数据面/Admin UI 双线落地**(2026-04-23):
+- **35 个 PR 合入**(#1~#35)
+- **171 个后端通过测试** + 1 skip;dashboard 2 个(未扩)
+- 差异化 #2 三层全通:数据面(#24)→ review 修复(#26)→ safety-net + CI 门禁(#31);cross-review 的 C-1/C-2/M-1/M-2/M-3 全部修掉
+- 商业化 MVP A.1 全 5 个子 PR 全通:data models(#28)→ pricing+states(#29)→ admin REST(#30)→ admin dashboard(#32)→ admin channels(#33)→ admin invoices(#35)
+- 基础设施大升级:`test-alembic-stepped` CI 门禁(阻塞 mutated migration 类 bug)+ `app/db/extra_models.py` aggregator(env.py 永久 1 行 diff)+ 两条硬规则(Alembic 不变性 / 自研 model 注册)
+- 三条新教训入库:L-014(自研 model 注册)/ L-015(已 merge revision 不可 mutate)/ L-016(fresh-DB CI 是 false-green)
 
 ## 💭 最新想法(给未来的 CTO)
 
 **Round 1 教训(仍有效)**:
 - **"附加看似小的 infra PR" 是 Round 1 最大价值**:PG/Redis compose profile + 速率限制一次到位,让 Round 2 SNI 选型器直接吃到 PR 门禁与测试 infra 的红利
-- **PR 粒度稳定模式**:1 PR = 1 SPEC + 1-3 个关联 commit + 测试 + 文档。Round 2 PR #13 (SNI core 1795 行 + 41 测试)仍然一次过 CI,验证该模式能 scale 到中等复杂度特性
-- **"upstream 冲突面 = 一行"原则有效**:SNI 模块全部落在 `hardening/sni/`,对 `app/` 和 `dashboard/` 零修改。下一个 follow-up PR(dashboard 端点)才会触碰 upstream,但通过 `app/routes/node.py` 的新路由而非修改现有路由
+- **PR 粒度稳定模式**:1 PR = 1 SPEC + 1-3 个关联 commit + 测试 + 文档
 
-**Round 2 前半反思**:
-- **SNI 选型器的实现选择**(Team Cymru WHOIS / Python 3.13+ vs 3.12 fallback / 指标复用同一 TLS 握手)全部在 SPEC 中预先做过权衡,实现阶段几乎无返工。SPEC-Driven 模式在此大规模验证成功
-- **测试覆盖曲线**:Round 1 新增 22 测试,Round 2 前半又 +46 测试,到 63 个。关键是 `hardening/sni/` 的 4 个测试文件全部完全 mock 网络,CI 离线可跑。这是正确的测试哲学,要坚持
-- **文档交叉引用习惯**:每个新模块都在 DEVELOPMENT.md + 同层 README + 上级 README 三处互链。这条没写进 rule,但成了事实标准,下轮考虑沉淀
+**Round 2 反思(仍有效)**:
+- **SPEC-Driven 模式在 SNI 的成功复制到 Round 3**:IP 限制 BRIEF → PR #24 实现 → cross-review → PR #26 修复,验证"先 SPEC 再动手"可以 scale 到跨轮次、多 agent(Codex 实现 + Opus review)协作
+- **"upstream 冲突面 = 一行"原则升级**:从"每个模块 1 行"(env.py 散装 import)进化到"整个 fork 1 行"(aggregator 聚合),这是 Round 3 架构抽象的一次质变
+- **CI debt 独立清**:Round 2 PR #20/#22/#23 + PR #27 的清债批次模式验证成立,不要捆进 feature PR
 
-**Round 2 后半反思 + 决策**:
+**Round 3 opener 反思**:
+- **Cross-review 的 ROI 在 iplimit 上爆表**:Opus 主轮 + sub-agent 独立轮两票收敛发现 C-1(buffer replay 造成误封)和 C-2(无条件 re-enable 冲突管理员操作),这两个若 merge 进生产都是"付费用户被误 disable + 管理员无法纠正"的事故。30 分钟 review 换回 P1 生产事故,这个模式 Round 3 全面推广 —— 尤其针对任何**触碰用户状态机**的 PR
+- **L-015 Alembic 不变性是本轮最贵的教训**:PR #26 mutate 已 merge 的 `4f7b7c8e9d10` 直接导致"已部署环境永远缺一张表"的静默 bug,CI 全绿完全察觉不到。修复链路 safety-net → stepped-upgrade CI gate → 硬规则进 rules,是标准的"教训 → 防线 → 规则"三步沉淀
+- **aggregator 模式适合所有 upstream-owned 注册点**:env.py 是第一个,未来若要扩展 `app/routes/` 的 upstream router 列表、`app/tasks/` 的定时任务注册,都可以用同样的"upstream 文件 1 行 import → fork aggregator 文件集中注册"模式。这是 Round 3+ 的架构红利
 
-- **差异化 #1 的三层闭环验证了"upstream 冲突面 = 一行"不仅适用后端**:前端 SNI 集成也落在新独立目录 `dashboard/src/modules/nodes/dialogs/sni-suggest/`,对 upstream 其它代码零修改。这个哲学从后端扩到前端后,upstream-sync 的风险面进一步收窄
-- **CI 基础设施的隐性 debt 比想象中多**:Round 2 PR #18 第一次触碰 locale JSON 就引爆了 `tools/check_translations.sh` 全局 drift(每 locale >100 key),同时发现 Chromatic 没有 project token。这些都是 main 上躺了很久的 debt,只是之前没 PR 去碰它们。CTO 决策:不把清 debt 捆在 feature PR 里(那样 PR 永远合不上),独立一轮 "CI infra cleanup" 清一次
-- **新教训落入 rule 的节奏再评估**:LESSONS 现有 13 条(L-001 到 L-013),其中 8 条已沉淀为 `.agents/rules/*.md`。剩下 5 条都是"单次事件 + 判断题"型,暂不转 rule。下轮开始前再扫一遍,看是否有趋势性重复
+**Round 3 mid 的分叉**:
 
-**Round 2 后半的三条路径**:
-
-| 路径 | 选 | 预计 | 推进哪个商业目标 |
+| 路径 | 内容 | 预计 | 推进哪个商业目标 |
 |---|---|---|---|
-| A | **计费 MVP**(Subscription/Payment/Invoice 模型 + 管理员手动激活订阅) | 5-7 天 | 能变现 |
-| B | **SNI rate-limit 回填 + CI infra 清债**(locale drift / Chromatic token / UVICORN_HOST 默认值)| 1-2 天 | 稳定性 + 工具链 |
-| C | **IP 限制(防账号共享)自研**(Hiddify `shared_limit` 算法 port 到 Marzneshin API) | 3-5 天 | 差异化 #2 |
+| A | **A.2 EPay 对接 + A.3 TRC20 poller**(把商业化 MVP 从"Admin 可管"推进到"用户可付款") | 4-6 天 | 能变现(关键一跃) |
+| B | **iplimit 真实节点 E2E + 白名单 / SCAN 小 🟡**(差异化 #2 从 fake test 推到生产就绪) | 2-3 天 | 稳定性 + 差异化可信度 |
+| C | **Reality 配置审计器**(差异化 #3 MVP) | 3-5 天 | 差异化 #3 |
+| D | **订阅模型 + 用户订阅面板**(商业化 MVP 的"用户面",与 A.2 耦合) | 3-4 天 | 能变现(串行在 A 之后) |
 
-**CTO 建议**:B → A 串行。B 一两天清掉 CI 债让未来每一个 PR 更爽;然后 A 专注商业化 MVP。C 可以委派 Codex worktree 并行做(IP 限制有明确算法参考,适合 Agent 隔离执行)。但最终选哪个应由用户的**运营 deadline** 决定,而不是技术偏好。下轮开工前 CTO 主动问一次
+**CTO 建议**:A → B 并行(A 用主线,B 委派 Codex worktree);A 完工后接 D 闭环用户面。C 放 Round 3 末或 Round 4。最终还是看用户的**运营 deadline 和变现优先级**,开工前主动问一次。
