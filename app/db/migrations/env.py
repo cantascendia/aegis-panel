@@ -7,6 +7,7 @@ from sqlalchemy import pool
 from app.config.env import SQLALCHEMY_DATABASE_URL
 from app.db.base import Base
 import hardening.iplimit.db  # noqa: F401
+import ops.billing.db  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
