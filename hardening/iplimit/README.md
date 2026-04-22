@@ -1,22 +1,93 @@
-# hardening/iplimit/ — 原生 IP 并发限制
+# hardening/iplimit/ - IP concurrency limiter
 
-**状态**: ⏳ 待建(v0.3)
+**Status**: Round 2 MVP.
 
-**为什么自研**: Marzban 生态的 V2IpLimit / miplimiter / luIP 全部**不兼容
-Marzneshin**(API 路径不同,详见 `docs/ai-cto/COMPETITORS.md` 第 5 节)。不
-走 "fork 外挂工具改 API" 路线 —— 维护成本高,每次 upstream 更新都要跟。
+**Goal**: detect subscription sharing by counting distinct source IPs
+per user in a rolling window, using Marznode-provided Xray access
+events and Redis runtime state.
 
-## 方案
+## Architecture
 
-1. 订阅 Marznode 暴露的 Xray `stats` gRPC(`app/marznode/` 已有基础)
-2. 按用户级计数当前连接 IP 集合,超阈值触发:
-   - 断连多余连接(优先断最后登录)
-   - Telegram / email 告警
-3. 策略可配置:`max_concurrent_ips` / `grace_period` / `country_filter`
+The module is self-owned under `hardening/iplimit/`:
 
-## 参考
+| File | Role |
+|---|---|
+| `db.py` | SQLAlchemy policy models and effective-policy resolution |
+| `events.py` | Marznode access-log event parser and bounded collector |
+| `store.py` | Redis key helpers, rolling-window state, audit persistence |
+| `task.py` | Scheduled detector and warn/disable enforcement |
+| `scheduler.py` | APScheduler installation through `apply_panel_hardening()` |
+| `endpoint.py` | Sudo-admin REST endpoints for dashboard use |
 
-- Hiddify `app/roles/shared_limit.py` 算法(见 COMPETITORS.md 建议 3)
-- 不要 copy AGPL 代码(Hiddify 也是 AGPL),要重写并在本目录声明 AGPL
+The runtime integration point is
+`hardening.panel.middleware.apply_panel_hardening()`, which includes the
+router and starts the feature-owned scheduler by wrapping the FastAPI
+lifespan. No `app/tasks/` or `app/routes/` files are edited.
 
-## 暂无实现。
+## Redis Contract
+
+Redis is optional. If `REDIS_URL` is unset, the scheduler logs one
+disabled notice per process start and skips polling. The REST endpoints
+still return SQL policy state with empty runtime observations.
+
+Keys:
+
+```text
+aegis:iplimit:observed:{user_id}   # ZSET ip -> last-seen unix ts
+aegis:iplimit:violation:{user_id}  # STRING disabled-until unix ts
+aegis:iplimit:audit:{user_id}      # LIST capped JSON events
+aegis:iplimit:dedupe:{user_id}     # STRING violation fingerprint
+```
+
+## Policy
+
+Global defaults live in `aegis_iplimit_config`; nullable per-user
+overrides live in `aegis_iplimit_override`.
+
+Defaults:
+
+- `max_concurrent_ips = 3`
+- `window_seconds = 300`
+- `violation_action = "warn"`
+- `disable_duration_seconds = 3600`
+
+Per-user `NULL` fields inherit the global value.
+
+## Scheduler
+
+The poll interval is controlled by:
+
+```text
+IPLIMIT_POLL_INTERVAL=30
+IPLIMIT_LOG_READ_LIMIT=1000
+IPLIMIT_LOG_READ_TIMEOUT_SECONDS=3
+IPLIMIT_AUDIT_LIMIT=100
+```
+
+The collector calls existing `app.marznode.nodes[*].get_logs(...)`
+clients. It does not open a new gRPC connection and does not parse local
+Xray log files.
+
+## API
+
+```text
+GET   /api/users/{username}/iplimit
+PATCH /api/users/{username}/iplimit/override
+GET   /api/users/{username}/iplimit/audit
+```
+
+All endpoints require sudo-admin access.
+
+## Operator Notes
+
+Action `warn` writes an audit event and sends a Telegram alert if the
+panel already has Telegram configured. Action `disable` writes an audit
+event, marks the user disabled, pushes the removal to Marznode, and
+automatically re-enables the user when the Redis `disabled_until` value
+expires.
+
+## License
+
+This is an independent AGPL-3.0 implementation. Hiddify's
+`shared_limit` feature was used only as product-level inspiration; no
+code was copied.
