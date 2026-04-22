@@ -286,9 +286,7 @@ def test_happy_path_passes_region_through(
             elapsed_seconds=0.5,
         )
 
-    monkeypatch.setattr(
-        "hardening.sni.endpoint.select_candidates", _capture
-    )
+    monkeypatch.setattr("hardening.sni.endpoint.select_candidates", _capture)
 
     resp = client.post(
         "/api/nodes/sni-suggest",
@@ -322,9 +320,7 @@ def test_timeout_surfaces_as_504(
         await asyncio.sleep(1.0)
         raise AssertionError("should have been cancelled by timeout")
 
-    monkeypatch.setattr(
-        "hardening.sni.endpoint.select_candidates", _hang
-    )
+    monkeypatch.setattr("hardening.sni.endpoint.select_candidates", _hang)
 
     resp = client.post(
         "/api/nodes/sni-suggest",
@@ -347,9 +343,7 @@ def test_seed_load_error_surfaces_as_500(
     async def _broken(**kwargs: Any) -> Any:
         raise SeedLoadError("blacklist.yaml: missing 'blocked' key")
 
-    monkeypatch.setattr(
-        "hardening.sni.endpoint.select_candidates", _broken
-    )
+    monkeypatch.setattr("hardening.sni.endpoint.select_candidates", _broken)
 
     resp = client.post(
         "/api/nodes/sni-suggest",
@@ -401,9 +395,7 @@ def test_response_includes_rejected_section(
     async def _give(**kwargs: Any) -> SelectorResult:
         return result
 
-    monkeypatch.setattr(
-        "hardening.sni.endpoint.select_candidates", _give
-    )
+    monkeypatch.setattr("hardening.sni.endpoint.select_candidates", _give)
 
     resp = client.post(
         "/api/nodes/sni-suggest",

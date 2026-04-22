@@ -40,9 +40,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Body, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.dependencies import SudoAdminDep
@@ -112,7 +112,7 @@ router = APIRouter(prefix="/api/nodes", tags=["SNI"])
 @limiter.limit(SNI_SUGGEST_RATE_LIMIT)
 async def sni_suggest(
     request: Request,  # noqa: ARG001  # required by slowapi rate-limit decorator
-    body: SniSuggestRequest,
+    body: Annotated[SniSuggestRequest, Body()],
     admin: SudoAdminDep,
 ) -> dict[str, Any]:
     """Probe + rank SNI candidates. Sudo-admin only, rate-limited."""
