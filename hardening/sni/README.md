@@ -90,7 +90,7 @@ python -m hardening.sni.selector --ip 103.x.x.x --count 5 --region jp
 `POST /api/nodes/sni-suggest`
 
 - **Auth**: sudo admin(`SudoAdminDep`)
-- **Rate limit**: 6/分钟/IP(配置开启时生效;默认关)
+- **Rate limit**: 当前未在端点装饰;依赖 sudo-admin 门 + 60s wall-clock + 选型器内 `Semaphore(5)` 作为 defense-in-depth。slowapi 装饰器对 async def 的 signature introspection 有兼容性问题(PR #16 发现,详见 endpoint.py 模块 docstring),IP 桶粒度的 rate limit 留待 follow-up PR 解决
 - **Timeout**: 60 秒(`asyncio.wait_for`)
 - **Request**:
   ```json

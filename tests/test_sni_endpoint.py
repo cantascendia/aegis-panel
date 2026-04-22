@@ -22,10 +22,11 @@ marznode clients). The router's auth dependency is the real
 end to end — we just provide fake Admins via
 ``app.dependency_overrides``.
 
-Rate-limit interaction: in tests the env has no ``RATE_LIMIT_ENABLED``
-set, so ``hardening.panel.rate_limit.limiter`` is built with
-``enabled=False``. Its ``@limiter.limit(...)`` decorators become
-no-ops. Tests don't need to worry about 429s from repeated calls.
+Rate limiting is currently NOT applied to this endpoint (see
+``hardening/sni/endpoint.py`` module docstring — slowapi's decorator
+on ``async def`` breaks FastAPI signature introspection). Protection
+relies on the sudo-admin gate, the 60s wall-clock timeout, and the
+selector's internal ``Semaphore(5)``. Tests reflect that reality.
 """
 
 from __future__ import annotations
