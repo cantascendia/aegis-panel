@@ -154,6 +154,7 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | #48 | **协作 kit**(SESSIONS.md + SPEC-{deploy,reality-audit,dashboard-tests} 骨架 + i18n-extractor rule + WIP-billing-split)| ✅ 合并 | **S-O**(S-F 切出)| `4b46e50` |
 | #49 | **A.4 money-critical 组件单测**(CartSummary + PlanCard)| ✅ 合并 | **S-F** | `0c5beb3` |
 | #52 | **worktree 隔离铁规则 + L-018**(SESSIONS.md 铁规则 #7)| ✅ 合并 | **S-F/S-O** | `56e1b06` |
+| #54 | **tools/setup-session-worktrees.sh**(一键建 aegis-{B,D,R,X} worktree;SESSIONS.md 铁规则 #7 改成指向脚本)| ✅ 合并 | **session 0** | `747d5a4` |
 
 ## 已部署配置文件
 

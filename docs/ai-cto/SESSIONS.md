@@ -6,7 +6,7 @@
 > 手册参考:CTO handbook §5(模型路由)、§7(Spec-Driven)、
 > 铁律 #1/#8/#10(决策服务愿景 / 先建分支 / 国际化+环境分离)。
 
-_Updated: 2026-04-23 late-2(S-O 刷新:#41/#48/#49/#52 已合入,S-D/S-X worktree 分支就位,S-O 独立 worktree 建成)_
+_Updated: 2026-04-23 late-2(S-O 刷新:#41/#48/#49/#52/#54 已合入,S-D/S-X worktree 分支就位,S-O 独立 worktree 建成)_
 
 ---
 
@@ -19,7 +19,7 @@ _Updated: 2026-04-23 late-2(S-O 刷新:#41/#48/#49/#52 已合入,S-D/S-X worktre
 | **S-D** | 部署一体化 | Claude Code × `aegis-D`(未正式启)| Opus(SPEC)→Sonnet | `deploy/**`, `docs/ai-cto/SPEC-deploy.md` | `feat/spec-deploy` 分支已建,D.0 spec flesh-out PR 未开 | 待启 |
 | **S-R** | Reality 审计器 | Claude Code × `aegis-R`(待开)| Opus(SPEC)→Sonnet | `hardening/reality/**`, `docs/ai-cto/SPEC-reality-audit.md` | — | 未启 |
 | **S-X** | 前端测试基建 | Claude Code × `aegis-X`(未正式启)| Sonnet | `dashboard/src/**/*.test.tsx`, `dashboard/src/test-utils/**`, `dashboard/vitest.config.*` | `feat/dashboard-tests-x0` 分支已建 | 待启 |
-| **S-O** | 文档 / 流程 | Claude Code × `aegis-O`(part-time)| Sonnet | `docs/ai-cto/**`(非 SPEC-*), `.agents/rules/**` | 本分支 `docs/ai-cto/round-3-mid-late2-refresh` | 触发中 |
+| **S-O** | 文档 / 流程 | Claude Code × `aegis-O`(part-time)| Sonnet | `docs/ai-cto/**`(非 SPEC-*), `.agents/rules/**` | 本分支 `docs/ai-cto/round-3-mid-late2-refresh`(PR #56) | 触发中 |
 
 ## 归档(已完成)
 
@@ -131,18 +131,15 @@ _Updated: 2026-04-23 late-2(S-O 刷新:#41/#48/#49/#52 已合入,S-D/S-X worktre
    - PR commit 挂到错误分支(gh pr create 抓的是当前 branch,不是你以为的那个)
    - 教训来源见 LESSONS.md **L-018**
 
-   **推荐做法**:
+   **一键建立 worktree**(主 repo 跑一次,已有的跳过):
    ```bash
-   # 主 repo 留给 session 0(审阅 + merge 裁判)
-   cd C:/projects/Marzban
-   # 每个并发 session 分一个 worktree(独立工作目录 + 独立分支)
-   git worktree add ../aegis-session-B feat/billing-backend
-   git worktree add ../aegis-session-D docs/spec-deploy
-   git worktree add ../aegis-session-R docs/spec-reality
-   # Session 启动时 cd 到自己的 worktree
+   bash tools/setup-session-worktrees.sh
    ```
+   脚本幂等地在 `../aegis-{B,D,R,X}` 建 4 个 worktree,每个绑定占位分支(起点 `origin/main`)。每个 session 启动时 `cd` 到对应目录,再 `git checkout -b feat/<specific-task>` 切到实际工作分支。详见 `tools/setup-session-worktrees.sh` 顶部注释。
 
-   或者用独立的 `git clone` 到不同目录。**禁止在同一个工作目录并发运行 2 个及以上 Claude session**。
+   主 repo 目录(`C:/projects/Marzban`)**留给 session 0**(审阅 + merge 裁判),不在这里写代码。
+
+   或者用独立的 `git clone` 到不同目录 —— 更重但隔离最彻底。**禁止在同一个工作目录并发运行 2 个及以上 Claude session**。
 
 ---
 
