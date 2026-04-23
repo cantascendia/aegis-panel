@@ -14,6 +14,8 @@
 #   # 2) 之后每次开新 Claude session,第一条消息先 cd:
 #   cd C:/projects/aegis-B   # S-B session
 #   cd C:/projects/aegis-D   # S-D session
+#   cd C:/projects/aegis-F   # S-F session
+#   cd C:/projects/aegis-O   # S-O session
 #   cd C:/projects/aegis-R   # S-R session
 #   cd C:/projects/aegis-X   # S-X session
 #
@@ -49,6 +51,8 @@ echo ""
 declare -a SESSIONS=(
     "B:billing-backend:feat/billing-session-B-home"
     "D:deploy:docs/session-D-home"
+    "F:billing-frontend:feat/session-F-home"
+    "O:session-O:docs/session-O-home"
     "R:reality-audit:docs/session-R-home"
     "X:dashboard-tests:feat/session-X-home"
 )

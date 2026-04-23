@@ -135,7 +135,7 @@ _Updated: 2026-04-23 late-2(S-O 刷新:#41/#48/#49/#52/#54 已合入,S-D/S-X wor
    ```bash
    bash tools/setup-session-worktrees.sh
    ```
-   脚本幂等地在 `../aegis-{B,D,R,X}` 建 4 个 worktree,每个绑定占位分支(起点 `origin/main`)。每个 session 启动时 `cd` 到对应目录,再 `git checkout -b feat/<specific-task>` 切到实际工作分支。详见 `tools/setup-session-worktrees.sh` 顶部注释。
+   脚本幂等地在 `../aegis-{B,D,F,O,R,X}` 建 6 个 worktree(B/D/F/O/R/X),每个绑定占位分支(起点 `origin/main`)。每个 session 启动时 `cd` 到对应目录,再 `git checkout -b feat/<specific-task>` 切到实际工作分支。详见 `tools/setup-session-worktrees.sh` 顶部注释。
 
    主 repo 目录(`C:/projects/Marzban`)**留给 session 0**(审阅 + merge 裁判),不在这里写代码。
 
