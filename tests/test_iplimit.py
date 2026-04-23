@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from collections.abc import Generator
 from datetime import datetime
@@ -734,3 +735,24 @@ async def test_list_disabled_user_ids_uses_scan_iter() -> None:
     await redis.set("aegis:iplimit:observed:11", "1")
 
     assert await list_disabled_user_ids(redis) == [10]
+
+
+def test_non_utc_tz_logs_warning_once(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr(task, "_tz_warning_logged", False)
+    monkeypatch.setattr(time, "timezone", -28800)
+
+    with caplog.at_level(logging.WARNING, logger="hardening.iplimit.task"):
+        task._warn_if_panel_timezone_not_utc()
+        task._warn_if_panel_timezone_not_utc()
+
+    messages = [
+        record.message
+        for record in caplog.records
+        if "panel container TZ is not UTC" in record.message
+    ]
+    assert messages == [
+        "iplimit: panel container TZ is not UTC; confirm all marznode "
+        "containers match or events may be silently dropped"
+    ]
