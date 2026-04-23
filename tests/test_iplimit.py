@@ -763,6 +763,50 @@ async def test_state_endpoint_returns_sql_policy_when_redis_disabled(
 
 
 @pytest.mark.asyncio
+async def test_state_endpoint_reports_owned_disable_when_present(
+    db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user = add_user(db)
+    upsert_disabled_state(
+        db,
+        user_id=user.id,
+        disabled_until=200,
+        disabled_at=100,
+        previous_enabled=True,
+        previous_activated=True,
+        reason="iplimit_violation",
+    )
+    user.enabled = False
+    db.commit()
+    monkeypatch.setattr(
+        "hardening.iplimit.endpoint.is_redis_configured", lambda: False
+    )
+
+    response = await get_user_iplimit_state(user.username, db, object())
+
+    assert response.owned_disable is not None
+    assert response.owned_disable.disabled_at == 100
+    assert response.owned_disable.disabled_until == 200
+    assert response.owned_disable.reason == "iplimit_violation"
+    assert response.owned_disable.can_clear is True
+    assert response.disabled_until == 200
+
+
+@pytest.mark.asyncio
+async def test_state_endpoint_owned_disable_absent_when_no_row(
+    db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user = add_user(db)
+    monkeypatch.setattr(
+        "hardening.iplimit.endpoint.is_redis_configured", lambda: False
+    )
+
+    response = await get_user_iplimit_state(user.username, db, object())
+
+    assert response.owned_disable is None
+
+
+@pytest.mark.asyncio
 async def test_audit_endpoint_returns_empty_when_redis_disabled(
     db: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:

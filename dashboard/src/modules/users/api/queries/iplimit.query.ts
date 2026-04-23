@@ -18,12 +18,20 @@ export interface IpLimitOverride {
     ip_allowlist_cidrs: string | null;
 }
 
+export interface IpLimitOwnedDisable {
+    disabled_at: number;
+    disabled_until: number;
+    reason: string;
+    can_clear: boolean;
+}
+
 export interface IpLimitState {
     username: string;
     redis_configured: boolean;
     observed_ips: string[];
     observed_count: number;
     disabled_until: number | null;
+    owned_disable: IpLimitOwnedDisable | null;
     config: IpLimitConfig;
     override: IpLimitOverride | null;
 }

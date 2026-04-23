@@ -107,6 +107,9 @@ const RuntimeState: FC<RuntimeStateProps> = ({
     const disabledUntil = state.disabled_until
         ? new Date(state.disabled_until * 1000).toLocaleString()
         : null;
+    const ownedDisableUntil = state.owned_disable
+        ? new Date(state.owned_disable.disabled_until * 1000).toLocaleString()
+        : null;
 
     return (
         <section className="rounded-md border p-3">
@@ -135,7 +138,7 @@ const RuntimeState: FC<RuntimeStateProps> = ({
                     </div>
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
-                    {disabledUntil && (
+                    {disabledUntil && !state.owned_disable && (
                         <Button
                             type="button"
                             variant="outline"
@@ -167,6 +170,54 @@ const RuntimeState: FC<RuntimeStateProps> = ({
                 </div>
             </div>
 
+            {state.owned_disable && ownedDisableUntil && (
+                <div
+                    role="alert"
+                    className="mt-3 flex flex-col gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-destructive sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div className="flex min-w-0 flex-row items-start gap-2">
+                        <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+                        <div className="min-w-0">
+                            <p className="text-sm font-medium">
+                                {t(
+                                    "page.users.iplimit.runtime.owned_disable",
+                                    "Disabled by IP limiter until {{time}}",
+                                    { time: ownedDisableUntil },
+                                )}
+                            </p>
+                            <p className="text-xs text-destructive/80">
+                                {t(
+                                    "page.users.iplimit.runtime.owned_disable_reason",
+                                    "Reason: {{reason}}",
+                                    { reason: state.owned_disable.reason },
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                    {state.owned_disable.can_clear && (
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={onClear}
+                            disabled={clearing}
+                            className="w-full sm:w-auto"
+                        >
+                            <Unlock className="mr-2 size-4" />
+                            {clearing
+                                ? t(
+                                      "page.users.iplimit.runtime.clearing",
+                                      "Clearing...",
+                                  )
+                                : t(
+                                      "page.users.iplimit.runtime.clear_disable",
+                                      "Clear disable",
+                                  )}
+                        </Button>
+                    )}
+                </div>
+            )}
+
             <div className="mt-3 flex flex-wrap gap-2">
                 {state.observed_ips.length > 0 ? (
                     state.observed_ips.map((ip) => (
@@ -184,7 +235,7 @@ const RuntimeState: FC<RuntimeStateProps> = ({
                 )}
             </div>
 
-            {disabledUntil && (
+            {disabledUntil && !state.owned_disable && (
                 <div className="mt-3 text-xs text-destructive">
                     {t(
                         "page.users.iplimit.runtime.disabled_until",
