@@ -125,6 +125,24 @@ _Updated: 2026-04-23_
    - 链接本文件
 5. 冲突裁决顺序:本文件登记谁先 → CI 触发时间 → 强制写 boundary-update PR 补规则
 6. 每 3 轮或每重大 merge 后 S-O 触发,刷 STATUS + 归档已完成 session。
+7. 🆕 **每个并发 Claude session 必须有独立 git worktree 或独立 repo 克隆**。共享同一工作目录会导致:
+   - branch 切换撞车(session A commit 完发现自己在 session B 的分支上)
+   - 未提交文件互相污染(session A 的 stash 被 session B 的操作吃掉)
+   - PR commit 挂到错误分支(gh pr create 抓的是当前 branch,不是你以为的那个)
+   - 教训来源见 LESSONS.md **L-018**
+
+   **推荐做法**:
+   ```bash
+   # 主 repo 留给 session 0(审阅 + merge 裁判)
+   cd C:/projects/Marzban
+   # 每个并发 session 分一个 worktree(独立工作目录 + 独立分支)
+   git worktree add ../aegis-session-B feat/billing-backend
+   git worktree add ../aegis-session-D docs/spec-deploy
+   git worktree add ../aegis-session-R docs/spec-reality
+   # Session 启动时 cd 到自己的 worktree
+   ```
+
+   或者用独立的 `git clone` 到不同目录。**禁止在同一个工作目录并发运行 2 个及以上 Claude session**。
 
 ---
 

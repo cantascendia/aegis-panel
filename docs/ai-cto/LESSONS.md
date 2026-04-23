@@ -8,6 +8,46 @@
 
 ---
 
+## L-018 | Round 3 多会话并行 | 同一工作目录并发跑多个 Claude session → branch / stash / PR 全面撞车
+
+**现象**: 2026-04-23 日下午,为了平行推进 S-D(部署)+ S-R(Reality 审计)+ S-F(本会话,前端测试)三线,用户在同一个 `C:/projects/Marzban` 工作目录里并发开了 3 个 Claude Code session。连续发生:
+
+1. S-F 在 `test/billing-user-money-critical` 分支写完 cart-summary / plan-card 测试 + commit,准备 push。再跑 `git status` 发现**已经不在原分支了** —— 被切到 `feat/spec-deploy`(S-D session 的分支),而且我的 commit 还在,但分支名对不上
+2. S-F 的 `git push origin test/billing-user-money-critical` 推上去的内容**包含了 S-D 的 commit**(6377c4e 文档)—— 一个 PR 混了两个 session 的无关工作
+3. 恢复分支时,发现 S-D 还有更新版 `6604d0f` 在另一个本地分支 `feat/spec-deploy-clean`,内容互不兼容
+4. 再跑 `git status` 发现自己在 `docs/spec-reality-audit`(S-R session 的分支),且有一个**别人的** `DECISIONS.md` 未提交改动
+5. 开 PR 时,`gh pr create` 因为"当前分支有未提交改动"失败,不得不用 `--head <branch>` 显式指定
+
+最终结果:S-F 花了 ~20 分钟 git surgery 把三条线切开,期间一度有多个 remote 分支指向同一 SHA 但命名混乱(feat/spec-deploy / feat/spec-deploy-clean / test/billing-user-money-critical)。
+
+**根因**: Claude Code session 对 `git` 状态没有 isolation —— 切分支、stash、commit 都直接作用于 working tree。多个 session 共享同一 `.git` 和 working tree 时:
+
+- session A `git checkout feat-A` → session B `git checkout feat-B` → session A 的下一个 `git commit` 落到 B 分支
+- session A `git stash` → session B 的未提交修改被 stash 进 A 的 stash list → session A `git stash pop` 把 B 的东西 apply 到 A 的 working tree
+- session A 正在 merge PR → session B 的 `git pull` fast-forward 到 A 的 merge commit,但 B 的当前分支可能因此偏离预期
+
+Git 的设计前提是"一个 working tree = 一个 actor",不是并发安全的。
+
+**防线**(已固化到 `docs/ai-cto/SESSIONS.md` 铁规则 #7):
+
+1. **硬规则**:每个并发 Claude session 必须有独立 **git worktree** 或独立 **repo 克隆**。主 repo 目录只留给 session 0(审阅 + merge 裁判)。
+2. 推荐的 worktree 布局:
+   ```bash
+   cd C:/projects/Marzban          # session 0,裁判
+   git worktree add ../aegis-B feat/billing-backend
+   git worktree add ../aegis-D docs/spec-deploy
+   git worktree add ../aegis-R docs/spec-reality
+   # 每个 session 起手:cd ../aegis-X
+   ```
+3. **Session kickoff prompt 必须明确工作目录**。SPEC-deploy.md / SPEC-reality-audit.md / SPEC-dashboard-tests.md 里的 Kickoff prompt 需要加一段:
+   > 你的工作目录:`C:/projects/aegis-<session-letter>`。**不要** `cd` 到别的目录;**不要** 在主 repo `C:/projects/Marzban` 操作。
+4. **Preflight check**(每个 session 首条命令):`pwd && git branch --show-current && git status --porcelain` —— 如果 `git status` 显示**不属于本 session 的未提交文件**,立刻停手问用户,而不是 stash / commit。
+5. **跨 session PR 开 PR**:用 `gh pr create --head <branch>` 显式指定,不要信当前分支。
+
+**沉淀**: ✅ 已升级到 `SESSIONS.md` 铁规则 #7(本 PR)。后续 kickoff prompt 更新是下次 S-O session 的清单项。
+
+---
+
 ## L-017 | Round 3 A.1.4.c | 注释里不能出现匹配 i18n 抽取正则的字面 —— drift-gate 会把它当 source key
 
 **现象**: A.1.4.c(PR #35)第一次 CI 失败:`run-script (en.json)` 报 `PR increases locale drift by 1 for dashboard/public/locales/en.json`,`missing=24` 比 base 的 `missing=23` 多 1,但我的所有 `page.billing.invoices.*` key 在 locale JSON 里都存在。
