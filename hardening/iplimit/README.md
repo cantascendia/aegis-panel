@@ -86,6 +86,15 @@ event, marks the user disabled, pushes the removal to Marznode, and
 automatically re-enables the user when the Redis `disabled_until` value
 expires.
 
+Before enabling `disable` for paying users, run the production checklist
+in `docs/ai-cto/OPS-iplimit-runbook.md`. The key precondition is that
+the panel and every Marznode container use the same timezone, preferably
+`TZ=UTC`, because Xray access-log timestamps are parsed as local time.
+
+Parser hardening samples live in
+`docs/ai-cto/XRAY-ACCESS-LOG-SAMPLES.md`. Add new production log shapes
+there before widening `events.py`.
+
 ## License
 
 This is an independent AGPL-3.0 implementation. Hiddify's
