@@ -16,7 +16,7 @@ from app.db import GetDB, crud
 from app.db.models import User
 from app.models.user import User as MarznodeUser
 from app.notification.telegram import send_message
-from hardening.iplimit.allowlist import parse_cidrs
+from hardening.iplimit.allowlist import IpNetwork, parse_cidrs
 from hardening.iplimit.config import (
     IPLIMIT_AUDIT_LIMIT,
     IPLIMIT_LOG_READ_LIMIT,
@@ -30,6 +30,7 @@ from hardening.iplimit.db import (
     upsert_disabled_state,
 )
 from hardening.iplimit.events import ConnectionEvent, collect_events_from_nodes
+from hardening.iplimit.policy import IpLimitPolicy
 from hardening.iplimit.store import (
     ViolationAuditEvent,
     clear_disabled_until,
@@ -58,10 +59,7 @@ async def run_iplimit_poll() -> None:
         users = _list_enabled_users(db)
         username_to_id = {user.username: user.id for user in users}
         policies = resolve_policies(db, [user.id for user in users])
-        username_to_allowlist = {
-            user.username: parse_cidrs(policies[user.id].ip_allowlist_cidrs)
-            for user in users
-        }
+        username_to_allowlist = _resolve_username_allowlists(users, policies)
 
         events = await collect_events_from_nodes(
             marznode.nodes,
@@ -77,6 +75,26 @@ async def run_iplimit_poll() -> None:
             now_ts=now_ts,
             audit_limit=IPLIMIT_AUDIT_LIMIT,
         )
+
+
+def _resolve_username_allowlists(
+    users: list[User], policies: dict[int, IpLimitPolicy]
+) -> dict[str, list[IpNetwork]]:
+    username_to_allowlist: dict[str, list[IpNetwork]] = {}
+    for user in users:
+        try:
+            username_to_allowlist[user.username] = parse_cidrs(
+                policies[user.id].ip_allowlist_cidrs
+            )
+        except ValueError as exc:
+            logger.warning(
+                "iplimit: user %s has invalid allowlist CIDRs, "
+                "skipping allowlist: %s",
+                user.username,
+                exc,
+            )
+            username_to_allowlist[user.username] = []
+    return username_to_allowlist
 
 
 async def process_connection_events(

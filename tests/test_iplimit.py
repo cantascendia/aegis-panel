@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from collections.abc import Generator
 from datetime import datetime
@@ -17,6 +18,7 @@ from hardening.iplimit.db import (
     IpLimitConfig,
     IpLimitDisabledState,
     UserIpLimitOverride,
+    resolve_policies,
     resolve_policy,
     upsert_disabled_state,
 )
@@ -577,6 +579,26 @@ def test_override_allowlist_merges_with_global(db: Session) -> None:
 
     assert ip_matches_any_cidr("203.0.113.9", networks)
     assert ip_matches_any_cidr("2001:db8::9", networks)
+
+
+def test_invalid_allowlist_logs_and_fails_open(
+    db: Session, caplog: pytest.LogCaptureFixture
+) -> None:
+    user = add_user(db)
+    db.add(
+        UserIpLimitOverride(
+            user_id=user.id,
+            ip_allowlist_cidrs="not-a-cidr",
+        )
+    )
+    db.commit()
+    policies = resolve_policies(db, [user.id])
+
+    with caplog.at_level(logging.WARNING, logger="hardening.iplimit.task"):
+        allowlists = task._resolve_username_allowlists([user], policies)
+
+    assert allowlists == {user.username: []}
+    assert "invalid allowlist CIDRs" in caplog.text
 
 
 @pytest.mark.asyncio
