@@ -14,7 +14,9 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 _TIMESTAMP_RE = re.compile(r"^(?P<ts>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})\b")
-_EMAIL_RE = re.compile(r"\bemail:\s*(?P<username>[\w.-]{1,128})\b")
+# Xray's client `email` is an arbitrary label; public samples include
+# email-like labels with `@`, while Marzban usernames remain lookup-bound.
+_EMAIL_RE = re.compile(r"\bemail:\s*(?P<username>[\w.@+-]{1,128})\b")
 _FROM_RE = re.compile(
     r"\bfrom\s+(?:(?:tcp|udp):)?(?P<host>\[[0-9a-fA-F:.]+\]|[^:\s]+)"
 )
