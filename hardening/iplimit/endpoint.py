@@ -41,12 +41,20 @@ class IpLimitOverrideResponse(BaseModel):
     violation_action: Literal["warn", "disable"] | None
 
 
+class IpLimitOwnedDisableResponse(BaseModel):
+    disabled_at: int
+    disabled_until: int
+    reason: str
+    can_clear: bool
+
+
 class IpLimitStateResponse(BaseModel):
     username: str
     redis_configured: bool
     observed_ips: list[str]
     observed_count: int
     disabled_until: int | None
+    owned_disable: IpLimitOwnedDisableResponse | None
     config: IpLimitConfigResponse
     override: IpLimitOverrideResponse | None
 
@@ -104,6 +112,16 @@ async def get_user_iplimit_state(
         observed_ips=observed_ips,
         observed_count=len(observed_ips),
         disabled_until=disabled_until,
+        owned_disable=(
+            IpLimitOwnedDisableResponse(
+                disabled_at=state.disabled_at,
+                disabled_until=state.disabled_until,
+                reason=state.reason,
+                can_clear=True,
+            )
+            if state
+            else None
+        ),
         config=IpLimitConfigResponse(**policy.__dict__),
         override=(
             IpLimitOverrideResponse(
