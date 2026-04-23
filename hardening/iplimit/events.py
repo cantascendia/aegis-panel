@@ -7,9 +7,11 @@ import ipaddress
 import logging
 import re
 import time
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
+
+from hardening.iplimit.allowlist import IpNetwork, ip_matches_any_cidr
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,9 @@ class ConnectionEvent:
 
 
 def parse_xray_access_line(
-    line: str, username_to_id: Mapping[str, int]
+    line: str,
+    username_to_id: Mapping[str, int],
+    username_to_allowlist: Mapping[str, Sequence[IpNetwork]] | None = None,
 ) -> ConnectionEvent | None:
     """Extract a connection event from one Xray access-log line.
 
@@ -53,6 +57,10 @@ def parse_xray_access_line(
     try:
         ip = ipaddress.ip_address(host)
     except ValueError:
+        return None
+    if username_to_allowlist and ip_matches_any_cidr(
+        str(ip), username_to_allowlist.get(username, ())
+    ):
         return None
 
     return ConnectionEvent(
@@ -80,6 +88,7 @@ async def collect_events_from_nodes(
     *,
     max_lines_per_node: int,
     read_timeout_seconds: float,
+    username_to_allowlist: Mapping[str, Sequence[IpNetwork]] | None = None,
 ) -> list[ConnectionEvent]:
     """Collect bounded recent access-log events from existing nodes."""
 
@@ -89,6 +98,7 @@ async def collect_events_from_nodes(
                 node_id=node_id,
                 node=node,
                 username_to_id=username_to_id,
+                username_to_allowlist=username_to_allowlist,
                 max_lines=max_lines_per_node,
                 read_timeout_seconds=read_timeout_seconds,
             )
@@ -111,6 +121,7 @@ async def _collect_node_events(
     node_id: int,
     node: object,
     username_to_id: Mapping[str, int],
+    username_to_allowlist: Mapping[str, Sequence[IpNetwork]] | None,
     max_lines: int,
     read_timeout_seconds: float,
 ) -> list[ConnectionEvent]:
@@ -128,7 +139,9 @@ async def _collect_node_events(
         except (StopAsyncIteration, TimeoutError):
             break
 
-        event = parse_xray_access_line(line, username_to_id)
+        event = parse_xray_access_line(
+            line, username_to_id, username_to_allowlist
+        )
         if event:
             events.append(event)
 

@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from app.cache.redis import get_redis, is_redis_configured
 from app.db import crud
 from app.dependencies import DBDep, SudoAdminDep
+from hardening.iplimit.allowlist import parse_cidrs
 from hardening.iplimit.config import IPLIMIT_AUDIT_LIMIT
 from hardening.iplimit.db import (
     get_disabled_state,
@@ -33,12 +34,14 @@ class IpLimitConfigResponse(BaseModel):
     window_seconds: int
     violation_action: Literal["warn", "disable"]
     disable_duration_seconds: int
+    ip_allowlist_cidrs: str
 
 
 class IpLimitOverrideResponse(BaseModel):
     max_concurrent_ips: int | None
     window_seconds: int | None
     violation_action: Literal["warn", "disable"] | None
+    ip_allowlist_cidrs: str | None
 
 
 class IpLimitStateResponse(BaseModel):
@@ -55,6 +58,7 @@ class IpLimitOverridePatch(BaseModel):
     max_concurrent_ips: int | None = Field(None, ge=1, le=128)
     window_seconds: int | None = Field(None, ge=30, le=86400)
     violation_action: Literal["warn", "disable"] | None = None
+    ip_allowlist_cidrs: str | None = None
 
 
 class IpLimitAuditEventResponse(BaseModel):
@@ -110,6 +114,7 @@ async def get_user_iplimit_state(
                 max_concurrent_ips=override.max_concurrent_ips,
                 window_seconds=override.window_seconds,
                 violation_action=override.violation_action,
+                ip_allowlist_cidrs=override.ip_allowlist_cidrs,
             )
             if override
             else None
@@ -129,17 +134,20 @@ async def patch_user_iplimit_override(
 ) -> IpLimitOverrideResponse:
     _ = admin
     user = _get_user_or_404(db, username)
+    _validate_cidrs(body.ip_allowlist_cidrs)
     override = upsert_user_override(
         db,
         user.id,
         max_concurrent_ips=body.max_concurrent_ips,
         window_seconds=body.window_seconds,
         violation_action=body.violation_action,
+        ip_allowlist_cidrs=body.ip_allowlist_cidrs,
     )
     return IpLimitOverrideResponse(
         max_concurrent_ips=override.max_concurrent_ips,
         window_seconds=override.window_seconds,
         violation_action=override.violation_action,
+        ip_allowlist_cidrs=override.ip_allowlist_cidrs,
     )
 
 
@@ -184,3 +192,12 @@ def _get_user_or_404(db: DBDep, username: str):
     if not user or user.removed:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+def _validate_cidrs(value: str | None) -> None:
+    if value is None:
+        return
+    try:
+        parse_cidrs(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

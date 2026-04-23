@@ -20,6 +20,7 @@ import {
     TableHead,
     TableHeader,
     TableRow,
+    Textarea,
 } from "@marzneshin/common/components";
 import {
     type IpLimitAction,
@@ -204,6 +205,7 @@ interface OverrideFormProps {
         max_concurrent_ips: number | null;
         window_seconds: number | null;
         violation_action: IpLimitAction | null;
+        ip_allowlist_cidrs: string | null;
     }) => void;
 }
 
@@ -211,11 +213,13 @@ const OverrideForm: FC<OverrideFormProps> = ({ state, saving, onSave }) => {
     const { t } = useTranslation();
     const [maxIps, setMaxIps] = useState<string>("");
     const [windowSeconds, setWindowSeconds] = useState<string>("");
+    const [allowlistCidrs, setAllowlistCidrs] = useState<string>("");
     const [action, setAction] = useState<IpLimitAction | "inherit">("inherit");
 
     useEffect(() => {
         setMaxIps(state.override?.max_concurrent_ips?.toString() ?? "");
         setWindowSeconds(state.override?.window_seconds?.toString() ?? "");
+        setAllowlistCidrs(state.override?.ip_allowlist_cidrs ?? "");
         setAction(state.override?.violation_action ?? "inherit");
     }, [state.override]);
 
@@ -226,6 +230,7 @@ const OverrideForm: FC<OverrideFormProps> = ({ state, saving, onSave }) => {
             max_concurrent_ips: maxIps ? Number(maxIps) : null,
             window_seconds: windowSeconds ? Number(windowSeconds) : null,
             violation_action: action === "inherit" ? null : action,
+            ip_allowlist_cidrs: allowlistCidrs,
         });
     };
 
@@ -299,6 +304,32 @@ const OverrideForm: FC<OverrideFormProps> = ({ state, saving, onSave }) => {
                         </SelectContent>
                     </Select>
                 </div>
+            </div>
+            <div className="mt-3 flex flex-col gap-1">
+                <Label htmlFor="iplimit-allowlist">
+                    {t(
+                        "page.users.iplimit.override.allowlist",
+                        "Allowlisted CIDRs",
+                    )}
+                </Label>
+                <Textarea
+                    id="iplimit-allowlist"
+                    className="min-h-24 font-mono text-xs"
+                    placeholder={
+                        effective.ip_allowlist_cidrs ||
+                        "203.0.113.0/24\n2001:db8::/32"
+                    }
+                    value={allowlistCidrs}
+                    onChange={(event) =>
+                        setAllowlistCidrs(event.target.value)
+                    }
+                />
+                <p className="text-xs text-muted-foreground">
+                    {t(
+                        "page.users.iplimit.override.allowlist_hint",
+                        "One CIDR per line. Matching IPs are ignored before counting.",
+                    )}
+                </p>
             </div>
             <div className="mt-3 flex flex-row items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">

@@ -13,6 +13,7 @@ export interface IpLimitOverridePatch {
     max_concurrent_ips: number | null;
     window_seconds: number | null;
     violation_action: IpLimitAction | null;
+    ip_allowlist_cidrs: string | null;
 }
 
 export async function patchIpLimitOverride(
