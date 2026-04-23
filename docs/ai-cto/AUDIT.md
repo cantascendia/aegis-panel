@@ -3,6 +3,42 @@
 **目标**: 商业化机场发行版 (>200 付费用户、多节点、Reality 协议)  
 **日期**: 2026-04-21
 
+> ⚠️ **本文件是 fork 时(2026-04-21)的基线快照,不再原地刷新。**
+> 各条目的**当前状态**见下方 "📊 Round 3 mid 进度 overlay";**实时评分**见 `docs/ai-cto/STATUS.md` "当前代码质量评分";**决策沿革**见 `docs/ai-cto/DECISIONS.md`。
+
+---
+
+## 📊 Round 3 mid 进度 overlay(2026-04-23 late-2 刷新)
+
+原始 TOP 5 清单的当前状态 —— 点 PR 编号看落地细节:
+
+| 优先级 | 项目 | 状态 | 落地 |
+|---|---|---|---|
+| P0 | 实现计费系统(Subscription/Payment/Invoice)| 🔄 **A.1 + A.2.1 + A.4 skeleton 落地**,A.2.2/A.3/A.5 进行中 | #25/#28/#29/#30/#31/#32/#33/#35/#41/#46/#49 |
+| P0 | JWT Secret 外置到 `.env` | ✅ **完成** | #2 |
+| P0 | Admin 登录速率限制(slowapi + Redis)| ✅ **完成**(opt-in,`RATE_LIMIT_ENABLED=true` + `REDIS_URL` 双必)| #7 |
+| P1 | 审计日志系统(AuditLog 表 + 中间件)| 🟡 **窄域已有**(billing `payment_events`);通用 AuditLog 待 RBAC 时合并设计 | (窄域随 #28-#35 合入)|
+| P1 | 修复 N+1 + 后台任务异步化 | 🟡 **iplimit N+1 已修**(#26 M-1);通用后台 task 异步化未专项 | #26 |
+
+**额外已落地(基线 audit 未列但同等价值的改进)**:
+
+- ✅ 安全基线:CORS 白名单 / bcrypt 固化 / JWT 时效 60min(#2)+ TrustedProxyMiddleware(#20-23)
+- ✅ 基础设施:PG16 + Redis compose profile(#4)/ pytest + ruff + pip-audit CI 三门禁(#1/#4)/ Alembic fresh-DB PG16 matrix(#4)+ stepped-upgrade(#31)/ 自研 model aggregator 收口 env.py 冲突面(#34)
+- ✅ 差异化 #1 SNI 智能选型器:CLI(#13)+ REST(#16)+ UI(#18)三层闭环
+- ✅ 差异化 #2 IP 限制 MVP(#24/#26)+ 生产化(#31/#40/#42/#43/#44/#45 Codex)
+- ✅ 多会话协作 infra:SESSIONS.md 裁判台 + 冲突地带表(#48)+ worktree 隔离铁规则 L-018(#52)+ 一键建 worktree 脚本(#54)
+
+**当前仍未动的基线 audit 项**(按 STATUS 关键缺口):
+
+- ⏳ 通用 AuditLog 表 + 中间件(留待 RBAC 合并设计)
+- ⏳ 后台 task 统一异步化(`record_user_usages` / `review_users` 仍 sync blocking)
+- ⏳ RBAC + 管理员分层权限(v0.3)
+- ⏳ 备用通道 XHTTP/Hysteria2(v0.3 差异化 #4)
+- ⏳ Reality 健康度仪表盘(v0.3 差异化 #3)
+- ⏳ 一键部署(S-D session `feat/spec-deploy` 已起,待 D.0 SPEC flesh-out)
+
+**评分口径对齐**:STATUS 里的 `R3 opener 7.6/10` 覆盖的八维与本 audit 的八维**不完全同构**(本 audit 按"① 架构 ② 代码质量 ③ 性能 ④ 安全 ⑤ 测试 ⑥ 配置 ⑦ 功能完整性 ⑧ UX" 切;STATUS 按"架构 / 代码质量 / 性能 / 安全 / 测试 / DX / 功能完整性 / UX")。差一个"配置" vs "DX" 的维度 —— fork 时的"配置"维度在 R3 时已经被 `.env` + python-decouple + CI 三门禁吸收进"DX"维度,不再单列。
+
 ---
 
 ## ① 架构质量
