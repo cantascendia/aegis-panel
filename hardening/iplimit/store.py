@@ -89,12 +89,15 @@ async def clear_disabled_until(redis: object, user_id: int) -> None:
 
 
 async def list_disabled_user_ids(redis: object) -> list[int]:
-    keys = await redis.keys(f"{KEY_PREFIX}:violation:*")
     user_ids: list[int] = []
-    for key in keys:
+    async for key in redis.scan_iter(
+        match=f"{KEY_PREFIX}:violation:*", count=500
+    ):
         try:
-            user_ids.append(int(str(key).rsplit(":", maxsplit=1)[1]))
-        except (IndexError, ValueError):
+            user_ids.append(
+                int(_redis_key_to_text(key).rsplit(":", maxsplit=1)[1])
+            )
+        except (IndexError, UnicodeDecodeError, ValueError):
             continue
     return user_ids
 
@@ -146,3 +149,9 @@ def _fingerprint(ip_list: Sequence[str], action: str) -> str:
         digest.update(b"\0")
         digest.update(ip.encode())
     return digest.hexdigest()
+
+
+def _redis_key_to_text(key: object) -> str:
+    if isinstance(key, bytes):
+        return key.decode()
+    return str(key)

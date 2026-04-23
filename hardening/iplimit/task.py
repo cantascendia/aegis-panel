@@ -44,11 +44,13 @@ from hardening.iplimit.store import (
 logger = logging.getLogger(__name__)
 
 _redis_disabled_notice_logged = False
+_tz_warning_logged = False
 
 
 async def run_iplimit_poll() -> None:
     """Poll Marznode access events and enforce IP limit policies."""
 
+    _warn_if_panel_timezone_not_utc()
     redis = _get_configured_redis()
     if redis is None:
         return
@@ -323,6 +325,18 @@ def _log_update_failure(
             "iplimit failed to push user %s update to node %s",
             username,
             node_id,
+        )
+
+
+def _warn_if_panel_timezone_not_utc() -> None:
+    global _tz_warning_logged
+    if _tz_warning_logged:
+        return
+    _tz_warning_logged = True
+    if time.timezone != 0:
+        logger.warning(
+            "iplimit: panel container TZ is not UTC; confirm all marznode "
+            "containers match or events may be silently dropped"
         )
 
 
