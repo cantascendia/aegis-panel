@@ -141,8 +141,16 @@ deploy/
 
 1. **依赖检测**(不强装,给出安装命令):`docker (≥24)`, `docker compose (v2 插件)`,
    `curl`, `openssl`, `jq`。缺失时打印具体 `apt-get install ...` 命令,exit 1。
-2. **OS 识别**:优先支持 Ubuntu 22.04 / 24.04 LTS、Debian 12。其他发行版
-   给 warning + `--force` 继续。Detection 走 `/etc/os-release` 的 `ID` + `VERSION_ID`。
+2. **OS + 硬件 + 提供商预检**:
+   - OS:优先支持 Ubuntu 22.04 / 24.04 LTS、Debian 12。其他发行版
+     给 warning + `--force` 继续。Detection 走 `/etc/os-release` 的 `ID` + `VERSION_ID`。
+   - 硬件:`/proc/meminfo` < 2GB 时拒绝装 pg,强制 `--db sqlite`;`nproc` < 2
+     时打印 warning;`df /var/lib` < 20GB 时拒绝继续。
+   - 提供商 ASN 探测(对齐 compass "脏 ASN 段"):`curl -s ifconfig.co/asn` 得到
+     ASN,对照内置 `deploy/install/lib/asn-blocklist.txt`(含 Oracle / GCP /
+     Vultr 主力段的已知高封 ASN)。命中时 **warning but continue**,并在
+     `INSTALL-SUMMARY.txt` 写入 "建议迁移至 Hetzner / RackNerd / 搬瓦工 CN2 GIA
+     等商业流量密集 ASN"。非命中打印 PASS。
 3. **交互式 vs 非交互**:
    - 默认交互(`read -p`),
    - `--non-interactive` 从 flags / 环境变量取值(供 Ansible 调用),
@@ -197,7 +205,61 @@ MARZNODE_GRPC_PORT=62051
 # === CF Tunnel 开关(install.sh --cf-tunnel yes 时自动置 true) ===
 CF_TUNNEL_ENABLED=false
 CF_ACCESS_REQUIRED_FOR_ADMIN=true         # 启 tunnel 时强制 Access policy
+
+# === Reality 默认 SNI(区域感知,install.sh 按 VPS IP geo 自动选,可覆盖) ===
+# 具体 SNI 选型逻辑归 SPEC-sni-selector.md(S-R session);本 spec 只定部署侧默认。
+REALITY_SNI_REGION=auto                   # auto|global|jp|kr|us;auto 走 geo 探测
+REALITY_SNI_DEFAULT_GLOBAL=www.microsoft.com   # 次选 addons.mozilla.org / itunes.apple.com
+REALITY_SNI_DEFAULT_JP=www.lovelive-anime.jp   # 次选 www.tiktok.jp / www.amazon.co.jp
+REALITY_SNI_DEFAULT_KR=static.naver.net        # 次选 www.kakao.com
+REALITY_SNI_DEFAULT_US=swdist.apple.com        # 次选 www.bing.com
+REALITY_SNI_BLOCKLIST=www.google.com,speedtest.net   # compass 点名回落失败,强拒
+REALITY_UTLS_FINGERPRINT=chrome           # 不用 chrome_pq(Reality bug)/ randomized(本身是指纹)
+REALITY_FLOW=xtls-rprx-vision             # 裸 TCP 必启,XHTTP/gRPC 可省
+
+# === 备用通道(主 Reality 被封时自动回切,v0.3 启用,v0.2 只预留 env 槽位) ===
+FALLBACK_CHANNEL_ENABLED=false            # v0.2 默认关;v0.3 由 S-R 启用
+FALLBACK_PORT_BACKUP=2053                 # compass "非标准端口"建议的第二备用
 ```
+
+**SNI 选择的硬指标**(摘录,install.sh 校验时用):必须 TLS 1.3 + HTTP/2 + X25519,
+不能跳转(`yahoo.com → www.yahoo.com` 即非法),加分项为与 VPS **同 ASN/同数据中心**。
+install.sh 对 `REALITY_SNI_DEFAULT_*` 跑一次 `openssl s_client -tls1_3 -alpn h2`
+冒烟,失败则 warning 并建议切 region 或手动覆盖。RealiTLScanner /24 邻居扫描归
+S-R session,不在 D 交付。
+
+### compose 生产配置(D.1,`deploy/compose/docker-compose.prod.yml`)
+
+**与根目录 `docker-compose.yml` 的区别**:根目录是 upstream 保留的开发/演示用,
+已接 `postgres` / `redis` profile 供按需启用;`deploy/compose/docker-compose.prod.yml`
+是生产专用,**默认启用所有核心服务**并提供以下不同:
+
+| 维度 | 根 `docker-compose.yml` | `deploy/compose/docker-compose.prod.yml` |
+|---|---|---|
+| 网络 | `network_mode: host`(贴 upstream) | 同 host,但对 panel/marznode 额外绑 127.0.0.1 监听,强制走 nginx/CF |
+| 服务 | marzneshin + marznode + (profile)pg/redis | 默认全启,加 nginx + (可选)cloudflared |
+| 镜像 tag | `:latest`(演示) | 锁定 `:v${AEGIS_VERSION}`(install.sh 注入) |
+| env 源 | `.env` 根目录 | `/opt/aegis/.env`(600 权限) |
+| volume 路径 | `/var/lib/marzneshin` 等 | 统一挂 `/opt/aegis/data/{panel,marznode,pg,redis}` |
+| healthcheck | pg/redis 已有 | panel + marznode 补 `/api/system/info` + `grpc_health_probe` |
+| 资源上限 | 无 | panel 1CPU/1GB、pg 0.5CPU/512MB、redis 0.25CPU/256MB、marznode 0.5CPU/512MB |
+| 启动顺序 | 无 depends_on | `pg → alembic init容器 → panel → marznode → nginx` |
+| 日志 | 默认 json-file | `json-file`,`max-size: 10m`、`max-file: 3`(避免磁盘打爆) |
+
+**alembic 作为 init 容器**:与 panel 同镜像、同 env,入口 `alembic upgrade head`,
+`depends_on: [pg]`(condition: service_healthy)。panel `depends_on: [alembic]`
+(condition: service_completed_successfully)。保证迁移永远早于 panel 启动,
+且失败阻塞启动(不留半迁移状态)。
+
+**nginx 职责**:TLS 终结(certbot 挂 `/etc/letsencrypt` 只读)+ `$DASHBOARD_PATH`
+反代 127.0.0.1:$PANEL_PORT + `$XRAY_SUBSCRIPTION_PATH` 独立 `limit_req` zone
+(10/5s,对齐 compass "订阅链接加 10s 5次速率限制")+ `/api/admin/token` zone
+(5/minute,对齐 compass 面板加固建议)。未匹配路径 444(直接断连,不回 404)。
+
+**S1 轻量变体 `docker-compose.sqlite.yml`**:`compose extends` 裁剪掉 pg / redis
+/ alembic 容器,panel 用 SQLite 文件 `/opt/aegis/data/panel/db.sqlite3`,
+alembic 迁移改为 panel 启动脚本内联 `alembic upgrade head`(接受轻微启动
+延迟,避免多出一个 init 容器)。
 
 ### Ansible 职责(D.3,多节点)
 
@@ -248,7 +310,19 @@ all:
 
 ### CF Tunnel 自动化(D.4,`deploy/cloudflare/`)
 
-**前置**:操作者持有 CF API token,scope 限定:`Zone.DNS:Edit` + `Account.Cloudflare Tunnel:Edit` + `Account.Access:Edit`(不给全局 token)。
+**前置:最小权限 API token**(操作者自建,不给全局 Global API Key):
+
+| Scope | 权限 | 用途 | 必选 |
+|---|---|---|---|
+| Account / Cloudflare Tunnel | Edit | 建 / 删 tunnel | ✅ |
+| Zone / DNS | Edit(限定到 `$PANEL_DOMAIN` 所属 zone) | 建 CNAME 到 `<uuid>.cfargotunnel.com` | ✅ |
+| Account / Access: Apps and Policies | Edit | 建 Access App + Policy | ✅ |
+| Account / Access: Service Tokens | Read | `setup-access.sh` 验证 session duration 配置 | 可选 |
+| Zone / Zone Settings | Read | 验证 zone Always Use HTTPS / Universal SSL 已启 | 可选 |
+
+**install-tunnel.sh** 启动第 0 步先对 token 做 `GET /user/tokens/verify` + scope
+枚举,任一必选 scope 缺失直接 exit 5 并列出缺失项(对齐 AC-D.4.5)。token
+值不落盘,仅在当前 shell env 读取,避免误提交(对齐 Risks "CF token 误提 commit")。
 
 **`install-tunnel.sh`**:
 1. `cloudflared tunnel create aegis-$(hostname -s)`,抓 tunnel UUID
@@ -305,6 +379,16 @@ all:
 - [ ] **AC-D.1.7** Debian 12 上全流程能跑(warning 后用户显式继续)
 - [ ] **AC-D.1.8** CentOS/Alma 系显式拒绝安装并给出切换发行版建议(不崩溃)
 - [ ] **AC-D.1.9** 端口占用时 exit code = 4,报错含占用进程 PID
+- [ ] **AC-D.1.10** 生成的 `.env` 含 compass 五件套默认值:`XRAY_POLICY_CONN_IDLE=120`、
+      `XRAY_POLICY_HANDSHAKE=2`、`JWT_ACCESS_TOKEN_EXPIRE_MINUTES≤60`、
+      `PANEL_PORT` ≠ 8080/80/443(非标)、`REALITY_UTLS_FINGERPRINT=chrome`、
+      `REALITY_FLOW=xtls-rprx-vision`;缺一即 FAIL
+- [ ] **AC-D.1.11** SNI 冒烟:`REALITY_SNI_DEFAULT_*` 中至少 1 个可通过
+      `openssl s_client -tls1_3 -alpn h2 -servername X -connect X:443` 握手;
+      `REALITY_SNI_BLOCKLIST` 任一值被设成 `REALITY_SNI_DEFAULT_*` 则拒绝启动
+- [ ] **AC-D.1.12** 脏 ASN 预检:在 Oracle/GCP/Vultr 主力段 ASN 上装,
+      `INSTALL-SUMMARY.txt` 出现迁移建议但不阻塞;商业段(Hetzner/RackNerd)上装,
+      无 warning
 
 ### D.2 — 独立 marznode
 
@@ -325,6 +409,11 @@ all:
 - [ ] **AC-D.4.2** 未在 Access 白名单的邮箱访问 dashboard 302 到 CF 登录页
 - [ ] **AC-D.4.3** `uninstall-tunnel.sh` 撤销后,CF 控制台无残留 tunnel / Access app / DNS 记录
 - [ ] **AC-D.4.4** `agpl-selfcheck.sh` 在干净安装上全 PASS;故意改 `NOTICE.md` 删版权头后对应项 FAIL
+- [ ] **AC-D.4.5** `install-tunnel.sh` 用缺少 `Zone.DNS:Edit` 的 token 跑,exit code = 5
+      且 stderr 输出缺失的 scope 名;用全量 scope token 跑则成功
+- [ ] **AC-D.4.6** nginx rate limit 生效:`ab -n 20 -c 5 https://$PANEL_DOMAIN/api/admin/token`
+      5 次以内 200/401,之后 429;订阅路径 `ab -n 20 -c 5 https://$PANEL_DOMAIN$XRAY_SUBSCRIPTION_PATH/<token>`
+      5 次以内 200,之后 429(对齐 compass "订阅链接 10s 5次" 建议)
 
 ### D.5 — 运维文档
 
@@ -355,6 +444,9 @@ all:
 | 幂等性回归(新 PR 意外破坏 idempotency) | 中 | 高 | CI `deploy-smoke.yml` 跑 `install.sh` 两次,diff `/opt/aegis/.env` 必须空;作为 D.1 合并卡点 |
 | AGPL 自检误报(合法的 LGPL 依赖被判 FAIL) | 中 | 低 | 维护 `deploy/compliance/license-allowlist.txt`,PR review 时人工新增条目;自检 script 对 allowlist 内的 license 降级为 WARNING |
 | CF token 误提 commit | 低 | **极高** | pre-commit hook(`.agents/rules/` 声明)+ `agpl-selfcheck.sh` 增一条 `grep CF_API_TOKEN in git log -p`;若命中立即告警 "rotate token NOW" |
+| 用户误选热门 SNI(`www.google.com` / `speedtest.net`)导致节点被 DPI 快速封 | 中 | **极高** | `.env.example` 内置 `REALITY_SNI_BLOCKLIST` 硬名单,install.sh 检测到 `REALITY_SNI_DEFAULT_*` 命中黑名单则 exit 2;区域默认值已按 compass 选冷门 CDN 域,降低手填出错面 |
+| 装在脏 ASN(Oracle / GCP / Vultr 主力段)被整段封 | 中 | 高 | install.sh 预检 ASN 给 warning + 迁移建议(见步骤 2);不强阻(用户可能有历史原因留在该 ASN),但写进 `INSTALL-SUMMARY.txt` 让运维可追溯 |
+| uTLS 指纹选错(`chrome_pq` Reality bug / `randomized` 反成特征) | 低 | 高 | `.env.example` 硬锁 `REALITY_UTLS_FINGERPRINT=chrome`,install.sh 校验值在 `{chrome,firefox,edge,safari,ios}` 白名单,越界 exit 2 |
 
 ---
 
@@ -377,3 +469,10 @@ all:
 ## 变更日志
 
 - **2026-04-23** — S-D session 首轮 flesh-out(Scope 显式化 + How 填坑 + Acceptance criteria 细化到 AC-D.x.y 编号 + Risks 表全部填对策 + 引入 compass 五件套默认值 + 差异化 #4 合规自检)。docs-only PR。
+- **2026-04-23(增量)** — 补完 compass 五件套落地细节:(1) install.sh 新增 OS/硬件/
+  提供商 ASN 预检(脏 ASN blocklist);(2) `.env.example` 补 SNI 区域默认矩阵 +
+  `REALITY_SNI_BLOCKLIST` + `REALITY_UTLS_FINGERPRINT` + `REALITY_FLOW` + 备用通道
+  槽位;(3) 新增 **compose 生产配置** 子章(服务规格 / 资源上限 / 启动顺序 /
+  nginx rate limit / S1 轻量变体);(4) CF Tunnel token scope 细化为最小权限表;
+  (5) 新增 AC-D.1.10~12 / AC-D.4.5~6;(6) Risks 新增热门 SNI / 脏 ASN / uTLS 指纹
+  三条。仍为 docs-only,无代码改动。
