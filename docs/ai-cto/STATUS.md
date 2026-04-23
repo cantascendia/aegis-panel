@@ -1,15 +1,24 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-23(Round 3 opener — iplimit MVP + billing 数据面/Admin 落地 + Alembic 不变性规则沉淀)
+> 最后更新:2026-04-23 late(Round 3 mid — 多会话并行期)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 opener —— 商业化 MVP + 差异化 #2 同步推进中**
+**Round 3 mid —— 多会话并行,差异化 #2 生产化 + 商业化后端 A.2 推进 + 商业化前端 A.4 铺设 + 协作 kit 落地**
 
-状态:🔄 进行中。Round 2 v0.2 差异化 #1 SNI 三层闭环已在 PR #18 封顶,Round 3 开局同步推进两条线并沉淀基础设施债。
+状态:🔄 进行中。3 个并行 session + 1 个 part-time 刚定义:
+
+| Session | PR | 状态 |
+|---|---|---|
+| **S-B 商业化后端**(Claude Code) | #46 A.2.1 ✅ merged;A.2.2-A.3.3 待续 | 进行中 |
+| **S-F 商业化前端**(本会话,Claude Code) | #41 open,ready for review | 本会话 |
+| **S-I iplimit 生产化**(Codex) | #40/#42/#43/#44/#45 全 ✅ merged | 已完工 |
+| **S-O 协作 kit**(本会话切出) | docs/ai-cto/multi-session-kit 分支 | 本 PR |
+
+多会话协作索引见 `docs/ai-cto/SESSIONS.md`(本轮新增)。
 
 **差异化 #2 (IP 限制 = Hiddify `shared_limit` 等价物) 已落地**:
 - ✅ **IP limiter MVP**(PR #24,`7b12085`)—— `hardening/iplimit/` 数据面 + policy 表 + REST + dashboard UI,按 BRIEF-codex-ip-limiter.md 执行
@@ -129,6 +138,18 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | #33 | **Billing admin channels (A.1.4.b)** | ✅ 合并 | `a808e11` |
 | #34 | **extra_models.py aggregator + 硬规则 L-014/15** | ✅ 合并 | `f31db67` |
 | #35 | **Billing admin invoices (A.1.4.c)**(订单列表 + 详情 dialog + 动作面板) | ✅ 合并 | `a4e0c15` |
+
+**Round 3 mid(多会话并行期)**:
+
+| PR | 内容 | 状态 | Session | SHA |
+|---|---|---|---|---|
+| #37 | STATUS 底半部刷新 | (open) | - | - |
+| #38 | SPEC-billing-a2-a3.md(A.2/A.3 详细 spec) | ✅ 合并 | S-B kickoff | `0a4aa78` |
+| #39 | BRIEF-codex-iplimit-production.md(Codex 委派) | ✅ 合并 | S-I kickoff | `2fba986` |
+| #40-#45 | iplimit 生产化 6 条(runbook / 日志样本 / CIDR allowlist / 时区 / scan 重构 / owned-disable banner) | ✅ 全合 | **S-I** Codex 全套完工 | - |
+| #41 | **A.4 用户购买 UI skeleton**(flag-gated OFF;fixtures + hooks + 7 组件 + 2 routes + i18n) | 🟡 open,ready | **S-F**(本) | - |
+| #46 | **Billing A.2.1 provider abstraction + EPay adapter** | ✅ 合并 | **S-B** | `46b0296` |
+| - | **协作 kit**(SESSIONS.md + 3 SPEC 骨架 + i18n-extractor rule) | 🟡 本 PR | S-F spinoff | - |
 
 ## 已部署配置文件
 
