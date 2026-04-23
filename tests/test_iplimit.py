@@ -35,6 +35,7 @@ from hardening.iplimit.store import (
     ViolationAuditEvent,
     audit_key,
     get_observed_ips,
+    list_disabled_user_ids,
     push_audit_event,
     read_audit_events,
     set_disabled_until,
@@ -94,6 +95,13 @@ class FakeRedis:
     async def keys(self, pattern: str) -> list[str]:
         prefix = pattern.removesuffix("*")
         return [key for key in self.strings if key.startswith(prefix)]
+
+    async def scan_iter(self, match: str, count: int = 500):
+        _ = count
+        prefix = match.removesuffix("*")
+        for key in list(self.strings):
+            if key.startswith(prefix):
+                yield key
 
     async def lpush(self, key: str, value: str) -> None:
         self.lists.setdefault(key, []).insert(0, value)
@@ -711,3 +719,18 @@ async def test_clear_disable_endpoint_restores_owned_disable(
     assert user.activated is True
     assert response.disabled_until is None
     assert f"aegis:iplimit:violation:{user.id}" not in redis.strings
+
+
+@pytest.mark.asyncio
+async def test_list_disabled_user_ids_uses_scan_iter() -> None:
+    class NoKeysRedis(FakeRedis):
+        async def keys(self, pattern: str) -> list[str]:
+            _ = pattern
+            raise AssertionError("list_disabled_user_ids must not call KEYS")
+
+    redis = NoKeysRedis()
+    await redis.set("aegis:iplimit:violation:10", "1")
+    await redis.set("aegis:iplimit:violation:not-an-int", "1")
+    await redis.set("aegis:iplimit:observed:11", "1")
+
+    assert await list_disabled_user_ids(redis) == [10]
