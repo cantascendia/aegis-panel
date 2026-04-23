@@ -179,3 +179,124 @@ sign = md5((raw + merchant_key).encode()).hexdigest()
 ---
 
 _保存此文件,首次选码商前通读,每家新合作前再读一次。2026-04-22 初版。_
+
+---
+
+## 附录 A — 面板接入操作手册(开发/运维视角,A.2.2 起生效)
+
+读者:你自己(或下一任)在 panel 上新增 / 维护一个码商 channel 时用。
+代码入口:
+[ops/billing/checkout_endpoint.py](../../ops/billing/checkout_endpoint.py)
++ [ops/billing/providers/epay.py](../../ops/billing/providers/epay.py)
++ [ops/billing/config.py](../../ops/billing/config.py)。
+
+### A.1 一次性初始化
+
+**Fernet key**(用于加密 `PaymentChannel.merchant_key` 列):
+```bash
+python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
+```
+写入 `.env`:
+```
+BILLING_SECRET_KEY="<上面生成的 key>"
+BILLING_PUBLIC_BASE_URL="https://panel.example.com"
+```
+`BILLING_PUBLIC_BASE_URL` **必须**是码商服务器可以直接 POST 到的地
+址,否则 webhook 永远收不到。重启 panel 生效。
+
+### A.2 创建 channel(带加密)
+
+```bash
+curl -X POST https://panel.example.com/api/billing/admin/channels \
+  -H "Authorization: Bearer <sudo-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "channel_code": "zpay1",
+    "display_name": "ZPay 主渠道",
+    "kind": "epay",
+    "gateway_url": "https://pay.zpay.example",
+    "merchant_id": "100123",
+    "merchant_key": "码商给的原文密钥",
+    "enabled": false,
+    "extra_config": {
+      "sign_body_mode": "plain",
+      "allowed_ips": ["210.x.x.0/24"]
+    }
+  }'
+```
+后端自动 Fernet 加密 `merchant_key` 存入 `merchant_key_encrypted` 列,
+明文不落 DB,响应里也不回显。`enabled: false` 先验证,再正式开。
+
+### A.3 签名方言切换(`sign_body_mode`)
+
+| 方言 | body 组成 | 占比 | A.2 起支持 |
+|---|---|---|---|
+| `plain`(默认) | `k1=v1&...&kn=vn` + `merchant_key` | ~70% 码商 | A.2.1 |
+| `with_key_prefix` | `k1=v1&...&kn=vn&key=` + `merchant_key` | 少数码商 | A.2.2 |
+
+切换:
+```bash
+curl -X PATCH .../channels/{id} -d '{"extra_config": {"sign_body_mode": "with_key_prefix"}}'
+```
+
+未来出现 HMAC-SHA256 / JSON body 等其它方言,先在本文档登记再动手
+加实现,避免代码里堆叠没用过的分支。
+
+### A.4 IP 白名单(`allowed_ips`)
+
+字符串数组,支持 IPv4/IPv6 字面量和 CIDR(`1.2.3.0/24` / `2001:db8::/32`)。
+空数组 / 未配置 → 不限制。命中顺序:`X-Forwarded-For` 第一个值 →
+transport 层 `request.client.host`。格式错误条目会被跳过并记日志,
+不会整条 webhook 崩掉。
+
+### A.5 首次 ¥0.01 round-trip 验证
+
+1. 建个 `price_cny_fen=1` 的 plan
+2. channel `enabled: true`,把 webhook URL `https://panel.example.com/api/billing/webhook/epay/zpay1` 填进码商后台
+3. `POST /api/billing/cart/checkout` 自己付自己 ¥0.01
+4. 10 秒内回看 `GET /api/billing/admin/invoices/{id}`:`state` 应该是
+   `paid`;`events` 接口应看到 `webhook_received` + `webhook_epay` 两
+   行审计
+5. 如果卡在 `awaiting_payment`:
+   - 日志有 `webhook sign check failed` → `merchant_key` 或
+     `sign_body_mode` 不对
+   - 日志有 `webhook caller ... not in allowed_ips` → 放宽 IP 或确认
+     码商真实出口 IP(他们给的段通常不全)
+   - 码商后台查他们发送了几次、收到的 HTTP 返回码
+
+建议长期保留这个 ¥0.01 plan,每次 panel 升级 / 切换码商 都跑一遍。
+
+### A.6 merchant_key 轮换
+
+码商通知轮换 / 怀疑泄露 时:
+1. 拉新 key
+2. `PATCH /api/billing/admin/channels/{id}` 带 `{"merchant_key": "<新>"}`
+3. 后端重新加密覆盖 `merchant_key_encrypted`,旧密文作废
+4. 如果此时有基于旧 key 的支付会话还挂着 → 用户付完但 webhook 签名
+   验不过(新 key 验老 sign),用 admin UI `apply_manual` 人工收尾
+
+`BILLING_SECRET_KEY` 本身的轮换不在 A.2.2 范围 —— 需要一次性迁移任
+务把所有存量密文重新加密,计划在后续 PR 做。
+
+### A.7 已接码商清单(字段待填)
+
+每接一家更新一行。**禁止**写到代码注释里,写到这:
+
+| 码商名 | `gateway_url` | `sign_body_mode` | 出口 IP / CIDR | 首次接入日期 |
+|---|---|---|---|---|
+| (TBD) | | | | |
+
+### A.8 常见问题速查
+
+| 症状 | 原因 | 修复 |
+|---|---|---|
+| 创建 channel 返回 503 | `BILLING_SECRET_KEY` 没配 | 配好 `.env`,重启 panel |
+| checkout 返回 503 | `BILLING_PUBLIC_BASE_URL` 空 | 配好公网地址,重启 |
+| webhook 全 400 | `sign_body_mode` 不对 | PATCH 切 `with_key_prefix` 再试 |
+| webhook 全 400 | `merchant_key` 已轮换,panel 没同步 | PATCH 新 key |
+| webhook 全 403 | `allowed_ips` 太紧 | 扩 CIDR 或清空白名单 |
+| 状态卡 `paid` 不进 `applied` | A.5 定时任务还没 ship | admin `apply_manual` 应急 |
+| `BillingMisconfigured: Failed to decrypt` | `BILLING_SECRET_KEY` 被换过没迁移存量 | 换回旧 key,或重发 channel |
+
+_附录 A 2026-04-23 随 A.2.2 落地。改动 `ops.billing.checkout_endpoint`
+/ `providers.epay` 时务必同步改这里。_

@@ -28,7 +28,7 @@ PaymentEvent audit log survives everything.
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, HTTPException, Query, status
 from sqlalchemy import select
@@ -166,7 +166,22 @@ def create_channel(
             status_code=409,
             detail=f"channel_code {body.channel_code!r} already exists",
         )
-    channel = PaymentChannel(**body.model_dump())
+
+    # Prefer the new ``merchant_key`` field; fall back to the legacy
+    # ``secret_key`` alias. Encrypt before persist; legacy plaintext
+    # column is no longer written by new rows.
+    plaintext_key = body.merchant_key or body.secret_key or ""
+    channel = PaymentChannel(
+        channel_code=body.channel_code,
+        display_name=body.display_name,
+        kind=body.kind,
+        gateway_url=body.gateway_url,
+        merchant_id=body.merchant_id,
+        enabled=body.enabled,
+        priority=body.priority,
+    )
+    _apply_channel_secret(channel, plaintext_key)
+    _apply_extra_config(channel, body.extra_config)
     db.add(channel)
     db.commit()
     db.refresh(channel)
@@ -185,11 +200,62 @@ def update_channel(
         raise HTTPException(status_code=404, detail="channel not found")
 
     updates = body.model_dump(exclude_unset=True)
+    new_plaintext_key = updates.pop("merchant_key", None)
+    legacy_secret_key = updates.pop("secret_key", None)
+    extra_config = updates.pop("extra_config", None)
+
     for field, value in updates.items():
         setattr(channel, field, value)
+
+    if new_plaintext_key is not None or legacy_secret_key is not None:
+        _apply_channel_secret(
+            channel, new_plaintext_key or legacy_secret_key or ""
+        )
+    if extra_config is not None:
+        _apply_extra_config(channel, body.extra_config)
+
     db.commit()
     db.refresh(channel)
     return channel
+
+
+def _apply_channel_secret(channel: PaymentChannel, plaintext: str) -> None:
+    """Fernet-encrypt ``plaintext`` and write to
+    ``merchant_key_encrypted``; clear the legacy plaintext column.
+
+    Empty ``plaintext`` means "clear the credential" — both columns
+    land on None, and the channel effectively becomes unusable until
+    re-credentialed.
+    """
+    from ops.billing.config import BillingMisconfigured, encrypt_merchant_key
+
+    if not plaintext:
+        channel.merchant_key_encrypted = None
+        channel.secret_key = None
+        return
+    try:
+        channel.merchant_key_encrypted = encrypt_merchant_key(plaintext)
+    except BillingMisconfigured as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Billing encryption key is not configured. Set "
+                "BILLING_SECRET_KEY in the panel environment before "
+                "creating payment channels."
+            ),
+        ) from exc
+    channel.secret_key = None
+
+
+def _apply_extra_config(channel: PaymentChannel, extra: Any) -> None:
+    if extra is None:
+        return
+    # ``extra`` is a ChannelExtraConfig Pydantic model — dump to dict,
+    # drop None values so stored JSON stays compact.
+    payload = extra.model_dump(exclude_none=True) if hasattr(
+        extra, "model_dump"
+    ) else dict(extra)
+    channel.extra_config_json = payload or None
 
 
 # ---------------------------------------------------------------------

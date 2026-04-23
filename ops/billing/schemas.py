@@ -133,9 +133,24 @@ class PlanOut(BaseModel):
 # ---------------------------------------------------------------------
 
 
+class ChannelExtraConfig(BaseModel):
+    """Structured view of the ``PaymentChannel.extra_config_json``
+    blob. Both fields optional so partial payloads are valid."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sign_body_mode: Literal["plain", "with_key_prefix"] | None = None
+    allowed_ips: list[str] | None = None
+
+
 class ChannelIn(BaseModel):
     """Request body for ``POST /admin/channels``. Creates one 码商
-    instance."""
+    instance.
+
+    ``merchant_key`` is the 码商-issued secret in plaintext; the
+    handler Fernet-encrypts before persist. The legacy ``secret_key``
+    alias is still accepted for one release to keep older clients /
+    fixtures functional."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -144,9 +159,20 @@ class ChannelIn(BaseModel):
     kind: Literal["epay"] = Field(default="epay")
     gateway_url: str = Field(..., min_length=1, max_length=512)
     merchant_id: str = Field(..., min_length=1, max_length=128)
-    secret_key: str = Field(..., min_length=1, max_length=256)
+    merchant_key: str | None = Field(default=None, max_length=256)
+    secret_key: str | None = Field(default=None, max_length=256)
     enabled: bool = Field(default=False)
     priority: int = Field(default=0)
+    extra_config: ChannelExtraConfig | None = None
+
+    @model_validator(mode="after")
+    def _require_some_key(self) -> ChannelIn:
+        if not (self.merchant_key or self.secret_key):
+            raise ValueError(
+                "create channel requires merchant_key "
+                "(secret_key accepted as legacy alias)"
+            )
+        return self
 
 
 class ChannelPatch(BaseModel):
@@ -159,16 +185,17 @@ class ChannelPatch(BaseModel):
     )
     gateway_url: str | None = Field(default=None, min_length=1, max_length=512)
     merchant_id: str | None = Field(default=None, min_length=1, max_length=128)
-    secret_key: str | None = Field(default=None, min_length=1, max_length=256)
+    merchant_key: str | None = Field(default=None, max_length=256)
+    secret_key: str | None = Field(default=None, max_length=256)
     enabled: bool | None = None
     priority: int | None = None
+    extra_config: ChannelExtraConfig | None = None
 
 
 class ChannelOut(BaseModel):
-    """Admin-facing response. **Omits ``secret_key``** to keep it out
-    of response logs; the secret is write-only once configured. If
-    admin needs to rotate, they PATCH a new one (which the PATCH
-    schema accepts)."""
+    """Admin-facing response. **Omits the merchant secret** (both
+    encrypted and plaintext columns). Write-only once configured; if
+    admin needs to rotate, they PATCH a new ``merchant_key``."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -180,6 +207,7 @@ class ChannelOut(BaseModel):
     merchant_id: str
     enabled: bool
     priority: int
+    extra_config_json: dict[str, Any] | None = None
     created_at: datetime
 
 
@@ -259,10 +287,53 @@ class PaymentEventOut(BaseModel):
     created_at: datetime
 
 
+class CheckoutLineIn(BaseModel):
+    """One cart line as the caller sends it. Resolves to an
+    ``InvoiceLine`` row at persist time."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    plan_id: int = Field(..., ge=1)
+    quantity: int = Field(default=1, ge=1)
+
+
+class CheckoutIn(BaseModel):
+    """Body for ``POST /api/billing/cart/checkout``. Admin-initiated
+    order creation on behalf of a user — A.4 adds the user-self-serve
+    sibling route under a separate auth dep."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    user_id: int = Field(..., ge=1)
+    channel_code: str = Field(..., min_length=1, max_length=64)
+    lines: list[CheckoutLineIn] = Field(..., min_length=1, max_length=32)
+    success_url: str = Field(..., min_length=1, max_length=512)
+    cancel_url: str = Field(..., min_length=1, max_length=512)
+    subject: str | None = Field(default=None, max_length=128)
+
+
+class CheckoutOut(BaseModel):
+    """Response from checkout. ``payment_url`` is the 码商-hosted
+    redirect for the user; clients should 302 the browser there."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    invoice_id: int
+    total_cny_fen: int
+    payment_url: str
+    provider_invoice_id: str
+    state: str
+    expires_at: datetime
+
+
 __all__ = [
+    "ChannelExtraConfig",
     "ChannelIn",
     "ChannelOut",
     "ChannelPatch",
+    "CheckoutIn",
+    "CheckoutLineIn",
+    "CheckoutOut",
     "InvoiceAdminActionIn",
     "InvoiceLineOut",
     "InvoiceListQuery",

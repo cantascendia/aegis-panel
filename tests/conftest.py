@@ -62,6 +62,18 @@ def _isolated_env() -> Iterator[None]:
     # Point the app at an ephemeral in-memory SQLite unless a test overrides.
     os.environ.setdefault("SQLALCHEMY_DATABASE_URL", "sqlite:///:memory:")
 
+    # Billing encryption + public URL. Production panels supply these
+    # via .env; tests mirror that contract so the channel create/patch
+    # and webhook paths exercise real Fernet + URL construction.
+    from cryptography.fernet import Fernet
+
+    from ops.billing import config as billing_config
+
+    billing_config._reload_for_tests(
+        secret_key=Fernet.generate_key().decode(),
+        public_base_url="https://panel.test",
+    )
+
     yield
 
     for key, value in saved.items():

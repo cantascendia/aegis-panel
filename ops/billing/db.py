@@ -46,6 +46,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -165,12 +166,21 @@ class PaymentChannel(Base):
     (b) credentials change without restart when an operator switches
     vendors (see OPS-epay-vendor-guide.md).
 
-    ``secret_key`` is stored plaintext here because it's essentially
-    a password supplied by the 码商 to us — not a key-pair whose
-    leakage we can guard against. Operators relying on DB-at-rest
-    encryption (Postgres TDE / disk encryption) is the expected
-    control; we don't attempt application-level encryption, which
-    would only protect against a half-compromised DB.
+    ``merchant_key_encrypted`` holds the 码商-issued secret at rest,
+    Fernet-encrypted under ``BILLING_SECRET_KEY`` (see
+    ``ops.billing.config``). The legacy ``secret_key`` column is kept
+    nullable for rows predating A.2.2's encryption addition and for
+    dev/test environments that opt out of configuring a Fernet key;
+    :meth:`merchant_key` resolves one or the other transparently.
+
+    ``extra_config_json`` holds per-channel protocol knobs that don't
+    merit their own column:
+
+    - ``sign_body_mode``: ``"plain"`` (default) or ``"with_key_prefix"``
+      — some 码商 dialects use ``body + "&key=" + secret`` instead of
+      ``body + secret`` when computing the MD5 sign
+    - ``allowed_ips``: list of IPv4/IPv6 literals or CIDRs that webhook
+      POSTs must originate from (double防线 besides MD5 verify)
     """
 
     __tablename__ = "aegis_billing_channels"
@@ -189,7 +199,21 @@ class PaymentChannel(Base):
     )
     gateway_url: Mapped[str] = mapped_column(String(512), nullable=False)
     merchant_id: Mapped[str] = mapped_column(String(128), nullable=False)
-    secret_key: Mapped[str] = mapped_column(String(256), nullable=False)
+    # Legacy plaintext key — nullable after A.2.2. New rows write to
+    # ``merchant_key_encrypted`` instead. Admin UI no longer displays
+    # or accepts this column; present only for backward-compat reads.
+    secret_key: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    # Fernet ciphertext of the 码商 secret. Decrypt via
+    # ``ops.billing.config.decrypt_merchant_key`` or the
+    # :meth:`merchant_key` convenience property.
+    merchant_key_encrypted: Mapped[bytes | None] = mapped_column(
+        LargeBinary, nullable=True
+    )
+    # Free-form JSON carrier for low-volume knobs. See class docstring
+    # for the keys currently consumed.
+    extra_config_json: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
     enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
@@ -205,6 +229,37 @@ class PaymentChannel(Base):
     __table_args__ = (
         Index("ix_billing_channels_enabled_priority", "enabled", "priority"),
     )
+
+    @property
+    def merchant_key(self) -> str:
+        """Plaintext 码商 secret, decrypted on-access.
+
+        Prefers the encrypted column; falls back to the legacy plain
+        ``secret_key`` when the encrypted one is empty. Dev / test
+        environments without ``BILLING_SECRET_KEY`` configured land on
+        the fallback path so test fixtures don't need the Fernet key.
+
+        Production code paths that require encryption
+        (``apply_panel_hardening`` boot check, OPS-epay-vendor-guide)
+        can assert ``merchant_key_encrypted`` is non-empty; this
+        property stays lenient so it's safe to read from any row.
+        """
+
+        from ops.billing.config import decrypt_merchant_key
+
+        if self.merchant_key_encrypted:
+            return decrypt_merchant_key(self.merchant_key_encrypted)
+        return self.secret_key or ""
+
+    def get_extra_config(self, key: str, default: Any = None) -> Any:
+        """Read a key from ``extra_config_json`` with a default.
+
+        Centralizes the None-guard so handlers don't scatter
+        ``(self.extra_config_json or {}).get(...)`` boilerplate.
+        """
+        if not self.extra_config_json:
+            return default
+        return self.extra_config_json.get(key, default)
 
     def __repr__(self) -> str:  # pragma: no cover
         return (
