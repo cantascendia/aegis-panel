@@ -6,7 +6,7 @@
 > 手册参考:CTO handbook §5(模型路由)、§7(Spec-Driven)、
 > 铁律 #1/#8/#10(决策服务愿景 / 先建分支 / 国际化+环境分离)。
 
-_Updated: 2026-04-23 late-2(S-O 刷新:#41/#48 已合入,S-D + S-X 分支就位)_
+_Updated: 2026-04-23 late-2(S-O 刷新:#41/#48/#49/#52/#54 已合入,S-D/S-X worktree 分支就位,S-O 独立 worktree 建成)_
 
 ---
 
@@ -14,12 +14,12 @@ _Updated: 2026-04-23 late-2(S-O 刷新:#41/#48 已合入,S-D + S-X 分支就位)
 
 | 编号 | 名字 | 工具 | 模型 | 地盘(独占) | 当前 PR | 状态 |
 |---|---|---|---|---|---|---|
-| **S-B** | 商业化后端 | Claude Code | Opus(money) | `ops/billing/**`, `hardening/panel/middleware.py`(billing rows), Alembic, 相关 tests | A.2.1 #46 ✅,A.2.2 待开 | 进行中 |
-| **S-F** | 商业化前端 | Claude Code | Sonnet | `dashboard/src/modules/billing/user/**`, `billing.{purchase,my-invoices}.lazy.tsx` | #41 ✅ merged(A.4 skeleton flag-OFF)| A.5 接力待开 |
-| **S-D** | 部署一体化 | Claude Code(未正式启)| Opus(SPEC)→Sonnet | `deploy/**`, `docs/ai-cto/SPEC-deploy.md` | `feat/spec-deploy` 分支已建,D.0 spec flesh-out PR 未开 | 待启 |
-| **S-R** | Reality 审计器 | (待开) | Opus(SPEC)→Sonnet | `hardening/reality/**`, `docs/ai-cto/SPEC-reality-audit.md` | — | 未启 |
-| **S-X** | 前端测试基建 | Claude Code(未正式启)| Sonnet | `dashboard/src/**/*.test.tsx`, `dashboard/src/test-utils/**`, `dashboard/vitest.config.*` | `feat/dashboard-tests-x0` 分支已建 | 待启 |
-| **S-O** | 文档 / 流程 | (part-time) | Sonnet | `docs/ai-cto/**`(非 SPEC-*), `.agents/rules/**` | — | 异步触发 |
+| **S-B** | 商业化后端 | Claude Code × `aegis-B` | Opus(money) | `ops/billing/**`, `hardening/panel/middleware.py`(billing rows), Alembic, 相关 tests | A.2.1 #46 ✅,A.2.2 待开 | 进行中 |
+| **S-F** | 商业化前端 | Claude Code | Sonnet | `dashboard/src/modules/billing/user/**`, `billing.{purchase,my-invoices}.lazy.tsx`, `dashboard/src/modules/billing/user/components/*.test.tsx` | #41 ✅ merged(A.4 skeleton);#49 ✅ merged(money-critical 单测)| A.5 接力待开 |
+| **S-D** | 部署一体化 | Claude Code × `aegis-D`(未正式启)| Opus(SPEC)→Sonnet | `deploy/**`, `docs/ai-cto/SPEC-deploy.md` | `feat/spec-deploy` 分支已建,D.0 spec flesh-out PR 未开 | 待启 |
+| **S-R** | Reality 审计器 | Claude Code × `aegis-R`(待开)| Opus(SPEC)→Sonnet | `hardening/reality/**`, `docs/ai-cto/SPEC-reality-audit.md` | — | 未启 |
+| **S-X** | 前端测试基建 | Claude Code × `aegis-X`(未正式启)| Sonnet | `dashboard/src/**/*.test.tsx`, `dashboard/src/test-utils/**`, `dashboard/vitest.config.*` | `feat/dashboard-tests-x0` 分支已建 | 待启 |
+| **S-O** | 文档 / 流程 | Claude Code × `aegis-O`(part-time)| Sonnet | `docs/ai-cto/**`(非 SPEC-*), `.agents/rules/**` | 本分支 `docs/ai-cto/round-3-mid-late2-refresh`(PR #56) | 触发中 |
 
 ## 归档(已完成)
 

@@ -1,7 +1,9 @@
 # 路线图(ROADMAP)
 
-> 最后更新:2026-04-21(第零轮)
+> 最后更新:2026-04-23 late-2(Round 3 mid late-2 — S-O 触发对齐)
 > 每阶段末尾或重大优先级变化时更新
+>
+> **当前位置**:v0.1 已完成,v0.2 进行中(SNI ✅ / 计费 A.1 + A.2.1 + A.4 skeleton + money-critical 单测合入 / 一键部署 S-D worktree 就位),v0.3 差异化 #2 已部分前置落地(IP 限制 MVP + 生产化 S-I 完工)
 
 ---
 
@@ -44,16 +46,16 @@
    - 根目录 `DEVELOPMENT.md`(本地启动步骤 + 常见故障排查)
    - Makefile 补全 `test / lint / format / db-reset` 目标
 
-### 验收
+### 验收(**v0.1 达成,2026-04-22 确认**)
 
-- [ ] AUDIT.md 安全维度从 3/10 提升到 ≥7/10
-- [ ] 测试维度从 1/10 提升到 ≥5/10
-- [ ] CI 全绿,任何 push 自动跑完 backend + frontend 测试
-- [ ] `/api/source` 或 dashboard footer 源码链接就位(AGPL 合规)
+- [x] AUDIT.md 安全维度从 3/10 提升到 ≥7/10(**达到 8/10**,见 STATUS 评分表)
+- [x] 测试维度从 1/10 提升到 ≥5/10(**达到 7/10**,171 passed)
+- [x] CI 全绿,任何 push 自动跑完 backend + frontend 测试(lint/test/pip-audit 三门禁 + Alembic stepped-upgrade + PG16 matrix)
+- [x] `/api/source` 或 dashboard footer 源码链接就位(AGPL 合规)
 
 ---
 
-## v0.2 — 差异化落地 + 一键部署(6-8 周)
+## v0.2 — 差异化落地 + 一键部署(6-8 周) — **进行中**
 
 **目标**: 让项目有**能卖的理由**。SNI 选型器 + 一键部署 + 计费 MVP。
 
@@ -66,29 +68,35 @@
    - ✅ 41 + 10 单测 mock 网络,CI 离线可跑
    - ⏳ 遗留:SNI rate-limit(slowapi async-def 兼容,LESSONS L-010)/ runbook / 前端单测
 
-2. **一键部署引擎 v1**(2-3 周)
+2. **一键部署引擎 v1**(2-3 周)⏳ **S-D session 已就位**(`feat/spec-deploy` 分支 + `aegis-D` worktree + SPEC-deploy.md 骨架合入于 #48)
    - `deploy/install.sh` — 单节点一键(幂等):apt / docker / compose / 初始化 DB / 生成 .env / 启动
    - `deploy/compose/` — 生产 compose 配置(含 postgres + redis + marzneshin + marznode + nginx)
    - `deploy/ansible/` — 多节点部署 playbook
    - `deploy/cloudflare/` — CF Tunnel 自动配置脚本(Zero Trust API 调用)
+   - 下一步:S-D D.0 flesh-out PR(spec 补完 TBD 段)→ D.1 install.sh 单节点 MVP
 
-3. **计费系统 MVP**(2-3 周)
-   - 数据模型:`Subscription`、`Payment`、`Invoice`(见 AUDIT.md ⑦-1)
-   - 订阅价格与流量/时长套餐配置
-   - 管理员手动 "激活订阅" + "续费" 操作(无支付网关,先走手工)
-   - 用户到期/超额告警(email + Telegram)
-   - 审计日志:所有订阅/支付操作 immutable log
+3. **计费系统 MVP**(2-3 周)🔄 **进行中 — A.1 全 5 子 PR + A.2.1 + A.4 skeleton + money-critical 单测落地**
+   - [x] A.1 数据模型 + 状态机 + Admin REST + Admin UI 三页(plans/channels/invoices)—— PR #28-#35
+   - [x] A.2.1 provider 抽象 + EPay adapter —— PR #46
+   - [x] A.4 用户购买 UI skeleton(flag-gated OFF)—— PR #41
+   - [x] A.4 money-critical 组件单测(CartSummary + PlanCard)—— PR #49
+   - ⏳ A.2.2 webhook endpoint(S-B 下一步)
+   - ⏳ A.3.1-A.3.3 TRC20 matcher + poller + admin stub(S-B 后续)
+   - ⏳ A.5 APScheduler 自动化(续期 / 到期提醒)
+   - **支付策略决策** D-010:易支付 + TRC20 双轨,放弃 Stripe(见 DECISIONS.md)
+   - 用户到期/超额告警(email + Telegram)—— 未启
 
-4. **审计日志系统**(1 周,可与 #3 合并)
+4. **审计日志系统**(1 周,可与 #3 合并)—— 未启
    - `AuditLog` 表 + 中间件自动记录管理员操作
    - Dashboard 页面查看审计日志(支持筛选 admin、时间段、操作类型)
+   - 备注:billing invoices 的 `payment_events` 表已是一种窄域审计,通用 AuditLog 可在 RBAC 时合并设计
 
 ### 验收
 
-- [ ] 新节点创建流程中 SNI 候选自动预填,用户 80% 场景不用手填
-- [ ] 从空 VPS 到面板可访问用时 ≤15 分钟(install.sh 跑完)
-- [ ] 管理员能为用户 "激活订阅" + 查看到期提醒 + 查看订阅历史
-- [ ] 所有关键操作有审计记录
+- [x] 新节点创建流程中 SNI 候选自动预填,用户 80% 场景不用手填(PR #18 达成)
+- [ ] 从空 VPS 到面板可访问用时 ≤15 分钟(install.sh 跑完)—— 待 S-D D.1
+- [~] 管理员能为用户 "激活订阅" + 查看到期提醒 + 查看订阅历史(激活 + 订阅列表 ✅;到期提醒 ⏳ 待 A.5)
+- [ ] 所有关键操作有审计记录(billing 窄域 ✅;通用 AuditLog ⏳)
 
 ---
 
@@ -104,11 +112,13 @@
    - 自动告警 + 推荐新 SNI 切换
    - 历史趋势图(Prometheus + Grafana)
 
-2. **原生 IP 限制模块**(2 周)
-   - `hardening/iplimit/` 自研(参考 Hiddify `shared_limit.py` 算法)
-   - 订阅 Xray stats API(通过 Marznode 转发)
-   - 按用户级计数 + 超限自动断连 + Telegram 告警
-   - 配置可精细(时长、并发、国家过滤)
+2. **原生 IP 限制模块**(2 周)✅ **已前置落地**(v0.3 item 提前到 Round 3 opener 完成,差异化 #2 用户可见闭环 + 生产化全套)
+   - [x] `hardening/iplimit/` MVP —— PR #24(policy 表 / Xray access 日志 parser / Redis 滚动窗口 / detector / REST / Telegram 告警 / clear-disable endpoint)
+   - [x] Review blockers C-1/C-2/M-1/M-2/M-3 修复 —— PR #26
+   - [x] Migration safety-net + Alembic stepped-upgrade CI 门禁 —— PR #31
+   - [x] 生产化(S-I Codex 完工):runbook + xray 日志样本 + CIDR allowlist + 时区修正 + owned-disable 可见性 —— PR #40/#42/#43/#44/#45
+   - ⏳ 真实节点 E2E 验证(留待 S-D 一键部署就位后双向测)
+   - ⏳ 小债:Redis SCAN 替代 KEYS / 白名单 UI
 
 3. **备用通道(XHTTP / Hysteria2)**(2-3 周)
    - `hardening/fallback/` 支持多协议回切

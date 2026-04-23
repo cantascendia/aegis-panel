@@ -5,6 +5,40 @@
 
 ---
 
+## D-011 | 2026-04-23 | 多会话并行的裁判台机制:SESSIONS.md + worktree 隔离 + append-only 冲突地带表
+
+**决策**: 随 Round 3 mid 进入多会话并行期(Claude Code × N 实例 + Codex + Antigravity/未来 Gemini),引入**三件套**作为并行协作契约:
+
+1. **`docs/ai-cto/SESSIONS.md` 裁判台**:每个 session 开 PR 前必须在活跃表登记编号 / 工具 / 模型 / **独占地盘** / 当前 PR / 状态
+2. **冲突地带表 + append-only 规则**:跨 session 必然触碰的公共文件(`hardening/panel/middleware.py` 的 `include_router`、`app/db/extra_models.py` 的 import、`dashboard/src/features/sidebar/items.tsx` 的 sidebar 组、两大 locale JSON、`dashboard/package.json` devDeps、`.github/workflows/*.yml`、`dashboard/src/routeTree.gen.ts`)一律 append-only,后 merge 方 rebase 处理
+3. **worktree 隔离铁规则**(#52 固化):每个并发 Claude session 必须有独立 git worktree(`C:/projects/aegis-{B,D,R,X,O}`)或独立 repo 克隆;主 repo 留给 session 0(审阅 + merge 裁判);**禁止在同一个工作目录并发跑 2+ Claude session** —— 违反会造成 branch 切换撞车 / stash 污染 / PR 挂错分支(L-018 全套事故)
+
+**Why**:
+
+- Round 3 opener 之后观察到一个指数级 risk:多个 session 若任意一个动 `app/db/migrations/env.py` 或 `hardening/panel/middleware.py` 都会冲突;SPEC-level 分工不够细,必须到**文件级 append-only 契约**
+- 过去靠口头 / PR 描述里写"我动了啥"的做法在 3+ session 并行时不可持续,必须有一份共同看齐的 source of truth
+- S-O 作为 part-time 独立 session 而不是混入其他 session,避免让 feature session 分心于文档压缩;铁律 #6 才能真的执行
+- **worktree 必要性的直接证据**:S-O 第一次触发时在主 repo 上改 docs,被其他 session 的 `git checkout` 反复吃掉;切到 `aegis-O` worktree 后立即稳定 —— L-018 不是理论,是运营事实
+
+**How to apply**:
+
+- **启动一个新 session**:
+  1. 主 repo 跑 `bash tools/setup-session-worktrees.sh`(幂等,首次会建 aegis-B/D/R/X)
+  2. S-O 单独建:`git worktree add C:/projects/aegis-O docs/session-O-home`(脚本未覆盖 O,按需手建)
+  3. 新 Claude session 第一条消息粘 `cd C:/projects/aegis-{letter}`
+  4. Session 自己 `git checkout -b feat/<specific-task>` 切到真工作分支
+- **冲突地带改动**:必须 append-only(新段组 / 新 import 行 / 新 sidebar 组);`dashboard/src/routeTree.gen.ts` 禁手改,后 merge 方重跑 `npx tsr generate`
+- **PR body 模板**新增两行:`I touch:` / `I don't touch:`,链接到 `SESSIONS.md`
+- **S-O 刷新流程**:cd 到 `aegis-O` → `git checkout -b docs/ai-cto/round-N-<milestone>-refresh` → 改 STATUS/LESSONS/DECISIONS/ROADMAP/rules → 独立 PR → 合入后删分支 + 清 worktree
+- S-O 触发时只刷 `docs/ai-cto/**`(非 SPEC-*)+ `.agents/rules/**`;如需动代码 → 停,让对应 session 处理
+
+**推翻条件**:
+- 并行 session 数回到 ≤ 1(单主 session 推进所有 scope),裁判台变冗余,worktree 规则也可弱化
+- 仓库引入 monorepo 工具(Nx/Turborepo/Bazel)提供强隔离的包边界,冲突面自动收拢到包清单
+- SESSIONS.md 本身变成冲突点(多人同时追加)—— 这意味着裁判台也要拆,可能的下一步是 per-session charter 文件(`docs/ai-cto/sessions/S-B.md`)
+
+---
+
 ## D-010 | 2026-04-22 | 计费 MVP 支付策略:易支付 + TRC20 双轨,放弃 Stripe
 
 **决策**: Round 2 path A(计费 MVP)只做两个支付通道:

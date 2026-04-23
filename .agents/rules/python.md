@@ -187,3 +187,21 @@ import ops.billing.db        # noqa: F401
 - `app/marznode/` 下的 gRPC 客户端要考虑节点不可达 / 超时 / 响应异常,不要假设 happy path
 - `app/tasks/` 下 APScheduler 任务必须幂等且能处理失败重试
 - `app/routes/` 下每个路由必须有 dependency-injected 权限校验(见 `app/dependencies.py`)
+
+### slowapi `@limiter.limit` 禁套 async def 路由(L-010 固化)
+
+**硬规则**:新增 `async def` FastAPI 路由**禁止**直接用 `@limiter.limit(...)` 装饰。当前 slowapi × FastAPI 0.121 组合下装饰器对 async 路由的 `__wrapped__` / `inspect.signature(follow_wrapped=True)` 保留不完整,FastAPI 只看得到 `(request,)` 其余参数按 query 解析 → 所有 body / dependency 注入 422。同项目 `def`(sync)路由套同样装饰器是 OK 的,只有 async 命中此坑。
+
+**允许的替代路径**(按优先级):
+
+1. **不在装饰器层限流**:函数体内手工调用 `limiter.limit(...)` 的底层 API 或用 `limiter.shared_limit(...)`;auth 门 + `asyncio.wait_for(...)` 全局 timeout + `asyncio.Semaphore(N)` 外调并发封顶三条默认即可顶住偶发滥用
+2. **同步 wrapper**:如必须装饰器层面限流,把路由改 `def`(非 async)里调用 `asyncio.run_coroutine_threadsafe` / `anyio.from_thread` 进异步世界 —— 仅当路由真的是薄包装且能容忍线程切换开销时可行
+3. **等 slowapi 官方修复**:关注 https://github.com/laurentS/slowapi 的 async signature preservation issue,版本升级后**必须有单测**证明 422 不再出现再解锁
+
+**配套防线**(即使没加 rate limit 也应保留):
+
+- `Depends(sudo_admin)` / `Depends(current_user)` 把未鉴权请求挡在计量之外
+- `asyncio.wait_for(coro, timeout=N)` 包所有对 marznode / Tronscan / Telegram / 外部码商的出站调用,超时 5-30s 视场景
+- `asyncio.Semaphore(N)` 限制单进程内对同一外部服务的并发(默认 8-16),防止一个慢调用把 event loop 拖死
+
+参见 LESSONS L-010。任何解除此规则的 PR 必须:(a) 链接 slowapi 已修复版本 release notes,(b) 含专门测试覆盖"async 路由 + body + Depends" 三参数同时可用。
