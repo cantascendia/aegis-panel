@@ -175,7 +175,7 @@ Git 的设计前提是"一个 working tree = 一个 actor",不是并发安全的
 3. 至少保留这些防线:auth 门 + `asyncio.wait_for()` 全局 timeout + `Semaphore(N)` 外调并发封顶 —— 这三条即使无 rate limit 也能顶住单次滥用
 4. 真正的 rate limit 必须等 slowapi+async 行为确认后再加
 
-**沉淀**: 🟡 半沉淀。`.agents/rules/python.md` "Marzneshin 特定" 段应加一条 "新增 async 路由不要直接套 slowapi 装饰器,先看 LESSONS.md L-010"。下轮开始前补上。
+**沉淀**: ✅ 已转硬规则(2026-04-23 S-O 触发)。`.agents/rules/python.md` "Marzneshin 特定" 段 → "slowapi `@limiter.limit` 禁套 async def 路由"(三条替代路径 + 三条配套防线 + 解除条件)。
 
 ---
 
