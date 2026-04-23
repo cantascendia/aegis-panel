@@ -8,12 +8,21 @@ export interface IpLimitConfig {
     window_seconds: number;
     violation_action: IpLimitAction;
     disable_duration_seconds: number;
+    ip_allowlist_cidrs: string;
 }
 
 export interface IpLimitOverride {
     max_concurrent_ips: number | null;
     window_seconds: number | null;
     violation_action: IpLimitAction | null;
+    ip_allowlist_cidrs: string | null;
+}
+
+export interface IpLimitOwnedDisable {
+    disabled_at: number;
+    disabled_until: number;
+    reason: string;
+    can_clear: boolean;
 }
 
 export interface IpLimitState {
@@ -22,6 +31,7 @@ export interface IpLimitState {
     observed_ips: string[];
     observed_count: number;
     disabled_until: number | null;
+    owned_disable: IpLimitOwnedDisable | null;
     config: IpLimitConfig;
     override: IpLimitOverride | null;
 }
@@ -81,4 +91,3 @@ export const useIpLimitQuery = ({ username }: { username: string }) =>
 
 export const useIpLimitAuditQuery = ({ username }: { username: string }) =>
     useQuery(ipLimitAuditQueryOptions({ username }));
-

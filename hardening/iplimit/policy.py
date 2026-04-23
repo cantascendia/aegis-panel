@@ -16,3 +16,4 @@ class IpLimitPolicy:
     window_seconds: int = 300
     violation_action: ViolationAction = "warn"
     disable_duration_seconds: int = 3600
+    ip_allowlist_cidrs: str = ""
