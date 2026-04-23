@@ -1,24 +1,24 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-23 late-2(Round 3 mid — A.4 skeleton + 协作 kit + worktree 规则合入,S-D/S-X 分支就位)
+> 最后更新:2026-04-23 late-3(Round 3 mid — S-D + S-X 正式启动,第三次 S-O 触发)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid —— 多会话并行,差异化 #2 生产化 + 商业化后端 A.2 推进 + 商业化前端 A.4 skeleton 合入 + 协作 kit 合入 + worktree 隔离铁规则**
+**Round 3 mid —— 多会话并行,差异化 #2 生产化 + 商业化后端 A.2 推进 + 商业化前端 A.4 skeleton + 协作 kit + worktree 规则合入 + S-D/S-X 正式启动**
 
 状态:🔄 进行中。活跃 + 待启 session 已在 SESSIONS.md 登记,L-018/铁规则 #7 要求各 session 跑独立 worktree:
 
 | Session | PR | 状态 |
 |---|---|---|
 | **S-B 商业化后端**(Claude Code × `aegis-B` worktree) | #46 A.2.1 ✅ merged;A.2.2 待开 | 进行中 |
-| **S-F 商业化前端**(Claude Code) | #41 A.4 skeleton ✅ merged(flag-gated OFF);#49 money-critical 测试 ✅ merged | A.5 接力待开 |
-| **S-D 部署一体化**(Claude Code × `aegis-D` worktree) | `feat/spec-deploy` 分支已建(SPEC 骨架随 #48 合入);D.0 flesh-out PR 未开 | 待启 |
-| **S-X 前端测试基建**(Claude Code × `aegis-X` worktree) | `feat/dashboard-tests-x0` 分支已建 | 待启 |
+| **S-F 商业化前端**(Claude Code) | #41 A.4 skeleton ✅ merged;#49 money-critical 测试 ✅ merged | A.5 接力待开 |
+| **S-D 部署一体化**(Claude Code × `aegis-D` worktree) | #58 OPS-deploy-runbook skeleton ✅ merged;D.0 SPEC flesh-out 待开 | 进行中 |
+| **S-X 前端测试基建**(Claude Code × `aegis-X` worktree) | #57 X.1 watch-mode + pnpm unify ✅ merged;#59 X.2 test-utils/render + picker/poll tests ✅ merged | 进行中 |
 | **S-I iplimit 生产化**(Codex × `Marzban-iplimit-production` worktree) | #40/#42/#43/#44/#45 全 ✅ merged | 已完工(归档)|
-| **S-O 文档守护**(Claude Code × `aegis-O` worktree,part-time) | #48 协作 kit + #52 worktree 规则 ✅ merged;本分支 `docs/ai-cto/round-3-mid-late2-refresh` 刷 STATUS/DECISIONS/LESSONS/ROADMAP/rules | 触发中 |
+| **S-O 文档守护**(Claude Code × `aegis-O` worktree,part-time) | #48 协作 kit + #52 worktree 规则 + #56 第一次刷新 + #60 AUDIT overlay ✅ merged;本分支 `docs/ai-cto/round-3-mid-late3-refresh` 微刷 STATUS | 触发中 |
 
 多会话协作索引见 `docs/ai-cto/SESSIONS.md`(本轮新增)。
 
@@ -155,6 +155,11 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | #49 | **A.4 money-critical 组件单测**(CartSummary + PlanCard)| ✅ 合并 | **S-F** | `0c5beb3` |
 | #52 | **worktree 隔离铁规则 + L-018**(SESSIONS.md 铁规则 #7)| ✅ 合并 | **S-F/S-O** | `56e1b06` |
 | #54 | **tools/setup-session-worktrees.sh**(一键建 aegis-{B,D,R,X} worktree;SESSIONS.md 铁规则 #7 改成指向脚本)| ✅ 合并 | **session 0** | `747d5a4` |
+| #56 | **S-O round-3-mid-late2 refresh**(第一次正式 S-O 触发:STATUS/SESSIONS/DECISIONS/LESSONS/ROADMAP + python.md slowapi async 硬规则 + D-011)| ✅ 合并 | **S-O** | `a9c9ccb` |
+| #57 | **S-X X.1**(dashboard unit-test watch-mode 修复 + pnpm 统一)| ✅ 合并 | **S-X** | `722d29c` |
+| #58 | **S-D OPS-deploy-runbook 骨架**(第一次 S-D 正式交付)| ✅ 合并 | **S-D** | `8a72301` |
+| #59 | **S-X X.2**(test-utils/render helpers + date-range-picker / usePolling 单测)| ✅ 合并 | **S-X** | `a0692bf` |
+| #60 | **AUDIT.md 进度 overlay**(fork-time 基线 + Round 3 mid 状态桥梁;不动原 🔴/🟠 finding)| ✅ 合并 | **S-O** | `009e757` |
 
 ## 已部署配置文件
 
@@ -220,7 +225,17 @@ Round 0 列表的全部 + Round 1 新增:
 - **#49 A.4 money-critical 组件单测**(S-F):CartSummary 小计 / PlanCard 价格显示的 safety net
 - **#52 worktree 隔离铁规则**(S-F/S-O 联合):SESSIONS.md +铁规则 #7;LESSONS.md +L-018(同一 working tree 并发跑多 session → branch/stash/PR 撞车全套);`tools/setup-session-worktrees.sh` 一键建 4 个 aegis-{B,D,R,X} worktree
 
-**下一步触发**:A.2.2 webhook endpoint(S-B)→ A.5 scheduler(S-B 后续)/ S-D 首日 SPEC flesh-out PR(`feat/spec-deploy` 分支已开待干)/ S-X 首日 test-infra PR(`feat/dashboard-tests-x0` 分支已开待干)
+**下一步触发**:A.2.2 webhook endpoint(S-B)→ A.5 scheduler(S-B 后续)/ S-D D.0 SPEC-deploy.md flesh-out PR(OPS-runbook 骨架已在 #58)/ S-X X.3+ 继续覆盖更多 dashboard 组件单测(test-utils 基建已在 #59)
+
+---
+
+**late-3 追加同步**(2026-04-23 late-3,承接 late-2 后的 3 个并行 merge):
+
+- **#57 S-X X.1**:pnpm-lock 漂移修复 + Vitest watch-mode 在 Windows 正确退出;S-X 从"分支就位"升到"进行中"
+- **#58 S-D OPS-deploy-runbook 骨架**:第一次 S-D 正式交付(单 docs 文件),给运维侧留下"节点迁移 / DB 备份 / CF token 泄露应急"四条 runbook 占位;S-D 从"分支就位"升到"进行中"
+- **#59 S-X X.2**:`dashboard/src/test-utils/render.tsx` 加 i18next + tanstack-query + theme 三件套 provider;补 date-range-picker / usePolling 两个单测,证明 test-utils 好用
+
+S-O 本轮两次触发消化了 #41/#46/#48/#49/#52/#54/#56/#57/#58/#59/#60 共 11 个 PR,STATUS/SESSIONS/DECISIONS/LESSONS/ROADMAP/AUDIT 全部对齐到现状。
 
 **本次 S-O 自身的教训**:首次 S-O 触发在 S-D 分支上混改 docs 被反复回滚(同工作树多 session 竞争),最终按 L-018/铁规则 #7 建 `aegis-O` worktree 隔离后才稳定完成刷新 —— 证明 worktree 规则本身是对的,S-O 不可豁免
 
