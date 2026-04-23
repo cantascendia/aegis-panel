@@ -51,8 +51,14 @@ const DashboardServicesLazyImport = createFileRoute('/_dashboard/services')()
 const DashboardNodesLazyImport = createFileRoute('/_dashboard/nodes')()
 const DashboardHostsLazyImport = createFileRoute('/_dashboard/hosts')()
 const DashboardAdminsLazyImport = createFileRoute('/_dashboard/admins')()
+const DashboardBillingPurchaseLazyImport = createFileRoute(
+  '/_dashboard/billing/purchase',
+)()
 const DashboardBillingPlansLazyImport = createFileRoute(
   '/_dashboard/billing/plans',
+)()
+const DashboardBillingMyInvoicesLazyImport = createFileRoute(
+  '/_dashboard/billing/my-invoices',
 )()
 const DashboardBillingInvoicesLazyImport = createFileRoute(
   '/_dashboard/billing/invoices',
@@ -135,6 +141,15 @@ const AuthLoginRoute = AuthLoginImport.update({
   getParentRoute: () => AuthRoute,
 } as any)
 
+const DashboardBillingPurchaseLazyRoute =
+  DashboardBillingPurchaseLazyImport.update({
+    id: '/billing/purchase',
+    path: '/billing/purchase',
+    getParentRoute: () => DashboardRoute,
+  } as any).lazy(() =>
+    import('./routes/_dashboard/billing.purchase.lazy').then((d) => d.Route),
+  )
+
 const DashboardBillingPlansLazyRoute = DashboardBillingPlansLazyImport.update({
   id: '/billing/plans',
   path: '/billing/plans',
@@ -142,6 +157,15 @@ const DashboardBillingPlansLazyRoute = DashboardBillingPlansLazyImport.update({
 } as any).lazy(() =>
   import('./routes/_dashboard/billing.plans.lazy').then((d) => d.Route),
 )
+
+const DashboardBillingMyInvoicesLazyRoute =
+  DashboardBillingMyInvoicesLazyImport.update({
+    id: '/billing/my-invoices',
+    path: '/billing/my-invoices',
+    getParentRoute: () => DashboardRoute,
+  } as any).lazy(() =>
+    import('./routes/_dashboard/billing.my-invoices.lazy').then((d) => d.Route),
+  )
 
 const DashboardBillingInvoicesLazyRoute =
   DashboardBillingInvoicesLazyImport.update({
@@ -478,11 +502,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardBillingInvoicesLazyImport
       parentRoute: typeof DashboardImport
     }
+    '/_dashboard/billing/my-invoices': {
+      id: '/_dashboard/billing/my-invoices'
+      path: '/billing/my-invoices'
+      fullPath: '/billing/my-invoices'
+      preLoaderRoute: typeof DashboardBillingMyInvoicesLazyImport
+      parentRoute: typeof DashboardImport
+    }
     '/_dashboard/billing/plans': {
       id: '/_dashboard/billing/plans'
       path: '/billing/plans'
       fullPath: '/billing/plans'
       preLoaderRoute: typeof DashboardBillingPlansLazyImport
+      parentRoute: typeof DashboardImport
+    }
+    '/_dashboard/billing/purchase': {
+      id: '/_dashboard/billing/purchase'
+      path: '/billing/purchase'
+      fullPath: '/billing/purchase'
+      preLoaderRoute: typeof DashboardBillingPurchaseLazyImport
       parentRoute: typeof DashboardImport
     }
     '/_dashboard/admins/$adminId/delete': {
@@ -771,7 +809,9 @@ interface DashboardRouteChildren {
   DashboardIndexLazyRoute: typeof DashboardIndexLazyRoute
   DashboardBillingChannelsLazyRoute: typeof DashboardBillingChannelsLazyRoute
   DashboardBillingInvoicesLazyRoute: typeof DashboardBillingInvoicesLazyRoute
+  DashboardBillingMyInvoicesLazyRoute: typeof DashboardBillingMyInvoicesLazyRoute
   DashboardBillingPlansLazyRoute: typeof DashboardBillingPlansLazyRoute
+  DashboardBillingPurchaseLazyRoute: typeof DashboardBillingPurchaseLazyRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -784,7 +824,9 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardIndexLazyRoute: DashboardIndexLazyRoute,
   DashboardBillingChannelsLazyRoute: DashboardBillingChannelsLazyRoute,
   DashboardBillingInvoicesLazyRoute: DashboardBillingInvoicesLazyRoute,
+  DashboardBillingMyInvoicesLazyRoute: DashboardBillingMyInvoicesLazyRoute,
   DashboardBillingPlansLazyRoute: DashboardBillingPlansLazyRoute,
+  DashboardBillingPurchaseLazyRoute: DashboardBillingPurchaseLazyRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
@@ -812,7 +854,9 @@ export interface FileRoutesByFullPath {
   '/users/create': typeof DashboardUsersCreateRoute
   '/billing/channels': typeof DashboardBillingChannelsLazyRoute
   '/billing/invoices': typeof DashboardBillingInvoicesLazyRoute
+  '/billing/my-invoices': typeof DashboardBillingMyInvoicesLazyRoute
   '/billing/plans': typeof DashboardBillingPlansLazyRoute
+  '/billing/purchase': typeof DashboardBillingPurchaseLazyRoute
   '/admins/$adminId/delete': typeof DashboardAdminsAdminIdDeleteRoute
   '/admins/$adminId/edit': typeof DashboardAdminsAdminIdEditRoute
   '/hosts/$hostId/delete': typeof DashboardHostsHostIdDeleteRoute
@@ -847,7 +891,9 @@ export interface FileRoutesByTo {
   '/users/create': typeof DashboardUsersCreateRoute
   '/billing/channels': typeof DashboardBillingChannelsLazyRoute
   '/billing/invoices': typeof DashboardBillingInvoicesLazyRoute
+  '/billing/my-invoices': typeof DashboardBillingMyInvoicesLazyRoute
   '/billing/plans': typeof DashboardBillingPlansLazyRoute
+  '/billing/purchase': typeof DashboardBillingPurchaseLazyRoute
   '/admins/$adminId/delete': typeof DashboardAdminsAdminIdDeleteRoute
   '/admins/$adminId/edit': typeof DashboardAdminsAdminIdEditRoute
   '/hosts/$hostId/delete': typeof DashboardHostsHostIdDeleteRoute
@@ -889,7 +935,9 @@ export interface FileRoutesById {
   '/_dashboard/users/create': typeof DashboardUsersCreateRoute
   '/_dashboard/billing/channels': typeof DashboardBillingChannelsLazyRoute
   '/_dashboard/billing/invoices': typeof DashboardBillingInvoicesLazyRoute
+  '/_dashboard/billing/my-invoices': typeof DashboardBillingMyInvoicesLazyRoute
   '/_dashboard/billing/plans': typeof DashboardBillingPlansLazyRoute
+  '/_dashboard/billing/purchase': typeof DashboardBillingPurchaseLazyRoute
   '/_dashboard/admins/$adminId/delete': typeof DashboardAdminsAdminIdDeleteRoute
   '/_dashboard/admins/$adminId/edit': typeof DashboardAdminsAdminIdEditRoute
   '/_dashboard/hosts/$hostId/delete': typeof DashboardHostsHostIdDeleteRoute
@@ -931,7 +979,9 @@ export interface FileRouteTypes {
     | '/users/create'
     | '/billing/channels'
     | '/billing/invoices'
+    | '/billing/my-invoices'
     | '/billing/plans'
+    | '/billing/purchase'
     | '/admins/$adminId/delete'
     | '/admins/$adminId/edit'
     | '/hosts/$hostId/delete'
@@ -965,7 +1015,9 @@ export interface FileRouteTypes {
     | '/users/create'
     | '/billing/channels'
     | '/billing/invoices'
+    | '/billing/my-invoices'
     | '/billing/plans'
+    | '/billing/purchase'
     | '/admins/$adminId/delete'
     | '/admins/$adminId/edit'
     | '/hosts/$hostId/delete'
@@ -1005,7 +1057,9 @@ export interface FileRouteTypes {
     | '/_dashboard/users/create'
     | '/_dashboard/billing/channels'
     | '/_dashboard/billing/invoices'
+    | '/_dashboard/billing/my-invoices'
     | '/_dashboard/billing/plans'
+    | '/_dashboard/billing/purchase'
     | '/_dashboard/admins/$adminId/delete'
     | '/_dashboard/admins/$adminId/edit'
     | '/_dashboard/hosts/$hostId/delete'
@@ -1067,7 +1121,9 @@ export const routeTree = rootRoute
         "/_dashboard/",
         "/_dashboard/billing/channels",
         "/_dashboard/billing/invoices",
-        "/_dashboard/billing/plans"
+        "/_dashboard/billing/my-invoices",
+        "/_dashboard/billing/plans",
+        "/_dashboard/billing/purchase"
       ]
     },
     "/_auth/login": {
@@ -1191,8 +1247,16 @@ export const routeTree = rootRoute
       "filePath": "_dashboard/billing.invoices.lazy.tsx",
       "parent": "/_dashboard"
     },
+    "/_dashboard/billing/my-invoices": {
+      "filePath": "_dashboard/billing.my-invoices.lazy.tsx",
+      "parent": "/_dashboard"
+    },
     "/_dashboard/billing/plans": {
       "filePath": "_dashboard/billing.plans.lazy.tsx",
+      "parent": "/_dashboard"
+    },
+    "/_dashboard/billing/purchase": {
+      "filePath": "_dashboard/billing.purchase.lazy.tsx",
       "parent": "/_dashboard"
     },
     "/_dashboard/admins/$adminId/delete": {
