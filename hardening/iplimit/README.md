@@ -53,6 +53,14 @@ Defaults:
 
 Per-user `NULL` fields inherit the global value.
 
+`ip_allowlist_cidrs` is a newline-separated CIDR list used to ignore
+legitimate source IPs before they enter the rolling window. The
+effective allowlist is the union of global config and per-user override:
+if an observed source IP matches either list, the event is skipped.
+Use this for operator monitoring addresses and known CGNAT / mobile
+carrier ranges that would otherwise create false positives. Both IPv4
+and IPv6 CIDRs are accepted.
+
 ## Scheduler
 
 The poll interval is controlled by:

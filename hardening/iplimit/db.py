@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from typing import Literal
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, select
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.db.base import Base
+from hardening.iplimit.allowlist import merge_cidr_texts, parse_cidrs
 from hardening.iplimit.policy import IpLimitPolicy, ViolationAction
 
 ActionValue = Literal["warn", "disable"]
@@ -31,6 +32,7 @@ class IpLimitConfig(Base):
     disable_duration_seconds: Mapped[int] = mapped_column(
         Integer, nullable=False, default=3600
     )
+    ip_allowlist_cidrs: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class IpLimitDisabledState(Base):
@@ -71,6 +73,7 @@ class UserIpLimitOverride(Base):
     violation_action: Mapped[str | None] = mapped_column(
         String(16), nullable=True
     )
+    ip_allowlist_cidrs: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 def get_global_config(db: Session) -> IpLimitConfig | None:
@@ -123,8 +126,12 @@ def upsert_user_override(
     max_concurrent_ips: int | None,
     window_seconds: int | None,
     violation_action: ActionValue | None,
+    ip_allowlist_cidrs: str | None = None,
 ) -> UserIpLimitOverride:
     """Create or replace a user's nullable override fields."""
+
+    if ip_allowlist_cidrs is not None:
+        parse_cidrs(ip_allowlist_cidrs)
 
     override = get_user_override(db, user_id)
     if override is None:
@@ -134,6 +141,7 @@ def upsert_user_override(
     override.max_concurrent_ips = max_concurrent_ips
     override.window_seconds = window_seconds
     override.violation_action = violation_action
+    override.ip_allowlist_cidrs = ip_allowlist_cidrs
     db.commit()
     db.refresh(override)
     return override
@@ -187,6 +195,7 @@ def _policy_from_config(config: IpLimitConfig | None) -> IpLimitPolicy:
         window_seconds=config.window_seconds,
         violation_action=_normalize_action(config.violation_action),
         disable_duration_seconds=config.disable_duration_seconds,
+        ip_allowlist_cidrs=config.ip_allowlist_cidrs or "",
     )
 
 
@@ -212,6 +221,9 @@ def _apply_override(
             else policy.violation_action
         ),
         disable_duration_seconds=policy.disable_duration_seconds,
+        ip_allowlist_cidrs=merge_cidr_texts(
+            policy.ip_allowlist_cidrs, override.ip_allowlist_cidrs
+        ),
     )
 
 

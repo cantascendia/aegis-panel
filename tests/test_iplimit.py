@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from collections.abc import Generator
 from datetime import datetime
@@ -12,10 +13,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.db.models import User
 from app.models.user import UserExpireStrategy
 from hardening.iplimit import task
+from hardening.iplimit.allowlist import ip_matches_any_cidr, parse_cidrs
 from hardening.iplimit.db import (
     IpLimitConfig,
     IpLimitDisabledState,
     UserIpLimitOverride,
+    resolve_policies,
     resolve_policy,
     upsert_disabled_state,
 )
@@ -247,6 +250,47 @@ def test_parse_xray_access_line_ignores_malformed_ip() -> None:
     line = "from tcp:not-an-ip:51234 accepted tcp:x:443 email: alice"
 
     assert parse_xray_access_line(line, {"alice": 10}) is None
+
+
+def test_parse_cidrs_accepts_ipv4_ipv6_mixed() -> None:
+    networks = parse_cidrs("203.0.113.0/24\n2001:db8::/32\n")
+
+    assert [str(network) for network in networks] == [
+        "203.0.113.0/24",
+        "2001:db8::/32",
+    ]
+
+
+def test_parse_cidrs_rejects_invalid_cidr() -> None:
+    with pytest.raises(ValueError, match="invalid CIDR"):
+        parse_cidrs("203.0.113.0/24\nnot-a-cidr")
+
+
+def test_ip_matches_allowlist_ipv4() -> None:
+    assert ip_matches_any_cidr("203.0.113.9", parse_cidrs("203.0.113.0/24"))
+
+
+def test_ip_matches_allowlist_ipv6() -> None:
+    assert ip_matches_any_cidr("2001:db8::9", parse_cidrs("2001:db8::/32"))
+
+
+def test_ip_outside_allowlist_not_matched() -> None:
+    assert not ip_matches_any_cidr(
+        "198.51.100.9", parse_cidrs("203.0.113.0/24")
+    )
+
+
+def test_event_parser_skips_allowlisted_ip() -> None:
+    line = "from tcp:203.0.113.9:51234 accepted tcp:x:443 email: alice"
+
+    assert (
+        parse_xray_access_line(
+            line,
+            {"alice": 10},
+            {"alice": parse_cidrs("203.0.113.0/24")},
+        )
+        is None
+    )
 
 
 @pytest.mark.asyncio
@@ -511,6 +555,52 @@ def test_user_override_falls_back_to_global_config(db: Session) -> None:
     assert policy.disable_duration_seconds == 1800
 
 
+def test_override_allowlist_merges_with_global(db: Session) -> None:
+    user = add_user(db)
+    db.add(
+        IpLimitConfig(
+            id=1,
+            max_concurrent_ips=4,
+            window_seconds=600,
+            violation_action="warn",
+            disable_duration_seconds=1800,
+            ip_allowlist_cidrs="203.0.113.0/24",
+        )
+    )
+    db.add(
+        UserIpLimitOverride(
+            user_id=user.id,
+            ip_allowlist_cidrs="2001:db8::/32",
+        )
+    )
+    db.commit()
+
+    networks = parse_cidrs(resolve_policy(db, user.id).ip_allowlist_cidrs)
+
+    assert ip_matches_any_cidr("203.0.113.9", networks)
+    assert ip_matches_any_cidr("2001:db8::9", networks)
+
+
+def test_invalid_allowlist_logs_and_fails_open(
+    db: Session, caplog: pytest.LogCaptureFixture
+) -> None:
+    user = add_user(db)
+    db.add(
+        UserIpLimitOverride(
+            user_id=user.id,
+            ip_allowlist_cidrs="not-a-cidr",
+        )
+    )
+    db.commit()
+    policies = resolve_policies(db, [user.id])
+
+    with caplog.at_level(logging.WARNING, logger="hardening.iplimit.task"):
+        allowlists = task._resolve_username_allowlists([user], policies)
+
+    assert allowlists == {user.username: []}
+    assert "invalid allowlist CIDRs" in caplog.text
+
+
 @pytest.mark.asyncio
 async def test_audit_list_is_capped_and_read_newest_first() -> None:
     redis = FakeRedis()
@@ -635,6 +725,7 @@ async def test_patch_override_endpoint_persists_nullable_fields(
             max_concurrent_ips=8,
             window_seconds=None,
             violation_action="warn",
+            ip_allowlist_cidrs="",
         ),
         db,
         object(),
@@ -643,6 +734,7 @@ async def test_patch_override_endpoint_persists_nullable_fields(
     assert response.max_concurrent_ips == 8
     assert response.window_seconds is None
     assert response.violation_action == "warn"
+    assert response.ip_allowlist_cidrs == ""
 
 
 @pytest.mark.asyncio
