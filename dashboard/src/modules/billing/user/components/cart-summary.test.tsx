@@ -20,12 +20,11 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 
-import { I18nextProvider } from "react-i18next";
-import i18n from "@marzneshin/features/i18n";
+import { renderWithProviders } from "@marzneshin/test-utils/render";
 
 import { FIXTURE_PLANS } from "../fixtures";
 import type { CartLine } from "../../types";
@@ -40,16 +39,14 @@ function renderCart(overrides?: {
 }) {
     const onRemove = overrides?.onRemove ?? vi.fn();
     const onCheckout = overrides?.onCheckout ?? vi.fn();
-    const utils = render(
-        <I18nextProvider i18n={i18n}>
-            <CartSummary
-                lines={overrides?.lines ?? []}
-                plans={overrides?.plans ?? FIXTURE_PLANS}
-                onRemove={onRemove}
-                onCheckout={onCheckout}
-                checkoutPending={overrides?.checkoutPending ?? false}
-            />
-        </I18nextProvider>,
+    const utils = renderWithProviders(
+        <CartSummary
+            lines={overrides?.lines ?? []}
+            plans={overrides?.plans ?? FIXTURE_PLANS}
+            onRemove={onRemove}
+            onCheckout={onCheckout}
+            checkoutPending={overrides?.checkoutPending ?? false}
+        />,
     );
     return { ...utils, onRemove, onCheckout };
 }

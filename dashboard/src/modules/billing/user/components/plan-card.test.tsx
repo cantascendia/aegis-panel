@@ -10,12 +10,11 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 
-import { I18nextProvider } from "react-i18next";
-import i18n from "@marzneshin/features/i18n";
+import { renderWithProviders } from "@marzneshin/test-utils/render";
 
 import type { Plan } from "../../types";
 import { PlanCard } from "./plan-card";
@@ -40,14 +39,12 @@ function renderCard(overrides?: {
     onAdd?: (plan: Plan) => void;
 }) {
     const onAdd = overrides?.onAdd ?? vi.fn();
-    const utils = render(
-        <I18nextProvider i18n={i18n}>
-            <PlanCard
-                plan={overrides?.plan ?? STARTER_PLAN}
-                alreadyInCart={overrides?.alreadyInCart ?? false}
-                onAdd={onAdd}
-            />
-        </I18nextProvider>,
+    const utils = renderWithProviders(
+        <PlanCard
+            plan={overrides?.plan ?? STARTER_PLAN}
+            alreadyInCart={overrides?.alreadyInCart ?? false}
+            onAdd={onAdd}
+        />,
     );
     return { ...utils, onAdd };
 }
