@@ -509,6 +509,82 @@
           "cancel_success": "Invoice #{{id}} cancelled",
           "cancel_error": "Cancel failed"
         }
+      },
+      "purchase": {
+        "title": "Purchase",
+        "plans_title": "Plans",
+        "pay_title": "Payment",
+        "empty_plans": "No plans available yet. Please check back later.",
+        "load_error": "Failed to load plans or payment channels.",
+        "plan_card": {
+          "add_to_cart": "Add to cart",
+          "already_added": "Added"
+        },
+        "addon": {
+          "title": "Extras",
+          "subtitle": "Add extra traffic or days on top of a base plan.",
+          "quantity": "Quantity",
+          "unit_gb": "GB",
+          "unit_day": "day",
+          "add": "Add"
+        },
+        "cart": {
+          "title": "Cart",
+          "empty": "Your cart is empty.",
+          "remove": "Remove line",
+          "total": "Total",
+          "checkout": "Checkout",
+          "checkout_pending": "Creating invoice..."
+        },
+        "picker": {
+          "epay_tab": "Alipay / WeChat",
+          "trc20_tab": "USDT (TRC20)",
+          "epay_empty": "No 易支付 channel configured.",
+          "trc20_desc": "Send USDT on the TRON network to the displayed address. Your payment is detected automatically.",
+          "pay_epay": "Pay with 易支付",
+          "pay_trc20": "Pay with USDT",
+          "paying": "Redirecting..."
+        },
+        "trc20": {
+          "title": "USDT (TRC20) payment",
+          "loading": "Loading invoice...",
+          "load_error": "Failed to load invoice",
+          "countdown": "Expires in",
+          "amount_label": "Exact amount (send this)",
+          "memo_label": "Memo (include in tx)",
+          "instructions": "Send the EXACT amount to the operator's TRC20 address with the memo above. Your payment is matched automatically within a minute of confirmation.",
+          "paid_waiting_apply": "Payment received. Activating your plan now...",
+          "applied": "Plan activated. Enjoy.",
+          "terminal_failure": "This invoice is no longer active. Please start a new purchase.",
+          "copy": "Copy",
+          "copied": "Copied"
+        },
+        "state": {
+          "created": "Created",
+          "pending": "Pending",
+          "awaiting_payment": "Waiting for payment",
+          "paid": "Paid",
+          "applied": "Activated",
+          "expired": "Expired",
+          "cancelled": "Cancelled",
+          "failed": "Failed"
+        },
+        "toast": {
+          "checkout_success": "Invoice #{{id}} created",
+          "checkout_error": "Checkout failed"
+        }
+      },
+      "my_invoices": {
+        "title": "My invoices",
+        "empty": "You haven't made any purchases yet.",
+        "load_error": "Failed to load invoices",
+        "col": {
+          "id": "ID",
+          "state": "State",
+          "provider": "Provider",
+          "total": "Total",
+          "created_at": "Created"
+        }
       }
     }
   },

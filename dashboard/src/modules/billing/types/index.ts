@@ -145,3 +145,20 @@ export interface PaymentEvent {
 export interface InvoiceAdminAction {
     note: string;
 }
+
+// ------------------------------------------------------------------
+// User-facing types — cart / checkout / polling snapshot.
+// Kept in a separate module so the user purchase flow evolves
+// independently from admin-CRUD shapes. See `./user.ts` for the
+// rationale and the full type list.
+// ------------------------------------------------------------------
+
+export type {
+    CartLine,
+    CheckoutChannelId,
+    CheckoutRequest,
+    CheckoutResponse,
+    InvoicePollSnapshot,
+    MyInvoiceRow,
+    ResolvedCartLine,
+} from "./user";

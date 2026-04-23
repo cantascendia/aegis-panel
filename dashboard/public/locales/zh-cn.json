@@ -388,6 +388,82 @@
           "cancel_success": "订单 #{{id}} 已取消",
           "cancel_error": "取消失败"
         }
+      },
+      "purchase": {
+        "title": "购买",
+        "plans_title": "套餐",
+        "pay_title": "支付",
+        "empty_plans": "暂无可购买套餐,请稍后再看。",
+        "load_error": "套餐或支付通道加载失败。",
+        "plan_card": {
+          "add_to_cart": "加入购物车",
+          "already_added": "已加入"
+        },
+        "addon": {
+          "title": "加量选项",
+          "subtitle": "在主套餐之上追加流量或天数。",
+          "quantity": "数量",
+          "unit_gb": "GB",
+          "unit_day": "天",
+          "add": "加入"
+        },
+        "cart": {
+          "title": "购物车",
+          "empty": "购物车为空。",
+          "remove": "移除",
+          "total": "合计",
+          "checkout": "去结账",
+          "checkout_pending": "正在创建订单..."
+        },
+        "picker": {
+          "epay_tab": "支付宝 / 微信",
+          "trc20_tab": "USDT (TRC20)",
+          "epay_empty": "未配置易支付通道。",
+          "trc20_desc": "向下方地址在 TRON 网络转账 USDT,系统自动识别到账。",
+          "pay_epay": "使用易支付付款",
+          "pay_trc20": "使用 USDT 付款",
+          "paying": "跳转中..."
+        },
+        "trc20": {
+          "title": "USDT (TRC20) 付款",
+          "loading": "订单加载中...",
+          "load_error": "订单加载失败",
+          "countdown": "剩余时间",
+          "amount_label": "精确金额(按此发送)",
+          "memo_label": "备注(随交易发送)",
+          "instructions": "向运营商的 TRC20 地址发送**精确金额**并带上备注。确认后 1 分钟内系统自动匹配。",
+          "paid_waiting_apply": "已收到付款,正在开通套餐...",
+          "applied": "套餐已开通,祝使用愉快。",
+          "terminal_failure": "此订单已失效,请重新下单。",
+          "copy": "复制",
+          "copied": "已复制"
+        },
+        "state": {
+          "created": "已创建",
+          "pending": "处理中",
+          "awaiting_payment": "等待付款",
+          "paid": "已付款",
+          "applied": "已生效",
+          "expired": "已过期",
+          "cancelled": "已取消",
+          "failed": "失败"
+        },
+        "toast": {
+          "checkout_success": "订单 #{{id}} 已创建",
+          "checkout_error": "结账失败"
+        }
+      },
+      "my_invoices": {
+        "title": "我的订单",
+        "empty": "暂无订单记录。",
+        "load_error": "订单加载失败",
+        "col": {
+          "id": "编号",
+          "state": "状态",
+          "provider": "支付通道",
+          "total": "金额",
+          "created_at": "创建时间"
+        }
       }
     }
   },
