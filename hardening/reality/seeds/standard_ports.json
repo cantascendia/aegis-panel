@@ -1,0 +1,7 @@
+{
+  "_comment": "Port categorization for the port_canonical check. 443 on a desktop-style node is the highest-risk choice (massive baseline traffic + GFW pays attention). The 'recommended' set is Cloudflare's HTTPS alternates which look identical to legitimate CF-fronted traffic in TLS metadata. Update via PR; this file's mtime is the audit's freshness baseline.",
+  "_source": "compass_artifact_wf-5103cc40-b39f-4d20-9217-61987475be44_text_markdown.md (2026-04 snapshot)",
+  "recommended": [2053, 2083, 2087, 2096],
+  "warning": [80, 8443],
+  "critical": [443]
+}
