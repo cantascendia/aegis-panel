@@ -8,6 +8,26 @@
 
 ---
 
+## L-024 | Round 3 mid late-6 | 链上支付 = 拉模型,不是没装好的推模型 — TRC20 必须 poll 而不是想着搞 webhook
+
+**现象**:实现 A.3 TRC20 时第一直觉是 "EPay 都有 webhook,TRC20 应该也搞个 webhook 路径,统一接口"。停下来想了 30 秒后明确:**Tron 协议本身不会向任何 endpoint 推送**。Tronscan / Trongrid / 自建节点都是 "我读"。所谓的"TRC20 webhook" 只能是:第三方 indexer 读链 → 推到我们这。等于在我们和链之间加了一个新 trust boundary。
+
+**根因**:支付通道有两种 trust 模型:
+- **推模型**(EPay / Stripe / NOWPayments / 微信支付):中介向我们推回调。我们必须验签防伪,但中介会主动告诉我们"用户付了"。
+- **拉模型**(任何区块链直收):没有中介,我们必须主动观察链。延迟 = 我们的 poll interval;trust boundary = "这个 RPC 节点说的是真的链状态"。
+
+把这两类强行套进同一个抽象(都搞 webhook)= 给自己增加一个不必要的 trust boundary,而且要为 indexer 的 stability / 跑路 / 数据延迟单独写预案。**直接 poll 反而更简单**:30s 一次 HTTP GET,任何 indexer 给同样的数据就行,出问题切个 base URL 即可(`BILLING_TRC20_TRONSCAN_API_BASE` 改下值)。
+
+**防线**(下次接新支付通道时的判断流程):
+1. **该协议本身有没有原生 push 机制?** 区块链 = 几乎全部没有(以太坊有 eth_subscribe websocket,但要求自建 archive 节点,不实用);第三方网关 = 几乎全部有
+2. **如果没原生 push,中介推 ≠ 协议推**。中介推就是另一种"我们读" + 中介内部缓存,把 trust boundary 移到中介的可靠性上。能直接读链就直接读
+3. **延迟可接受?** Poll interval 决定 SLA。30s 对支付场景够用(用户从付款到看到 "已确认" 等 30s 不是问题);< 5s 才需要考虑 websocket / 长轮询
+4. **API 切换成本?** 直接 poll 公共 indexer 切换成本低(改 base URL);依赖某中介推送,切换是大手术
+
+**沉淀**: ✅ 本 entry。`ops/billing/providers/trc20.py` 模块 docstring "Why polling over webhook" 段记录设计决策上下文;`Trc20Provider.handle_webhook` 主动 raise `UnhandledEventType` 防止有人后来又想加 webhook 路由。
+
+---
+
 ## L-023 | Round 3 mid late-6 | `asyncio.run()` 在 FastAPI 已运行 loop 内会炸,用 `asyncio.to_thread` 包装现有 sync 实现
 
 **现象**:Reality R.3 endpoint 测试 `test_audit_source_config_perfect_returns_green` 失败,日志显示 `RuntimeError: asyncio.run() cannot be called from a running event loop`,同时 pytest 警告 `coroutine '_fake' was never awaited`。错误来自 `hardening/reality/checks/asn_match.py` 内的 `info = asyncio.run(lookup_asn(sni_ip))` —— 这个 helper 是 sync 的,从 CLI / 普通脚本调用没问题,但 FastAPI endpoint 里上层已经在跑 event loop。
