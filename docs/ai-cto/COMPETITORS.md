@@ -1,27 +1,50 @@
 # 竞品分析(COMPETITORS)
 
-> 最后更新:2026-04-21(第零轮,基于 sub-agent 深度调研)
-> 数据来源:GitHub API + 官方 README + 源码抽样 + WebSearch,截至 2026-04-21
+> 最后更新:**2026-04-26**(quarterly refresh,首次自第零轮起)
+> 数据来源:GitHub API 实抓(`gh api repos/<owner>/<repo>` + `releases`)+ 我们已落地代码状态
+>
+> **下次刷新**:2026-07-26(每季度,与 `UPSTREAM-SYNC-REPORT-*.md` 同步进行)
 
 ---
 
 ## 综合矩阵
 
-| 维度 | **Marzneshin**(我们基底) | Hiddify-Manager | 3X-UI | Remnawave | S-UI |
-|---|---|---|---|---|---|
-| Stars | 673 | **8.7k** | **34.7k** | 3.7k | 8.5k |
-| 最近活跃 | v0.7.4 @ 2025-10 | v12.0 @ 2026-02 | v2.9.0 | v2.7.4 | 活跃 |
-| 技术栈 | Python + TS | Python + Shell | Go + HTML | TS (NestJS) | Go |
-| 多节点原生 | ✅ panel+marznode | ✅ | ❌ | ❌ | ❌ |
-| 测试覆盖 | ~0% | ~0% | ~0% | ~0% | ~0% |
-| 商业化(计费/订阅) | ❌ | ⚠️ 用户限制管理但无支付 | ❌ | ❌ | ❌(仅订阅链接) |
-| 原生 IP 限制 | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Reality/SNI 选型 | ❌ | 半(多协议混用) | ❌ | ❌ | ✅(sing-box 原生) |
-| CF Tunnel 集成 | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Telegram Bot | 已有(aiogram) | ✅ 成熟 | ❌ | ❌ | ❌ |
-| i18n | ✅ 6 种 | ✅ 多种 | 部分 | 部分 | ✅ |
+新增 **Aegis(我们)** 列,把"我们基底 Marzneshin"和"我们 fork 后的真实状态"分开 —— 这样能清晰看到我们 6 个月在 Marzneshin 之上加了什么。
 
-**关键洞察**:**所有竞品测试覆盖率都为 0%**,这说明整个生态对质量工程普遍不重视;如果我们能把 Marzneshin 基底补齐 CI + 测试,本身就是差异化。
+| 维度 | **Aegis(我们)** | Marzneshin(我们基底) | Hiddify-Manager | 3X-UI | Remnawave | S-UI |
+|---|---|---|---|---|---|---|
+| Stars | n/a(私仓) | **677**(几乎不动) | **8745**(+45) | **35.1k**(+450) | **3775**(+75) | **8554**(+54) |
+| 最近 release | 71 个内部 PR,无对外 release | v0.7.4 @ 2025-07-12 | **v12.2.0b1 @ 2026-03-29** | **v2.9.2 @ 2026-04-22** | **2.7.4 @ 2026-03-30** | v1.4.1 @ 2026-03-29 |
+| 最后 push | 2026-04-26(本会话) | **2025-10-04**(7 个月前)| 2026-03-29 | **2026-04-24** | 2026-04-23 | 2026-04-01 |
+| 维护状态 | 🟢 活跃 | **⚫ dormant** | 🟢 活跃 + 加速 | 🟢 最活跃 | 🟢 daily-release 节奏 | 🟢 活跃 |
+| 技术栈 | Python 3.12 + TS(同 Marzneshin)+ 自研 hardening / ops | Python + TS | Python + Shell | Go + HTML | TS (NestJS) | Go |
+| 多节点原生 | ✅ 继承 panel+marznode | ✅ panel+marznode | ✅ | ❌ | ❌ | ❌ |
+| 测试覆盖 | **~233 后端测试 + CI 全套**(L-022 / D-009)| ~0% | ~0% | ~0% | ~0% | ~0% |
+| 商业化(计费/订阅) | **🟡 进行中**:A.1 数据面 + Admin UI ✅,A.2.2 webhook ✅,A.5 scheduler ⏳,真接码商 ⏳ | ❌ | ⚠️ 用户限制管理但无支付 | ❌ | ❌ | ❌(仅订阅链接) |
+| 原生 IP 限制 | **✅ MVP**(PR #24,policy 表 + dashboard UI) | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Reality/SNI 选型 | **✅ 全链路闭环**(PR #13/16/18/66 — CLI / REST / UI / runbook) | ❌ | 半(多协议混用) | ❌ | ❌ | ✅(sing-box 原生) |
+| CF Tunnel 集成 | ⏳ SPEC-deploy.md D.4 已就位,代码未起 | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Telegram Bot | ✅ 继承 aiogram + iplimit 告警拓展 | 已有(aiogram) | ✅ 成熟 | ❌ | ❌ | ❌ |
+| i18n | ✅ 继承 6 种 | ✅ 6 种 | ✅ 多种 | 部分 | 部分 | ✅ |
+| 反代信任 X-Forwarded-For | **✅ per-feature CIDR env**(D-012,billing webhook 已用) | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+**关键洞察(2026-04-26 复评后修正)**:
+
+1. **基底 Marzneshin 实质 dormant**(详见 [`UPSTREAM-SYNC-REPORT-2026-04-26.md`](./UPSTREAM-SYNC-REPORT-2026-04-26.md))。其他 4 个竞品全部活跃,3X-UI 昨天还在发版。**我们事实上已是 Marzneshin lineage 的承接者**
+2. **测试覆盖 0% → 233 后端测试**:首轮观察的"整个生态不重视测试工程"仍成立 —— 我们是唯一有 CI 全套门禁 + alembic stepped upgrade + PG16 matrix + pip-audit 的项目
+3. **差异化 #1(SNI 智能选型器)+ #2(IP 限制)已 MVP 落地** —— 6 个月前是 ⏳,现在是 ✅
+4. **商业化是当前唯一未完成的差异化大块**(A.5 scheduler / 真接码商)。其他 4 个竞品**都没有**完整支付链路 —— 这仍是最宽护城河,但我们也没合上
+
+## 自第零轮(2026-04-21)以来的 5 天 + 6 个月里发生了什么
+
+| 我们(Aegis) | Marzneshin 基底 | 其他竞品 |
+|---|---|---|
+| 71 个 PR 合入 | 2 个 hotfix(都在 fork 当天) | 3X-UI 12 个 release(v2.7.x → v2.9.x);Hiddify v12.0 → v12.2.0b1;Remnawave 2.7.0 → 2.7.4(daily) |
+| Round 1 leftover 全清 | 长期 stale | — |
+| 安全 / 测试 / CI 三档质量门禁 | 无变化 | 无变化(仍然 0%) |
+| SNI 选型器全链路闭环(差异化 #1) | — | — |
+| IP 限制 MVP(差异化 #2) | — | Hiddify 一直有但实现糙 |
+| 计费 A.1 + A.2.2 落地 | — | 仍无人做 |
 
 ---
 
@@ -157,18 +180,44 @@
 
 ---
 
-## 追踪坐标(未来每轮刷新)
+## 追踪坐标(每季度刷新)
 
-我们应当在每 3 轮监控一次以下数据,看竞品有没有做我们还没做的:
+| 项目 | 最后 release | 最后 push | 需要关注的新功能 |
+|---|---|---|---|
+| **Marzneshin**(我们基底)| v0.7.4 @ 2025-07-12 | 2025-10-04 | **dormant**;关注是否复活(commit count > 5 / 任何新 release)|
+| **Hiddify-Manager** | v12.2.0b1 @ 2026-03-29 | 2026-03-29 | 多节点演进、原生计费、IP 限制算法演进 |
+| **3X-UI** | **v2.9.2 @ 2026-04-22** | 2026-04-24 | Reality / sing-box 跟进、单节点商业化(若有)|
+| **Remnawave** | 2.7.4 @ 2026-03-30 | 2026-04-23 | 是否加多节点(NestJS 架构能否原生支持)|
+| **S-UI** | v1.4.1 @ 2026-03-29 | 2026-04-01 | Reality 抗封更新、sing-box 新协议适配 |
 
-| 项目 | 最后发布 | 需要关注的新功能 |
-|---|---|---|
-| Hiddify-Manager | v12.0.0 @ 2026-02 | 多节点演进、原生计费 |
-| Marzneshin(我们基底) | v0.7.4 @ 2025-10 | v0.8+ 若出,Kubernetes/多 admin RBAC |
-| Remnawave | v2.7.4 | 是否加多节点 |
-| S-UI | 活跃 | Reality 抗封更新 |
+**数据刷新策略**:每季度(2026-07-26 / 10-26 / ...)跑:
 
-数据刷新策略:每 3 轮跑一次 `gh api repos/<owner>/<repo>/releases/latest`,diff 出新 feature。
+```bash
+gh api 'repos/<owner>/<repo>' --jq '.stargazers_count, .pushed_at, .archived'
+gh api 'repos/<owner>/<repo>/releases?per_page=3' --jq '.[].tag_name + "  " + .[].published_at'
+```
+
+把上表数字 delta 写到本文件 §刷新历史(末尾),不删旧数据 — 保留纵向历史让我们看出谁加速 / 谁停摆。
+
+## 刷新历史
+
+### 2026-04-26(本次)
+
+- 首次定期刷新
+- **关键发现**:Marzneshin 基底实质 dormant(2 commit / 6 个月,见 UPSTREAM-SYNC-REPORT-2026-04-26.md);其他 4 个竞品全部活跃,3X-UI 最快(daily 节奏 + v2.9.x 系列)
+- 我们在 6 个月里合 71 个 PR,差异化 #1 SNI 全链路闭环 + #2 IP 限制 MVP + 计费数据面 / Admin / A.2.2 webhook 落地
+- **战略修订**:加 "Aegis(我们)" 列到矩阵首位,把"基底状态" 与 "我们状态" 区分(此前混在一列容易让读者误判我们已落地的差异化)
+- 维护者(`khodedawsh`)dormancy 同时影响 Marzneshin + v2share 两个 repo(D-013 链接)
+
+### 后续刷新模板
+
+```
+### YYYY-MM-DD
+
+- delta 维度 1:
+- delta 维度 2:
+- 战略修订(如有):
+```
 
 ---
 
