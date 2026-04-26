@@ -5,6 +5,38 @@
 
 ---
 
+## D-015 | 2026-04-26 | 链上支付匹配策略 = "memo > exact-amount + window";拒绝模糊;cents-dither 解并发;rate 操作员锁定
+
+**决策**:在 A.3 TRC20 落地中固化三条配套政策:
+
+1. **匹配策略**:
+   - **优先 memo 匹配**(HMAC-SHA256 8 字符 salt 化,`O(1)` 不模糊)
+   - **退回精确金额 + 时间窗口匹配**(对付 strip 掉 memo 的钱包 ~50%)
+   - **没有第三种**:不做"差不多" / "近似" / "前后 X 分钟内任意金额"
+2. **欠付 / 超付都不补偿**:用户付了 0.999 USDT 而账单 1.000 USDT → 不匹配,用户必须重发。**不**自动给个折扣(防"故意少付"的滥用),**不**自动留差额做 credit(防 operator 欠用户钱)。审计干净 = 钱不出错。
+3. **cents-dither 解并发**:`expected_amount_millis += invoice_id % 1000`。1000 个分散值,假设 operator 同一时刻 < 1000 个 awaiting_payment 直收发票(实际 < 几个),collision 概率忽略。**不用** UUID / random / 时间戳 dither —— 为了重启幂等可重算。
+4. **rate 操作员锁定**:`BILLING_TRC20_RATE_FEN_PER_USDT` 是 env 锁的,不自动 fetch CoinGecko / Binance。理由 = 多一个外部 API 依赖 = 多一个故障面 + 市场波动期匹配歧义(用户点 checkout 时 7.20,实际付款时 7.30 = 多付 / 少付都尴尬)。Operator 周复盘 + 设 env + 重启,1-2% 偏差 < ticker outage 风险。
+5. **`MIN_CONFIRMATIONS=1` 默认**:Tron 3 秒块时,`confirmed=true` ≈ 不可逆。Bitcoin 那种 6 / 12 confirmation doctrine 不适用。Paranoid operator 可调 19(Tron SR round)。
+
+**Why**:
+- 模糊匹配的诱惑很大("用户少付几分,给个面子让通过"),但开了这个口子之后无法收尾 —— 客户会试探 "9.95 也通过,9.5 呢?";审计 trail 失去精确性;refund 流程变成模糊判断
+- 链上没有 chargeback,用户付错就只能让他重发或申请人工退款。**这是协议本身的特性,我们不该去模糊化它**;就像信用卡能 chargeback 是协议特性,我们不该假装没有
+- cents-dither 用 `invoice_id % 1000` 而不是 random:**幂等**。重启 panel,memo 还是同 memo,dithered amount 还是同 amount,poller 重新读链可以自洽。Random 化 = DB 必须存 dither 值,重启风险面变大
+- rate 锁定是经典"少一个 API 少一个故障点"原则;用户体验 1-2% 偏差感知度极低(都是中国用户对 USDT 价格不敏感)
+
+**How to apply**:
+- `ops/billing/trc20_matcher.py` 模块 docstring "Why no proximity / partial match" 段是这条政策的代码版
+- `ops/billing/trc20_config.py` 模块 docstring "Why ``BILLING_TRC20_RATE_FEN_PER_USDT`` is operator-set" 段是 rate 锁定的理由
+- 14 个 matcher 测试覆盖所有 reject 情况(under-pay / over-pay / 窗口外 / unconfirmed / 小数额),pin 这条政策
+- 未来加新支付通道(BTC / ETH / TON 等)时,先回到 D-015 看适不适用;以太坊有 EIP-1559 gas dance 和 chargeback-via-revert 边角,可能需要 D-NNN 单开决策
+
+**推翻条件**:
+- 运营调研发现 50%+ 用户会因金额不精确放弃 → 重审欠付政策(可能加"≤ 1¢ 偏差自动放行")
+- 真接一家 Tronscan 替代发现 confirmation 模型不一样 → 重审 MIN_CONFIRMATIONS 默认
+- USDT 转换为 USD-pegged 但脱锚 → rate 锁定政策需重审(可能要加 max_deviation_pct env 防超偏离)
+
+---
+
 ## D-014 | 2026-04-26 | 计费 grant 应用 = `pricing.py` / `grants.py` 双模块分离;`expire_strategy` 升级政策固化
 
 **决策**:在 A.5 scheduler 落地中固化两条配套政策:

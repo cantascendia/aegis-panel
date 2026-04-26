@@ -1,6 +1,6 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-26 late-6(Round 3 mid — 差异化 #3 Reality audit R.1+R.2+R.3 + 商业化 A.5 scheduler 全部 session 0 自动落地,差异化 #3 后端闭环就绪)
+> 最后更新:2026-04-26 late-6(Round 3 mid — 差异化 #3 Reality audit R.1+R.2+R.3 + 商业化 A.5 scheduler + A.3 TRC20 全部 session 0 自动落地,商业化双支付通道闭环 + 差异化 #3 后端闭环就绪)
 > 更新频率:每 3 轮或重大节点
 
 ---
@@ -48,7 +48,7 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 ## 产品完成度
 
 - 上游功能 6/6 保留(面板 / 多节点 / Reality / 订阅 / Telegram / 多语言)
-- 自研核心功能 **5/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**计费数据面 + Admin UI + A.5 scheduler**,**Reality 配置审计 R.1+R.2+R.3**)
+- 自研核心功能 **5/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**计费完整后端 = 数据面 + Admin UI + A.5 scheduler + A.3 TRC20 双支付通道**,**Reality 配置审计 R.1+R.2+R.3**)
 - 自研基础设施 **全部就绪**:
   - ✅ 安全基线(JWT 外置 / CORS 白名单 / bcrypt 固化 / JWT 时效 60min)
   - ✅ Auth 依赖升级(pyjwt 2.12 / pynacl 1.6.2 / cryptography 46.0.7)
@@ -68,7 +68,7 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
   - ✅ **`hardening/iplimit/`**(Round 3)—— policy 表(config / override / disabled_state)+ Xray access 日志 parser(时间戳感知)+ Redis 滚动窗口 + detector + REST + Telegram 告警 + clear-disable endpoint
   - ✅ **`ops/billing/`**(Round 3)—— 5 张 `aegis_billing_*` 表(plans / channels / invoices / invoice_lines / payment_events)+ 状态机 + webhook 去重 + 管理员 REST
   - ✅ **`dashboard/src/modules/nodes/dialogs/sni-suggest/`**(Round 2)+ **`dashboard/src/modules/users/dialogs/iplimit/`**(Round 3)+ **`dashboard/src/modules/billing/`**(Round 3 in-progress)
-- 关键缺口(Round 3+):TRC20 poller(A.3)/ 用户购买 UI(A.4 完结)/ Reality 审计 dashboard 页(R.4,S-F-2)/ 真实 ¥0.01 round-trip(需用户对接码商)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC;小债:SNI rate-limit 回填 / `hardening/iplimit` 白名单 + Redis SCAN / TZ 对齐文档
+- 关键缺口(Round 3+):用户购买 UI(A.4 完结,S-F)/ Reality 审计 dashboard 页(R.4,S-F-2)/ 真实 ¥0.01 round-trip(需用户对接码商)/ 真实 USDT 测试网 round-trip(A.3 已 ship,需 ops 接 Tronscan stage 验证)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC;小债:SNI rate-limit 回填 / `hardening/iplimit` 白名单 + Redis SCAN / TZ 对齐文档
 
 ## 当前代码质量评分
 
@@ -261,19 +261,24 @@ S-O 本轮两次触发消化了 #41/#46/#48/#49/#52/#54/#56/#57/#58/#59/#60 共 
 - **#74 R.1 Reality 配置审计 core**:`hardening/reality/{checks,scoring,report,seeds}` —— 五件套指标(SNI 冷门度 / ASN 同质性 / 端口非标准 / shortId 合规 / connIdle 短设)+ 评分 + Markdown/JSON 渲染。44 测试。compass_artifact_*.md 五件套现在第一次有可执行体现
 - **#75 R.2 CLI + loader + 黄金 fixture**:`hardening/reality/cli.py` argparse 双模式(`--config` 文件 / `--from-db`)+ `from_db_rows` / `from_xray_config` loader + golden fixtures(perfect.json 应 ≥90 green / broken.json 应 <60 red)。CLI 退出码契约 `0/1/2` 锁定。20 测试
 - **#76 R.3 Reality REST endpoint**:`POST /api/reality/audit` (sudo-admin 门控 / 60s wait_for / 504 on WHOIS hang) + `apply_panel_hardening` include_router 一行。`asyncio.to_thread(check_asn_match)` 解决 sync `asyncio.run()` 与 FastAPI 运行 loop 冲突的问题(L-023 候选)。10 测试,**reality 全套 74 测试**
-- **#77 A.5 计费 scheduler**:`ops/billing/{scheduler,grants}.py` 两条 APScheduler 任务 —— `reap_expired_invoices`(每 60s,`awaiting_payment` 过 `expires_at` → `expired`)+ `apply_paid_invoices`(每 30s,`paid` → `applied` + 用户 `data_limit` / `expire_date` 加 grant)+ `install_billing_scheduler` lifespan 包装(同 iplimit 模式)。25 测试,**billing 全套 137 测试**
+- **#77 A.5 计费 scheduler**:`ops/billing/{scheduler,grants}.py` 两条 APScheduler 任务 —— `reap_expired_invoices`(每 60s,`awaiting_payment` 过 `expires_at` → `expired`)+ `apply_paid_invoices`(每 30s,`paid` → `applied` + 用户 `data_limit` / `expire_date` 加 grant)+ `install_billing_scheduler` lifespan 包装(同 iplimit 模式)。25 测试,billing 套 137 测试
+- **#79 A.3 TRC20 直收支付通道**(关键里程碑):**计费第二条支付通道全后端就位**。`ops/billing/{providers/trc20,trc20_config,trc20_matcher,trc20_client,trc20_poller}.py` 5 个新模块。**与 EPay 反向**:无第三方 webhook,我们 30s 轮询 Tronscan 公开 API。两层匹配 = 优先 memo(HMAC-SHA256 8 字符,salt 防爆破)+ 退回精确金额 + window(cents-dither 解并发)。无模糊匹配 / 无超付欠付补偿 = 审计干净。`MIN_CONFIRMATIONS` 默认 1(Tron 3 秒块时,paranoid 可调 19)。state-machine 守卫保 idempotency:同一 transfer 重新喂入不会双付。60 测试,**billing 全套 197 测试**(137 → 197)
 
 **差异化 #3 (Reality 配置审计) 后端闭环完成**:SPEC(#10 之前)→ R.1 core(#74)→ R.2 CLI+loader(#75)→ R.3 REST(#76)。R.4 dashboard UI 待 S-F-2 session 启动(前端地盘),后端闭环已 production-ready。
 
-**商业化推进里程碑**:A.5 scheduler 让"用户付钱后自动延长"链路从 webhook 到 User row 全自动,不再需要 admin manual_apply 手动触发。**A.2.x 链路下一步**只剩"真实 ¥0.01 round-trip"(需要 mock 码商或对接一家,需用户外部动作)。
+**商业化推进里程碑**:
+- A.5 scheduler 让"用户付钱后自动延长"链路从 webhook 到 User row 全自动,不再需要 admin manual_apply 手动触发
+- A.3 TRC20 + EPay 双支付通道全部后端就位 —— 用户结账时可选 EPay(支付宝/微信中介)或 TRC20(USDT 直收无中介手续费)。**A.x 计费**剩余真实开发动作 = A.4 用户购买 UI 收尾(前端,S-F)+ 真接 ¥0.01 round-trip(用户外部动作 = 接一家码商 stage 测试)+ 真接 USDT 测试网 round-trip(用户外部动作 = ops 接 Tronscan stage 验证一遍)
 
 **新增 LESSONS / DECISIONS**:
 - **L-023 候选** `asyncio.run()` 不能从 FastAPI 已运行的 loop 内调用 —— 用 `asyncio.to_thread` 包装可重用现有 sync 实现而不必改写为 async
+- **L-024 候选** 链上支付 vs. 第三方网关 = 拉模型 vs. 推模型,trust boundary 不一样;TRC20 选 poll 而不是想着搞个 webhook 是因为 Tron 本身不推,只能读
 - **D-014 候选** 计费 grant 应用 = pricing.py(预付,无 DB)/ grants.py(后付,改 User)分离;expire_strategy 政策:`NEVER` / `START_ON_FIRST_USE` 首次 duration grant → `FIXED_DATE` anchored 到 now;`FIXED_DATE` 已 lapsed → 从 `max(now, expire_date)` 延长
+- **D-015 候选** 链上支付匹配策略 = "memo > exact-amount + window";拒绝模糊匹配(under-pay / over-pay 都不补偿);cents-dither (`invoice_id % 1000` millis) 解并发;rate 操作员锁定不自动 fetch ticker(避免双 API 依赖 + 市场波动期匹配歧义)
 
-**Auto-merge 节奏继续稳态**:本轮 5 个 PR(#73/#74/#75/#76/#77)全部 session 0 单跑,Monitor + auto-merge 链路 5/5 成功,**用户 0 手动操作**。
+**Auto-merge 节奏继续稳态**:本轮 6 个 PR(#73/#74/#75/#76/#77/#79)全部 session 0 单跑(+ #78 docs 间隔同步),Monitor + auto-merge 链路 6/6 成功,**用户 0 手动操作**。
 
-**SESSIONS.md 状态**:Round 3 mid 接近收口 —— 差异化 #1 ✅ / 差异化 #2 ✅(MVP)/ 差异化 #3 ✅(后端);A.5 ✅。剩余真功能开发块 = R.4 dashboard(S-F-2)+ A.4 用户购买 UI(S-F-延续)+ 真接 ¥0.01 round-trip(用户外部动作)。
+**SESSIONS.md 状态**:Round 3 mid 接近收口 —— 差异化 #1 ✅ / 差异化 #2 ✅(MVP)/ 差异化 #3 ✅(后端);A.3 / A.5 ✅。剩余真功能开发块 = R.4 dashboard(S-F-2)+ A.4 用户购买 UI(S-F-延续)+ 真接 ¥0.01 round-trip(用户外部动作)+ 真接 USDT round-trip(用户外部动作)。
 
 ---
 
