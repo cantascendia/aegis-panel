@@ -15,6 +15,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from hardening.health.endpoint import router as health_router
 from hardening.iplimit.endpoint import router as iplimit_router
 from hardening.iplimit.scheduler import install_iplimit_scheduler
 from hardening.panel.rate_limit import limiter
@@ -67,5 +68,6 @@ def apply_panel_hardening(app: FastAPI) -> None:
     app.include_router(billing_admin_router)
     app.include_router(billing_checkout_router)
     app.include_router(reality_router)
+    app.include_router(health_router)
     install_iplimit_scheduler(app)
     install_billing_scheduler(app)
