@@ -22,6 +22,14 @@ xxhash==3.4.1
 grpcio==1.69.0
 psycopg==3.1.18
 psycopg-binary==3.1.18
+# v2share's "beta" version label is a maintainer convention, not a
+# quality flag — `0.1.0b31` is the latest release and the project
+# never published a stable `0.1.0`. Maintainer is `khodedawsh`, the
+# same person behind upstream Marzneshin, so this dep's lifecycle is
+# coupled to ours. See docs/ai-cto/RESEARCH-v2share-evaluation.md +
+# DECISIONS.md#D-013 for the full evaluation. Vendor-into-repo is the
+# planned hedge if upstream stalls; trigger conditions documented in
+# the research file.
 v2share==0.1.0b31
 PyJWT==2.12.0
 PyNaCl==1.6.2
