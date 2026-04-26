@@ -61,12 +61,18 @@ def get_provider(
             raise ValueError(
                 "epay provider requires callback_base_url for notify_url"
             )
+        from ops.billing.providers.epay import SIGN_BODY_MODE_PLAIN
+
+        sign_body_mode = channel.get_extra_config(
+            "sign_body_mode", SIGN_BODY_MODE_PLAIN
+        )
         return EPayProvider(
             channel_code=channel.channel_code,
             merchant_id=channel.merchant_id,
-            secret_key=channel.secret_key,
+            secret_key=channel.merchant_key,
             gateway_url=channel.gateway_url,
             callback_base_url=callback_base_url,
+            sign_body_mode=sign_body_mode,
         )
 
     if kind == "trc20":

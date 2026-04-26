@@ -316,7 +316,20 @@ class _StubChannel:
         self.channel_code = kw.get("channel_code", "zpay1")
         self.merchant_id = kw.get("merchant_id", "1001")
         self.secret_key = kw.get("secret_key", "s3cret")
+        self.merchant_key_encrypted = kw.get("merchant_key_encrypted", None)
         self.gateway_url = kw.get("gateway_url", "https://pay.example.com")
+        self.extra_config_json = kw.get("extra_config_json", None)
+
+    @property
+    def merchant_key(self) -> str:
+        # Stub mirrors PaymentChannel.merchant_key: prefer the
+        # (normally encrypted) column, fall back to plaintext.
+        return self.secret_key or ""
+
+    def get_extra_config(self, key: str, default: Any = None) -> Any:
+        if not self.extra_config_json:
+            return default
+        return self.extra_config_json.get(key, default)
 
 
 def test_get_provider_returns_epay_for_epay_kind() -> None:

@@ -56,6 +56,13 @@ EPAY_TRADE_SUCCESS = "TRADE_SUCCESS"
 # key present in the request participates.
 _SIGN_EXCLUDED_KEYS = frozenset({"sign", "sign_type"})
 
+# Sign-body dialects. ~70% of 码商 use "plain"; the rest prepend the
+# literal string "&key=" before the secret. Channel rows pick via
+# ``extra_config_json["sign_body_mode"]``.
+SIGN_BODY_MODE_PLAIN = "plain"
+SIGN_BODY_MODE_WITH_KEY_PREFIX = "with_key_prefix"
+SIGN_BODY_MODES = (SIGN_BODY_MODE_PLAIN, SIGN_BODY_MODE_WITH_KEY_PREFIX)
+
 
 class EPayProvider(BasePaymentProvider):
     """Generic 易支付 adapter. One instance per :class:`PaymentChannel`."""
@@ -70,12 +77,19 @@ class EPayProvider(BasePaymentProvider):
         secret_key: str,
         gateway_url: str,
         callback_base_url: str,
+        sign_body_mode: str = SIGN_BODY_MODE_PLAIN,
     ) -> None:
+        if sign_body_mode not in SIGN_BODY_MODES:
+            raise ValueError(
+                f"sign_body_mode must be one of {SIGN_BODY_MODES}, "
+                f"got {sign_body_mode!r}"
+            )
         self._channel_code = channel_code
         self._merchant_id = merchant_id
         self._secret_key = secret_key
         self._gateway_url = gateway_url.rstrip("/")
         self._callback_base_url = callback_base_url.rstrip("/")
+        self._sign_body_mode = sign_body_mode
 
     async def create_invoice(
         self,
@@ -108,7 +122,9 @@ class EPayProvider(BasePaymentProvider):
             "money": money,
             "sign_type": "MD5",
         }
-        params["sign"] = compute_sign(params, self._secret_key)
+        params["sign"] = compute_sign(
+            params, self._secret_key, sign_body_mode=self._sign_body_mode
+        )
 
         query = _urlencode_sorted(params)
         payment_url = f"{self._gateway_url}/submit.php?{query}"
@@ -138,7 +154,9 @@ class EPayProvider(BasePaymentProvider):
         if not received_sign:
             raise InvalidSignature("webhook missing sign field")
 
-        expected = compute_sign(params, self._secret_key)
+        expected = compute_sign(
+            params, self._secret_key, sign_body_mode=self._sign_body_mode
+        )
         # Constant-time comparison — sign is 32 hex chars, minimal cost.
         if not _constant_time_equals(received_sign, expected):
             raise InvalidSignature(
@@ -176,17 +194,26 @@ class EPayProvider(BasePaymentProvider):
 # ---------------------------------------------------------------------
 
 
-def compute_sign(params: Mapping[str, str], secret_key: str) -> str:
-    """Compute the plain-mode 易支付 MD5 signature.
+def compute_sign(
+    params: Mapping[str, str],
+    secret_key: str,
+    *,
+    sign_body_mode: str = SIGN_BODY_MODE_PLAIN,
+) -> str:
+    """Compute the 易支付 MD5 signature.
 
-    Algorithm(same across SSPanel / Xboard / v2board):
+    Algorithm(common core across SSPanel / Xboard / v2board):
 
     1. Exclude ``sign`` and ``sign_type``; drop empty-string values.
     2. Sort remaining keys ascending.
     3. Join as ``k1=v1&k2=v2&...``.
-    4. Append secret: ``body + secret_key``(plain mode;
-       ``body + "&key=" + secret_key`` is the minority dialect, not
-       supported in A.2.1).
+    4. Append secret. Two wire dialects observed:
+
+       - ``plain`` (default, ~70%): ``body + secret_key``
+       - ``with_key_prefix``: ``body + "&key=" + secret_key``
+
+       Dialect is per-channel (``PaymentChannel.extra_config_json
+       ["sign_body_mode"]``); the provider passes it through here.
     5. MD5 hexdigest, lowercase.
     """
 
@@ -197,7 +224,10 @@ def compute_sign(params: Mapping[str, str], secret_key: str) -> str:
     }
     sorted_items = sorted(filtered.items())
     body = "&".join(f"{k}={v}" for k, v in sorted_items)
-    body += secret_key
+    if sign_body_mode == SIGN_BODY_MODE_WITH_KEY_PREFIX:
+        body += f"&key={secret_key}"
+    else:
+        body += secret_key
     return hashlib.md5(body.encode("utf-8")).hexdigest().lower()
 
 

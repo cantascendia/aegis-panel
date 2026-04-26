@@ -62,6 +62,25 @@ def _isolated_env() -> Iterator[None]:
     # Point the app at an ephemeral in-memory SQLite unless a test overrides.
     os.environ.setdefault("SQLALCHEMY_DATABASE_URL", "sqlite:///:memory:")
 
+    # Billing encryption + public URL. Production panels supply these
+    # via .env; tests mirror that contract so the channel create/patch
+    # and webhook paths exercise real Fernet + URL construction.
+    from cryptography.fernet import Fernet
+
+    from ops.billing import config as billing_config
+
+    # In tests, FastAPI's TestClient sends requests with peer
+    # 127.0.0.1; trusting that lets the existing X-Forwarded-For
+    # tests exercise the "behind a trusted proxy" path. A dedicated
+    # spoofing test (test_webhook_ip_allowlist_ignores_spoofed_xff_when_peer_untrusted)
+    # overrides this back to "" to verify the "no trusted proxy"
+    # path rejects the same request.
+    billing_config._reload_for_tests(
+        secret_key=Fernet.generate_key().decode(),
+        public_base_url="https://panel.test",
+        trusted_proxies="127.0.0.1/32,::1/128",
+    )
+
     yield
 
     for key, value in saved.items():
