@@ -3,6 +3,8 @@ import secrets
 from datetime import datetime
 
 import sqlalchemy.sql
+
+from app.utils._aegis_clocks import now_utc_naive
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -100,7 +102,7 @@ class Admin(Base):
         default=True,
         server_default=sqlalchemy.sql.true(),
     )
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=now_utc_naive)
     is_sudo = Column(Boolean, default=False)
     password_reset_at = Column(DateTime)
     subscription_url_prefix = Column(
@@ -210,7 +212,7 @@ class User(Base):
     sub_updated_at = Column(DateTime)
     sub_last_user_agent = Column(String(512))
     sub_revoked_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=now_utc_naive)
     note = Column(String(500))
     online_at = Column(DateTime)
     edit_at = Column(DateTime)
@@ -222,7 +224,7 @@ class User(Base):
     @hybrid_property
     def expired(self):
         if self.expire_strategy == "fixed_date":
-            return self.expire_date < datetime.utcnow()
+            return self.expire_date < now_utc_naive()
         return False
 
     @expired.expression
@@ -465,9 +467,9 @@ class Node(Base):
     status = Column(
         Enum(NodeStatus), nullable=False, default=NodeStatus.unhealthy
     )
-    last_status_change = Column(DateTime, default=datetime.utcnow)
+    last_status_change = Column(DateTime, default=now_utc_naive)
     message = Column(String(1024))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=now_utc_naive)
     uplink = Column(BigInteger, default=0)
     downlink = Column(BigInteger, default=0)
     user_usages = relationship(

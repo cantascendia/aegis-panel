@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.db import crud, User, GetDB
 from app.db.models import Service
 from app.models.admin import Admin, oauth2_scheme
+from app.utils._aegis_clocks import now_utc_naive
 from app.utils.auth import get_admin_payload
 
 
@@ -100,7 +101,7 @@ def user_modification_access(
 def parse_start_date(start: str | None = None):
     if not start:
         return datetime.fromtimestamp(
-            datetime.utcnow().timestamp() - 30 * 24 * 3600
+            now_utc_naive().timestamp() - 30 * 24 * 3600
         )
     else:
         return datetime.fromisoformat(start)
@@ -108,7 +109,7 @@ def parse_start_date(start: str | None = None):
 
 def parse_end_date(end: str | None = None):
     if not end:
-        return datetime.utcnow()
+        return now_utc_naive()
     else:
         return datetime.fromisoformat(end)
 

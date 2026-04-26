@@ -9,6 +9,8 @@ from fastapi import HTTPException, Query
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi_pagination.links import Page
 
+from app.utils._aegis_clocks import now_utc_naive
+
 from app import marznode
 from app.db import crud, User
 from app.db.models import Service
@@ -180,7 +182,7 @@ async def delete_expired(
         admin=dbadmin if not admin.is_sudo else None,
     )
 
-    current_time = datetime.utcnow()
+    current_time = now_utc_naive()
     expiration_threshold = current_time - timedelta(seconds=passed_time)
     expired_users = [
         user
