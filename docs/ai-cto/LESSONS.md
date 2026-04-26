@@ -8,6 +8,30 @@
 
 ---
 
+## L-022 | Round 3 mid late-5 | 何时打破"session 0 不改 upstream 文件"的 Round 1 默认规则
+
+**现象**: PR #70 是 session 0 第一次**主动**修改 upstream `app/*` 11 个文件(26 callsite 替换 + 1 新建 `app/utils/_aegis_clocks.py`)。Round 1 默认是 "self-owned 优先,upstream 慎动"(D-009 的 lint 范围决策也是这哲学)。本 PR 显式打破默认,要在记忆里写清楚什么情况可以打破。
+
+**根因**: Round 1 默认规则不是教条,是 cost-benefit 估算的速记。改 upstream 的 cost = 每次 `git fetch marzneshin-upstream` 的 merge 冲突可能性;benefit 视场景。当 benefit 显著大于 cost 时,默认规则应让位。
+
+**防线**(打破规则的硬条件,**三条同时满足**):
+
+1. **改动是 must-fix**,不是 stylistic / 偏好性 / 优化性。例如:Python 3.12+ 强制 deprecation(`datetime.utcnow` / `datetime.utcfromtimestamp`)、CVE 修补、运行时 hard-error 路径。**反例**:rename 变量风格、code style 偏好、early return 优化 —— 这些不是 must-fix,upstream 还会自己用别的做法,改了纯增加 conflict
+2. **行为字节级保持**:改完前后语义无差。例如 `datetime.utcnow() ↔ datetime.now(UTC).replace(tzinfo=None)` 输出完全相同。**反例**:column type 变更、API contract 变更、错误处理路径变更 —— 即使你认为更好,upstream 不一定接受
+3. **上游早晚必须做**:这条最关键。Python 3.12 deprecation,upstream Marzneshin 早晚要清,我们先做了等于把作业写在前面;upstream 真做时找到我们已修(diff identical or close),merge 自然解。**反例**:我们的偏好(比如把 SQLAlchemy 1.x 写法升 2.0),upstream 可能不动这层,就一直冲突
+
+满足上述三条 = 改;**缺一条 = 不改**(继续走 self-owned 路径或开 upstream issue / PR 等)。
+
+**触面控制原则**:即使三条满足,也尽量**bounded**:
+
+- 11 文件 / ≤ 100 行 = 可接受
+- 把 fork-local helpers 集中到一个文件(本 PR 的 `app/utils/_aegis_clocks.py`),且文件名带 `_aegis_` 前缀和 `_` 私有标记,upstream-merge 时一眼能识别 "fork-only"
+- 改动到的每个文件**只换 deprecated 调用**,**不顺手做其他清理**。"扫一片" 的诱惑要忍住,否则违反第 2 条(行为保持)
+
+**沉淀**: ✅ 本 entry + STATUS late-5 块。未来类似边界判断:回到这条核对三个条件再动。
+
+---
+
 ## L-021 | Round 3 mid late-4 跨 session review | reviewer 推 commit 到他 session 的 PR 前必须同时跑 `ruff check` + `ruff format --check` 全自有目录
 
 **现象**: PR #65 是 S-B 开的,CI 在合入前一直绿。session 0 reviewer (本会话) 推 `de23f5f` 加安全修复后 CI 突然挂 `Lint (ruff)` —— 但失败的不是我新写的文件,是 PR #65 早就在的 `hardening/panel/middleware.py`(I001:`from ops.billing.checkout_endpoint import checkout_router as billing_checkout_router` 一行 85 字符超 79 限)。后又一轮挂在 `ops/billing/endpoint.py`(format ternary)。两轮 CI 失败都是 PR #65 原代码的潜伏问题。
