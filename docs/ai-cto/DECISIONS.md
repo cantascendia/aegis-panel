@@ -5,6 +5,34 @@
 
 ---
 
+## D-014 | 2026-04-26 | 计费 grant 应用 = `pricing.py` / `grants.py` 双模块分离;`expire_strategy` 升级政策固化
+
+**决策**:在 A.5 scheduler 落地中固化两条配套政策:
+
+1. **模块边界**:`ops/billing/pricing.py` 是**预付**层(纯函数,无 DB,产 `UserGrant`);`ops/billing/grants.py` 是**后付**层(改 `User.data_limit` / `User.expire_date` / `User.expire_strategy`,持有 grant-application policy)。两者互不 import,scheduler 是唯一胶水。
+2. **`expire_strategy` 升级政策**:
+   - `FIXED_DATE` 用户买 duration grant → 从 `max(now, expire_date)` 起延长 `days`(lapsed 用户 re-anchor 到 now,避免前 24h 已过期)
+   - `NEVER` 用户买 duration grant → 升 `FIXED_DATE`,anchor 到 `now + days`
+   - `START_ON_FIRST_USE` 用户买 duration grant → 同上,升 `FIXED_DATE`,anchor 到 `now + days`,且**清空** `usage_duration` / `activation_deadline`(对 `FIXED_DATE` 无意义,留着会让 admin UI 显示混乱)
+3. **`data_limit` policy**:bytes-additive,`NULL` 视为 0 baseline。"无限用户买 5GB 流量包" → 变成有限 5GB(运营者别这么卖,UI 层防住)。
+
+**Why**:
+- pricing/grants 分离让 cart-checkout(预付,UI 调)不必 import SQLAlchemy `User`,降低 import 图复杂度。同时 grant-application 的 policy 决策(lapsed re-anchor / strategy promotion)集中在一处,future audit / debug 不必 grep 多文件
+- `max(now, expire_date)` 这条没人会一开始想到,但是真实运营中**必踩**:用户付了款几小时后才意识到,或者 cron 任务延迟,如果不 re-anchor 就实际损失了几小时窗口,客户理论上能投诉。这里把规则写死在代码 + DECISIONS,等同合同条款
+- promote `NEVER` / `START_ON_FIRST_USE` 到 `FIXED_DATE` 是必然(他们付钱了,该计时);清 `usage_duration` 是收尾,不清不会出错,但是会让 admin 看不懂"为什么这个 fixed_date 用户还有 usage_duration 字段"
+
+**How to apply**:
+- `ops/billing/grants.py` 的模块 docstring 长版讲了三条政策
+- `tests/test_billing_grants.py` 11 个测试逐条验证(`test_grant_extends_lapsed_fixed_date_user_from_now_not_past` 是最关键的"合同条款"测试)
+- 未来调整 grant 政策(比如运营要支持 trial-to-paid 平滑过渡)→ 改 `apply_grant_to_user` + 加测试 + 更新本决策
+
+**推翻条件**:
+- 运营改用"扣费式"(用户欠款不延期)模型 → 全套重写
+- 引入按月订阅(recurring)而非按次购买 → grants.py 政策需扩展
+- expire_strategy 表结构变更(upstream 加新策略)→ 重审 promotion 规则
+
+---
+
 ## D-013 | 2026-04-26 | `v2share==0.1.0b31` 保留 + vendor 备胎规划,**不**主动替换
 
 **决策**: Round 1 leftover "v2share beta 替代评估" 结论 = **保持现状**:

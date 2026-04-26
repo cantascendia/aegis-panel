@@ -1,6 +1,6 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-26 late-5(Round 3 mid — Round 1 leftover 全清零 + 4 个 session 0 自动 PR,第五次 S-O 触发)
+> 最后更新:2026-04-26 late-6(Round 3 mid — 差异化 #3 Reality audit R.1+R.2+R.3 + 商业化 A.5 scheduler 全部 session 0 自动落地,差异化 #3 后端闭环就绪)
 > 更新频率:每 3 轮或重大节点
 
 ---
@@ -48,7 +48,7 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 ## 产品完成度
 
 - 上游功能 6/6 保留(面板 / 多节点 / Reality / 订阅 / Telegram / 多语言)
-- 自研核心功能 **4/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**计费数据面 + Admin UI**)
+- 自研核心功能 **5/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**计费数据面 + Admin UI + A.5 scheduler**,**Reality 配置审计 R.1+R.2+R.3**)
 - 自研基础设施 **全部就绪**:
   - ✅ 安全基线(JWT 外置 / CORS 白名单 / bcrypt 固化 / JWT 时效 60min)
   - ✅ Auth 依赖升级(pyjwt 2.12 / pynacl 1.6.2 / cryptography 46.0.7)
@@ -68,7 +68,7 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
   - ✅ **`hardening/iplimit/`**(Round 3)—— policy 表(config / override / disabled_state)+ Xray access 日志 parser(时间戳感知)+ Redis 滚动窗口 + detector + REST + Telegram 告警 + clear-disable endpoint
   - ✅ **`ops/billing/`**(Round 3)—— 5 张 `aegis_billing_*` 表(plans / channels / invoices / invoice_lines / payment_events)+ 状态机 + webhook 去重 + 管理员 REST
   - ✅ **`dashboard/src/modules/nodes/dialogs/sni-suggest/`**(Round 2)+ **`dashboard/src/modules/users/dialogs/iplimit/`**(Round 3)+ **`dashboard/src/modules/billing/`**(Round 3 in-progress)
-- 关键缺口(Round 3+):EPay 网关对接实现(A.2)/ TRC20 poller(A.3)/ 用户购买 UI(A.4)/ APScheduler 自动化(A.5)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC;小债:SNI rate-limit 回填 / `hardening/iplimit` 白名单 + Redis SCAN / TZ 对齐文档
+- 关键缺口(Round 3+):TRC20 poller(A.3)/ 用户购买 UI(A.4 完结)/ Reality 审计 dashboard 页(R.4,S-F-2)/ 真实 ¥0.01 round-trip(需用户对接码商)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC;小债:SNI rate-limit 回填 / `hardening/iplimit` 白名单 + Redis SCAN / TZ 对齐文档
 
 ## 当前代码质量评分
 
@@ -252,6 +252,28 @@ Round 0 列表的全部 + Round 1 新增:
 S-O 本轮两次触发消化了 #41/#46/#48/#49/#52/#54/#56/#57/#58/#59/#60 共 11 个 PR,STATUS/SESSIONS/DECISIONS/LESSONS/ROADMAP/AUDIT 全部对齐到现状。
 
 **本次 S-O 自身的教训**:首次 S-O 触发在 S-D 分支上混改 docs 被反复回滚(同工作树多 session 竞争),最终按 L-018/铁规则 #7 建 `aegis-O` worktree 隔离后才稳定完成刷新 —— 证明 worktree 规则本身是对的,S-O 不可豁免
+
+---
+
+**late-6 追加同步**(2026-04-26 late-6,**差异化 #3 Reality audit 后端闭环 + 商业化 A.5 scheduler 落地**,session 0 自动连击 5 个 PR — #72/#73/#74/#75/#76/#77;实际本轮 2 个新差异化里程碑):
+
+- **#72 / #73 季度研究**:Marzneshin upstream 6 个月 dormant 报告 + COMPETITORS.md 加入 "Aegis (我们)" 列(quarterly refresh framework 第一次跑通)
+- **#74 R.1 Reality 配置审计 core**:`hardening/reality/{checks,scoring,report,seeds}` —— 五件套指标(SNI 冷门度 / ASN 同质性 / 端口非标准 / shortId 合规 / connIdle 短设)+ 评分 + Markdown/JSON 渲染。44 测试。compass_artifact_*.md 五件套现在第一次有可执行体现
+- **#75 R.2 CLI + loader + 黄金 fixture**:`hardening/reality/cli.py` argparse 双模式(`--config` 文件 / `--from-db`)+ `from_db_rows` / `from_xray_config` loader + golden fixtures(perfect.json 应 ≥90 green / broken.json 应 <60 red)。CLI 退出码契约 `0/1/2` 锁定。20 测试
+- **#76 R.3 Reality REST endpoint**:`POST /api/reality/audit` (sudo-admin 门控 / 60s wait_for / 504 on WHOIS hang) + `apply_panel_hardening` include_router 一行。`asyncio.to_thread(check_asn_match)` 解决 sync `asyncio.run()` 与 FastAPI 运行 loop 冲突的问题(L-023 候选)。10 测试,**reality 全套 74 测试**
+- **#77 A.5 计费 scheduler**:`ops/billing/{scheduler,grants}.py` 两条 APScheduler 任务 —— `reap_expired_invoices`(每 60s,`awaiting_payment` 过 `expires_at` → `expired`)+ `apply_paid_invoices`(每 30s,`paid` → `applied` + 用户 `data_limit` / `expire_date` 加 grant)+ `install_billing_scheduler` lifespan 包装(同 iplimit 模式)。25 测试,**billing 全套 137 测试**
+
+**差异化 #3 (Reality 配置审计) 后端闭环完成**:SPEC(#10 之前)→ R.1 core(#74)→ R.2 CLI+loader(#75)→ R.3 REST(#76)。R.4 dashboard UI 待 S-F-2 session 启动(前端地盘),后端闭环已 production-ready。
+
+**商业化推进里程碑**:A.5 scheduler 让"用户付钱后自动延长"链路从 webhook 到 User row 全自动,不再需要 admin manual_apply 手动触发。**A.2.x 链路下一步**只剩"真实 ¥0.01 round-trip"(需要 mock 码商或对接一家,需用户外部动作)。
+
+**新增 LESSONS / DECISIONS**:
+- **L-023 候选** `asyncio.run()` 不能从 FastAPI 已运行的 loop 内调用 —— 用 `asyncio.to_thread` 包装可重用现有 sync 实现而不必改写为 async
+- **D-014 候选** 计费 grant 应用 = pricing.py(预付,无 DB)/ grants.py(后付,改 User)分离;expire_strategy 政策:`NEVER` / `START_ON_FIRST_USE` 首次 duration grant → `FIXED_DATE` anchored 到 now;`FIXED_DATE` 已 lapsed → 从 `max(now, expire_date)` 延长
+
+**Auto-merge 节奏继续稳态**:本轮 5 个 PR(#73/#74/#75/#76/#77)全部 session 0 单跑,Monitor + auto-merge 链路 5/5 成功,**用户 0 手动操作**。
+
+**SESSIONS.md 状态**:Round 3 mid 接近收口 —— 差异化 #1 ✅ / 差异化 #2 ✅(MVP)/ 差异化 #3 ✅(后端);A.5 ✅。剩余真功能开发块 = R.4 dashboard(S-F-2)+ A.4 用户购买 UI(S-F-延续)+ 真接 ¥0.01 round-trip(用户外部动作)。
 
 ---
 

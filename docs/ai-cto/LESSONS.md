@@ -8,6 +8,30 @@
 
 ---
 
+## L-023 | Round 3 mid late-6 | `asyncio.run()` 在 FastAPI 已运行 loop 内会炸,用 `asyncio.to_thread` 包装现有 sync 实现
+
+**现象**:Reality R.3 endpoint 测试 `test_audit_source_config_perfect_returns_green` 失败,日志显示 `RuntimeError: asyncio.run() cannot be called from a running event loop`,同时 pytest 警告 `coroutine '_fake' was never awaited`。错误来自 `hardening/reality/checks/asn_match.py` 内的 `info = asyncio.run(lookup_asn(sni_ip))` —— 这个 helper 是 sync 的,从 CLI / 普通脚本调用没问题,但 FastAPI endpoint 里上层已经在跑 event loop。
+
+**根因**:`asyncio.run` 文档明确写 "cannot be called when another asyncio event loop is running in the same thread"。CLI 和 endpoint 都需要这套 ASN match 逻辑,但 CLI 是 sync 入口(无 loop)、endpoint 是 async 入口(有 loop)。两个调用点对 sync/async 的期望不同。
+
+**防线**:**`asyncio.to_thread(sync_func, *args)` 把 sync helper 推到线程池,该线程没有 loop,`asyncio.run` 在那里能跑**。一行代码包装解决问题,不必把 `check_asn_match` 改写成 async 二态版本(那会引入两份代码或 sync_to_async/async_to_sync 适配复杂度)。
+
+**模板**:
+
+```python
+# 在 async 端(FastAPI endpoint / 异步任务):
+return await asyncio.to_thread(sync_helper_using_asyncio_run, arg1, arg2)
+
+# 在 sync 端(CLI / pytest sync test):
+return sync_helper_using_asyncio_run(arg1, arg2)  # 直接调用
+```
+
+**适用边界**:这是"同一逻辑两个调用环境"的快速胶水。**长期最佳设计** 是把底层逻辑做成 `async def`,sync 入口用 `asyncio.run` 收尾;但当底层已经 ship、改动面太大时,`to_thread` 是合理的妥协。本 PR 的 ASN match 满足 "已 ship + 多处 import" → 选 to_thread。
+
+**沉淀**: ✅ 本 entry。`hardening/reality/endpoint.py:_maybe_asn_check_async` 是模板代码。下次遇到 sync helper 在 async endpoint 里炸,先看是不是同一情况,直接 `asyncio.to_thread` 包装。
+
+---
+
 ## L-022 | Round 3 mid late-5 | 何时打破"session 0 不改 upstream 文件"的 Round 1 默认规则
 
 **现象**: PR #70 是 session 0 第一次**主动**修改 upstream `app/*` 11 个文件(26 callsite 替换 + 1 新建 `app/utils/_aegis_clocks.py`)。Round 1 默认是 "self-owned 优先,upstream 慎动"(D-009 的 lint 范围决策也是这哲学)。本 PR 显式打破默认,要在记忆里写清楚什么情况可以打破。
