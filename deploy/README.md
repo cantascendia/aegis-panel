@@ -39,6 +39,7 @@
 | IP 限制 | [`OPS-iplimit-runbook.md`](../docs/ai-cto/OPS-iplimit-runbook.md) | 时区对齐 / 误封解封 / 计数漂移 |
 | **SNI 选型** | [**`OPS-sni-runbook.md`**](../docs/ai-cto/OPS-sni-runbook.md) | **零候选通过 / ASN 查不到 / blacklist 维护 / 上线后验证** |
 | 易支付码商 | [`OPS-epay-vendor-guide.md`](../docs/ai-cto/OPS-epay-vendor-guide.md) | 选码商 / 接入 / 撤离 |
+| **TRC20 直收** | [**`OPS-trc20-runbook.md`**](../docs/ai-cto/OPS-trc20-runbook.md) | **冷钱包 / Tronscan / memo salt 轮换 / 月度对账 / 链 reorg SOP** |
 | 资金提取 | [`OPS-jpy-cashout.md`](../docs/ai-cto/OPS-jpy-cashout.md) | USDT → JPY 链路 |
 
 每份 runbook 默认按 "检测命令 / 判定条件 / 处置步骤 / 验证命令" 四段式
