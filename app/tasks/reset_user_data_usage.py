@@ -4,6 +4,7 @@ from datetime import datetime
 from app import marznode
 from app.db import crud, GetDB, get_users
 from app.models.user import UserDataUsageResetStrategy
+from app.utils._aegis_clocks import now_utc_naive
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ reset_strategy_to_days = {
 
 
 async def reset_user_data_usage():
-    now = datetime.utcnow()
+    now = now_utc_naive()
     with GetDB() as db:
         for user in get_users(
             db,

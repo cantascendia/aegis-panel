@@ -8,6 +8,7 @@ from app.db import (
     GetDB,
     get_users,
 )
+from app.utils._aegis_clocks import now_utc_naive
 from app.models.notification import UserNotification
 from app.models.user import (
     UserResponse,
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 async def review_users():
-    now = datetime.utcnow()
+    now = now_utc_naive()
     with GetDB() as db:
         for user in get_users(db, activated=True, is_active=False):
             """looking for expired/to be limited users who are still active"""
@@ -65,7 +66,7 @@ async def review_users():
             ):
                 continue
 
-            user.expire_date = datetime.utcnow() + timedelta(
+            user.expire_date = now_utc_naive() + timedelta(
                 seconds=user.usage_duration
             )
             user.expire_strategy = UserExpireStrategy.FIXED_DATE

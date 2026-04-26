@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from app.config import NOTIFY_DAYS_LEFT
 from app.db import GetDB
 from app.db.models import User
+from app.utils._aegis_clocks import now_utc_naive
 from app.models.notification import UserNotification
 from app.models.user import UserResponse
 from app.notification.notifiers import notify
@@ -24,7 +25,7 @@ async def expire_days_reached():
       log the event and trigger a notification.
     """
 
-    now = datetime.utcnow()
+    now = now_utc_naive()
     cleft = timedelta(days=NOTIFY_DAYS_LEFT) + now
     cright = timedelta(days=NOTIFY_DAYS_LEFT, seconds=30) + now
     with GetDB() as db:

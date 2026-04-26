@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import and_, select, insert, update, bindparam
 
 from app import marznode
+from app.utils._aegis_clocks import now_utc_naive
 from app.db import GetDB
 from app.db.models import NodeUsage, NodeUserUsage, User
 from app.marznode import MarzNodeBase
@@ -18,7 +19,7 @@ def record_user_usage_logs(
         return
 
     created_at = datetime.fromisoformat(
-        datetime.utcnow().strftime("%Y-%m-%dT%H:00:00")
+        now_utc_naive().strftime("%Y-%m-%dT%H:00:00")
     )
 
     with GetDB() as db:
@@ -77,7 +78,7 @@ def record_node_stats(node_id: int, usage: int):
         return
 
     created_at = datetime.fromisoformat(
-        datetime.utcnow().strftime("%Y-%m-%dT%H:00:00")
+        now_utc_naive().strftime("%Y-%m-%dT%H:00:00")
     )
 
     with GetDB() as db:
@@ -166,7 +167,7 @@ async def record_user_usages():
             used_traffic=User.used_traffic + bindparam("value"),
             lifetime_used_traffic=User.lifetime_used_traffic
             + bindparam("value"),
-            online_at=datetime.utcnow(),
+            online_at=now_utc_naive(),
         )
 
         db.execute(
