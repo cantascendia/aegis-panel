@@ -252,9 +252,11 @@ def _apply_extra_config(channel: PaymentChannel, extra: Any) -> None:
         return
     # ``extra`` is a ChannelExtraConfig Pydantic model — dump to dict,
     # drop None values so stored JSON stays compact.
-    payload = extra.model_dump(exclude_none=True) if hasattr(
-        extra, "model_dump"
-    ) else dict(extra)
+    payload = (
+        extra.model_dump(exclude_none=True)
+        if hasattr(extra, "model_dump")
+        else dict(extra)
+    )
     channel.extra_config_json = payload or None
 
 
