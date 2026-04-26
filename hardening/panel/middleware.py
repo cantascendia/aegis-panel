@@ -19,7 +19,9 @@ from hardening.iplimit.endpoint import router as iplimit_router
 from hardening.iplimit.scheduler import install_iplimit_scheduler
 from hardening.panel.rate_limit import limiter
 from hardening.sni.endpoint import router as sni_router
-from ops.billing.checkout_endpoint import checkout_router as billing_checkout_router
+from ops.billing.checkout_endpoint import (
+    checkout_router as billing_checkout_router,
+)
 from ops.billing.endpoint import router as billing_admin_router
 
 if TYPE_CHECKING:
