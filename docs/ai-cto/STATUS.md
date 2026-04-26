@@ -1,6 +1,6 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-26 late-6(Round 3 mid — 差异化 #3 Reality audit R.1+R.2+R.3 + 商业化 A.5 scheduler + A.3 TRC20 全部 session 0 自动落地,商业化双支付通道闭环 + 差异化 #3 后端闭环就绪)
+> 最后更新:2026-04-26 late-6 wave-2(Round 3 mid 后端实质收口 — 8 个 session 0 自动 PR + 双 OPS-runbook 闭环 + 健康端点;**三大差异化全部走完五段流程**,商业化双通道 production-ready,自研核心 5/8 已 backend-ready,剩余真功能开发块全在前端 / 外部环境)
 > 更新频率:每 3 轮或重大节点
 
 ---
@@ -48,7 +48,8 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 ## 产品完成度
 
 - 上游功能 6/6 保留(面板 / 多节点 / Reality / 订阅 / Telegram / 多语言)
-- 自研核心功能 **5/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**计费完整后端 = 数据面 + Admin UI + A.5 scheduler + A.3 TRC20 双支付通道**,**Reality 配置审计 R.1+R.2+R.3**)
+- 自研核心功能 **5/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**计费完整后端 = 数据面 + Admin UI + A.5 scheduler + A.3 TRC20 双支付通道**,**Reality 配置审计 R.1+R.2+R.3 + OPS runbook**)
+- **健康度后端**(2026-04-26 late-6 wave-2):`/api/aegis/health`(public liveness)+ `/api/aegis/health/extended`(sudo,6 个子系统并发探针,worst-of 聚合)。LB / k8s / Prometheus 接入直接可用
 - 自研基础设施 **全部就绪**:
   - ✅ 安全基线(JWT 外置 / CORS 白名单 / bcrypt 固化 / JWT 时效 60min)
   - ✅ Auth 依赖升级(pyjwt 2.12 / pynacl 1.6.2 / cryptography 46.0.7)
@@ -68,7 +69,7 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
   - ✅ **`hardening/iplimit/`**(Round 3)—— policy 表(config / override / disabled_state)+ Xray access 日志 parser(时间戳感知)+ Redis 滚动窗口 + detector + REST + Telegram 告警 + clear-disable endpoint
   - ✅ **`ops/billing/`**(Round 3)—— 5 张 `aegis_billing_*` 表(plans / channels / invoices / invoice_lines / payment_events)+ 状态机 + webhook 去重 + 管理员 REST
   - ✅ **`dashboard/src/modules/nodes/dialogs/sni-suggest/`**(Round 2)+ **`dashboard/src/modules/users/dialogs/iplimit/`**(Round 3)+ **`dashboard/src/modules/billing/`**(Round 3 in-progress)
-- 关键缺口(Round 3+):用户购买 UI(A.4 完结,S-F)/ Reality 审计 dashboard 页(R.4,S-F-2)/ 真实 ¥0.01 round-trip(需用户对接码商)/ 真实 USDT 测试网 round-trip(A.3 已 ship,需 ops 接 Tronscan stage 验证)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志 / 健康度仪表盘 / 备用通道 / RBAC;小债:SNI rate-limit 回填 / `hardening/iplimit` 白名单 + Redis SCAN / TZ 对齐文档
+- 关键缺口(Round 3+):用户购买 UI(A.4 完结,S-F)/ Reality 审计 dashboard 页(R.4,S-F-2)/ 真实 ¥0.01 round-trip(需用户对接码商)/ 真实 USDT 测试网 round-trip(A.3 已 ship,需 ops 接 Tronscan stage 验证)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志(panel-wide,需 SPEC)/ RBAC(需 SPEC);小债:SNI rate-limit 回填 / `hardening/iplimit` 白名单 + Redis SCAN / TZ 对齐文档
 
 ## 当前代码质量评分
 
@@ -279,6 +280,33 @@ S-O 本轮两次触发消化了 #41/#46/#48/#49/#52/#54/#56/#57/#58/#59/#60 共 
 **Auto-merge 节奏继续稳态**:本轮 6 个 PR(#73/#74/#75/#76/#77/#79)全部 session 0 单跑(+ #78 docs 间隔同步),Monitor + auto-merge 链路 6/6 成功,**用户 0 手动操作**。
 
 **SESSIONS.md 状态**:Round 3 mid 接近收口 —— 差异化 #1 ✅ / 差异化 #2 ✅(MVP)/ 差异化 #3 ✅(后端);A.3 / A.5 ✅。剩余真功能开发块 = R.4 dashboard(S-F-2)+ A.4 用户购买 UI(S-F-延续)+ 真接 ¥0.01 round-trip(用户外部动作)+ 真接 USDT round-trip(用户外部动作)。
+
+---
+
+**late-6 wave-2 追加同步**(2026-04-26 late-6 wave-2,**Round 3 mid 后端实质收口里程碑**:session 0 在 wave-1(#76/#77/#78/#79/#80)基础上再连击 3 个 PR 关闭运维侧 + 健康端点 — #81/#82/#83):
+
+- **#81 OPS-trc20-runbook**(521 行):closes A.3 五段流程的最后一段。10 章 mirroring OPS-sni-runbook 模板,涵盖冷钱包准备 / Tronscan stage / memo salt 轮换 / 月度对账 SQL / 链 reorg revert SOP / 冷钱包私钥丢失 mitigation 等。**A.3 现在是项目第二个**走完 D-005 完整五段流程的子系统(SPEC → core → REST/scheduler → UI[待 A.4] → runbook)
+- **#82 OPS-reality-runbook**(383 行):closes 差异化 #3 五段流程。11 章涵盖三种使用方式对照 / 退出码契约 (0/1/2 给 cron/CI 用) / 评分阈值溯源到 compass_artifact_*.md / 月度巡检 + 季度 seeds refresh + 强制新节点验证 SOP / 4 大故障场景。**Reality 现在是项目第三个**走完五段流程的子系统(SPEC → R.1 → R.2 → R.3 → R.4[待 S-F-2] → R.5 runbook)
+- **#83 健康端点 backend**:新模块 `hardening/health/`。两个端点:`/api/aegis/health`(public liveness,只返回 `{"status":"ok"}`,无 DB 调用,无版本,无子系统泄露,防 recon)+ `/api/aegis/health/extended`(sudo,6 个并发探针:db / billing_scheduler / iplimit_scheduler / trc20 / reality_seeds / sni_seeds,worst-of 聚合)。15 测试。`/api/aegis/*` 命名空间防 upstream 后续加 `/api/health` 撞车
+
+**8 个 PR 联翩自动 merged 里程碑**(本会话从 wave-1 #76 一路到 wave-2 #83):
+- 后端代码:R.3 endpoint(#76)+ A.5 scheduler(#77)+ A.3 TRC20(#79)+ health(#83)= 4 个 feat PR
+- 文档系统:late-6 STATUS 同步 ×2(#78 #80)+ 双 OPS runbook(#81 #82)= 4 个 docs PR
+- **用户 0 手动操作**,Monitor + auto-merge 链路 8/8 成功
+
+**Round 3 mid 后端实质收口判定标准**:
+- 三大差异化(SNI / IP-limit / Reality)全部走完五段流程(SNI 在 #66 已闭环,IP-limit 在 #44 闭环,Reality 在 #82 闭环)
+- 商业化(A.x)双支付通道全后端就位(A.1 / A.2.x / A.3 / A.5,仅 A.4 用户 UI 收尾要前端;真实 round-trip 要外部环境)
+- 健康端点解锁 ops 监控接入,Round 3+ 任何新 hardening / ops 模块都可继续在 health probe 添加一个采样,无侵入
+
+**剩余真功能开发动作分类**:
+1. **前端**(S-F / S-F-2 session 地盘):R.4 Reality 审计页 / A.4 用户购买 UI 完结
+2. **外部环境**(需用户行动):真接 ¥0.01 EPay round-trip / 真接 USDT 测试网 / iplimit 真实节点 E2E
+3. **新 SPEC 待开**(需要决策驱动):panel-wide 审计日志 / RBAC / CF Tunnel 集成
+
+**新增 LESSONS / DECISIONS**:本 wave-2 没有新条目;wave-1 已加 L-023 / L-024 / D-014 / D-015 全四条。
+
+**SESSIONS.md 状态**:**Round 3 mid 后端结块完成,可以开 Round 4 或者由用户决定下一阶段** —— 等用户做战略决策(开始 Round 4 / 启动 S-F-2 前端 / 外部 round-trip 验证 / 新 SPEC 决策)。
 
 ---
 
