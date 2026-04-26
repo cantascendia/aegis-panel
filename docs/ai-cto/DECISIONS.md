@@ -5,6 +5,30 @@
 
 ---
 
+## D-012 | 2026-04-26 | Reverse-proxy 信任 = per-feature `*_TRUSTED_PROXIES` CIDR env,不做 panel-wide middleware
+
+**决策**: 任何 IP-aware feature(rate limit / billing webhook / 未来 iplimit allowlist 的边缘用例 / 任何端点级 IP 白名单)各自挂一个 `<FEATURE>_TRUSTED_PROXIES` env,**不要**写一个 panel-wide `TrustedProxyMiddleware`。模板代码已经在 `ops/billing/config.py:BILLING_TRUSTED_PROXIES` + `ops/billing/checkout_endpoint.py:_peer_is_trusted_proxy`,下个 IP-aware feature 直接 copy。
+
+**Why**:
+- **反代信任假设是 per-deploy**:同一 panel 可能 billing webhook 走 Nginx-on-same-host(只信 127.0.0.1)而 iplimit 边缘用例走 CF Tunnel(只信 CF egress 段)。一个全局 middleware 强行让所有 feature 共享同一个 trusted-proxy 列表,把 "管什么 IP 算客户端" 这个 per-feature 决策粗化掉
+- **错配在功能边界 fail 比在全站 fail 好**:billing trusted_proxies 错配 → billing webhook 失败,运营立即看到;panel-wide middleware 错配 → 所有 IP-aware 行为静默错位,可能几天才发现
+- **渐进迁移友好**:每个 feature 自带 env,启用一个不影响其他;global middleware 上线即影响所有,推不动新 feature 加 IP 信任时只能"一起改"或"一起不改"
+- **直接公网部署的默认 = 空 = 不信 XFF**(L-019 防线),global middleware 找不到这种"分通道默认值"的位置
+- 现实数据点:之前 Round 1 STATUS 列了"TrustedProxyMiddleware"作为待补,但**到 Round 3 mid 唯一真正需要它的 feature 是 billing webhook**;其他四个 IP-aware feature(rate-limit / iplimit / sni / admin)目前没有 reverse-proxy 信任需求,做 panel-wide 等于**为 0 个真实使用者写抽象**
+
+**How to apply**:
+- IP-aware feature 起新代码时,直接 copy `ops/billing/config.py` 的 `_parse_trusted_proxies` + `<FEATURE>_TRUSTED_PROXIES` 解析模式
+- env 命名固定后缀 `_TRUSTED_PROXIES`,`.env.example` 必须有解释段(L-019 模板)
+- feature 的"获取客户端 IP"helper 必须做 trusted-proxy gate:peer 是 trusted = 信 XFF,否则用 transport peer
+- 测试套必须有 spoofing 反例(peer untrusted + spoofed XFF → 拒绝),模板见 `tests/test_billing_checkout_webhook.py:test_webhook_ip_allowlist_ignores_spoofed_xff_when_peer_untrusted`
+- **不要**改 `app/marzneshin.py` 加全局 middleware
+
+**推翻条件**:
+- **4 个或以上** feature 各自有 `*_TRUSTED_PROXIES` env 且**配置内容完全一致**长达一个轮次(说明 panel 有了固定反代拓扑) → 那时再抽 `app/middleware/trusted_proxy.py` 让 feature opt-in 信全局,对应 L-019/D-012 收编
+- 出现"一个端点的请求会被多个反代链路打到"且 panel 必须知道完整链路而非只信 X-Forwarded-For 第一段(例如要做 anti-fraud) → 那时改用 `Forwarded` RFC 7239 头 + 链路全解析,逻辑超出 per-feature env 能力
+
+---
+
 ## D-011 | 2026-04-23 | 多会话并行的裁判台机制:SESSIONS.md + worktree 隔离 + append-only 冲突地带表
 
 **决策**: 随 Round 3 mid 进入多会话并行期(Claude Code × N 实例 + Codex + Antigravity/未来 Gemini),引入**三件套**作为并行协作契约:
