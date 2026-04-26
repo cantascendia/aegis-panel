@@ -353,9 +353,15 @@ def test_get_provider_epay_requires_callback_base() -> None:
         get_provider("epay", _StubChannel())
 
 
-def test_get_provider_trc20_raises_not_implemented_in_a21() -> None:
-    # TRC20 provider ships in A.3.1, not A.2.1
-    with pytest.raises(NotImplementedError, match="A.3.1"):
+def test_get_provider_trc20_disabled_raises_misconfigured() -> None:
+    # As of A.3.1, the TRC20 provider exists but defaults to disabled.
+    # Calling it without configuration must surface that loudly so an
+    # operator who set kind="trc20" on a channel without env config
+    # sees the gap at provider construction time, not at first checkout.
+    from ops.billing.trc20_config import Trc20Misconfigured, _reload_for_tests
+
+    _reload_for_tests(enabled=False)
+    with pytest.raises(Trc20Misconfigured, match="not enabled"):
         get_provider("trc20")
 
 
