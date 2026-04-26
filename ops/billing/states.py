@@ -47,6 +47,7 @@ from ops.billing.db import (
     INVOICE_STATE_PENDING,
     Invoice,
     PaymentEvent,
+    _now_utc_naive,
 )
 
 
@@ -149,9 +150,9 @@ def transition(
     - ``note``: human-readable free text, used for admin_manual
       justifications
     - ``now``: timestamp injection for tests. Defaults to
-      ``datetime.utcnow()``
+      ``_now_utc_naive()`` (naive UTC, matches column shape)
     """
-    now = now or datetime.utcnow()
+    now = now or _now_utc_naive()
     payload = payload or {}
 
     if invoice.state == to_state:
@@ -257,7 +258,7 @@ def record_webhook_seen(
                    payload={...})
         session.commit()
     """
-    now = now or datetime.utcnow()
+    now = now or _now_utc_naive()
     fingerprint = webhook_fingerprint(provider, payload)
 
     # Check prior events for this invoice + provider with the same
