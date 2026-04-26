@@ -1,6 +1,6 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-26 late-4(Round 3 mid — 差异化 #1 SNI 闭环 + A.2.2 webhook 落地,第四次 S-O 触发)
+> 最后更新:2026-04-26 late-5(Round 3 mid — Round 1 leftover 全清零 + 4 个 session 0 自动 PR,第五次 S-O 触发)
 > 更新频率:每 3 轮或重大节点
 
 ---
@@ -166,6 +166,10 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | #64 | **S-D D.0** SPEC-deploy.md flesh-out(compass 默认值矩阵 / 生产 compose 9 维表 / CF Tunnel 最小权限)| ✅ 合并 | **S-D** | `6c33641` |
 | #65 | **S-B A.2.2** billing cart checkout + EPay webhook + session 0 cross-review 修(X-Forwarded-For 欺骗 / `datetime.utcnow()` × 3 / disabled-channel 410)| ✅ 合并 | **S-B + session 0** | `84ec4e0` |
 | #66 | **OPS-sni-runbook** 落地(SPEC-sni-selector follow-up #3 完成,差异化 #1 SNI 闭环最后一块)| ✅ 合并 | session 0 | `b03ccc0` |
+| #67 | round-3 mid late-4 micro-refresh(STATUS / LESSONS L-019/20/21 / DECISIONS D-012 — 反代信任 per-feature CIDR 设计模式锁定)| ✅ 合并 | **S-O** | `30670df` |
+| #68 | `datetime.utcnow()` 自有目录 sweep(`ops/billing/{db,states}.py` 6 处 → 共享 `_now_utc_naive` helper)| ✅ 合并 | session 0 | `42eb68f` |
+| #69 | `v2share` beta 评估结案(D-013 + `RESEARCH-v2share-evaluation.md`;keep + vendor hedge plan,2026-10-26 复评)| ✅ 合并 | session 0 | `c831150` |
+| #70 | `datetime.utcnow()` upstream `app/` sweep(26 callsites 跨 10 文件 + 1 `utcfromtimestamp` → `app/utils/_aegis_clocks.now_utc_naive`)| ✅ 合并 | session 0 | `f4e73cd` |
 
 ## 已部署配置文件
 
@@ -205,7 +209,7 @@ Round 0 列表的全部 + Round 1 新增:
   - ~~TrustedProxyMiddleware (panel-wide)~~ ❌ 撤销:由 D-012 改为 per-feature `*_TRUSTED_PROXIES` env;billing webhook 已用此模式(PR #65)
   - ~~cryptography 46 的 x509 `not_valid_before_utc` 迁移~~ ✅ 已合 PR #11(read-side 用 `_utc`,builder setter 不变,L-009)
   - ~~`v2share==0.1.0b31` beta 替代评估~~ ✅ 已结案 D-013 + `RESEARCH-v2share-evaluation.md`(保留 + vendor 备胎规划,2026-10-26 日历复评)
-  - **`datetime.utcnow()` 全 app 迁移**:PR #65 清了 checkout_endpoint.py 的 3 处,但 `ops/billing/states.py` / `app/dependencies.py` / `app/routes/user.py` / `app/db/models.py` 等仍存(SQLAlchemy `default=datetime.utcnow` 语义需要单独斟酌,不能批量替换)
+  - ~~`datetime.utcnow()` 全 app 迁移~~ ✅ **完工**:PR #65(billing webhook 3 处)+ PR #68(`ops/billing/{db,states}.py` 6 处)+ PR #70(upstream `app/*` 26 处 + 1 `utcfromtimestamp`)。统一收口到 `app/utils/_aegis_clocks.now_utc_naive`(fork-local helper,upstream 适配后即删)
 
 ## 竞品关键发现
 
@@ -244,6 +248,26 @@ Round 0 列表的全部 + Round 1 新增:
 S-O 本轮两次触发消化了 #41/#46/#48/#49/#52/#54/#56/#57/#58/#59/#60 共 11 个 PR,STATUS/SESSIONS/DECISIONS/LESSONS/ROADMAP/AUDIT 全部对齐到现状。
 
 **本次 S-O 自身的教训**:首次 S-O 触发在 S-D 分支上混改 docs 被反复回滚(同工作树多 session 竞争),最终按 L-018/铁规则 #7 建 `aegis-O` worktree 隔离后才稳定完成刷新 —— 证明 worktree 规则本身是对的,S-O 不可豁免
+
+---
+
+**late-5 追加同步**(2026-04-26 late-5,**Round 1 leftover 全清零里程碑**:session 0 自动连击 4 个 PR — #67/#68/#69/#70):
+
+- **#67 late-4 micro-refresh**:STATUS 口径同步 + L-019/L-020/L-021 + D-012(反代信任 = per-feature CIDR env,反对 panel-wide middleware,模板代码在 `ops/billing/config.py`)
+- **#68 billing datetime sweep**:`ops/billing/{db,states}.py` 6 处 `datetime.utcnow()` → 共享 `_now_utc_naive` helper。1 个 helper 函数,3 行 docstring,4+2 callsite 替换。CI 一次过
+- **#69 v2share 评估结案**:研究文件 `docs/ai-cto/RESEARCH-v2share-evaluation.md` ~110 行 + D-013 lock 决策。结论:keep + vendor hedge,2026-10-26 复评
+- **#70 upstream app/ datetime sweep**(关键里程碑):**第一次** session 0 主动改 upstream surface(`app/*` 10 文件 + 1 新文件 `app/utils/_aegis_clocks.py`)。26 + 1 callsite 替换。理由:Python 3.12 必修 deprecation + 行为字节级保持 + bounded surface(11 文件)+ 上游必将做相同事
+
+**Round 1 leftover 状态**:**全部清零**(原 6 项,过去会话 5 项已清,本轮清最后 1 项)。
+
+**Auto-merge 节奏稳态确立**(本轮强信号):
+- session 0 PR + Monitor → CI 全绿 → `gh pr merge --squash --delete-branch` → `git pull --ff-only` 链路验证 4 次,**用户 0 手动操作**
+- 失败路径(CI 红灯)Monitor 设的 `if [ "$fail" = "0" ]` 守卫会停止合并,人工介入 — 本轮 4 PR 没触发,但守卫健全
+
+**新增 LESSONS / DECISIONS**:
+- **L-022** 何时打破"不改 upstream 文件"的 Round 1 默认规则:Python 3.12 必修 deprecation + 行为字节级保持 + 触面 ≤ 一打文件 + 上游早晚必做。三条同时满足 = 改;缺一条 = 不改
+
+**SESSIONS.md 状态**:仍 active session count = 0(从 #66 合到 late-5 之间无新 active session;session 0 全自动跑了 4 个 micro 任务)。Round 1 leftover 清零是节奏切片,不强制启 Round 4 — 等用户决定下一步差异化(R.1 Reality 配置审计 / A.5 scheduler / 真接 ¥0.01 round-trip)。
 
 ---
 
