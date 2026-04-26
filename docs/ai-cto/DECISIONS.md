@@ -5,6 +5,44 @@
 
 ---
 
+## D-013 | 2026-04-26 | `v2share==0.1.0b31` 保留 + vendor 备胎规划,**不**主动替换
+
+**决策**: Round 1 leftover "v2share beta 替代评估" 结论 = **保持现状**:
+
+- `requirements.txt` 继续 pin `v2share==0.1.0b31`(就是 PyPI 当前最新)
+- `app/utils/share.py` 不动
+- 触发 vendor-into-repo(选项 C)的硬条件写入 `docs/ai-cto/RESEARCH-v2share-evaluation.md`
+- 半年(2026-10-26)日历复评 + 任意硬条件命中即触发
+
+**Why**:
+- v2share 与上游 Marzneshin 命脉绑定(同一作者 `khodedawsh`)。Marzneshin 仍
+  在 2025-10 发版,v2share 间接继续受益;拆开等于双重负担
+- "beta" 是作者版本号习惯,**不存在 stable 0.1.0 可升**。"升到稳定版" 不是
+  一个真选项
+- v2share 覆盖 xray + sing-box + clash 三协议订阅生成,**没有同等替代 Python
+  lib**。自己实现 = 1-2 周开发 + 长期协议 schema 跟踪负担,投入产出比最差
+- License 缺失风险通过"维护者归属推断"软处理(作者其他 repo 全 AGPL-3.0),
+  生产 license audit 时单独标注;短期可接受
+- CVE 由 `pip-audit` CI 自动覆盖;14 个月无 commit ≠ 高 CVE 风险(代码量小、
+  无网络层、纯字符串/JSON 生成)
+
+**How to apply**:
+- `requirements.txt` 在 `v2share==0.1.0b31` 上方加 8 行注释,解释 beta 不是
+  临时选择,指向 RESEARCH-v2share-evaluation.md(本 PR)
+- LESSONS / 之后 STATUS leftover 该项标 ✅ 已结案,链接到 D-013
+- 半年后(2026-10-26)由 S-O 触发复评 — 把 PyPI / GitHub 数据再抓一次,
+  delta 写到 RESEARCH 文件底部
+- 触发条件命中(repo archive / xray-singbox 跨大版本 6 个月无适配 / 我们
+  自己发现 bug 上游不响应)→ 立即开 vendor PR,把 `khodedawsh/v2share` 内
+  容拷进 `vendor/v2share/` 并改 import,同时在仓库根 LICENSE 区交代清楚
+
+**推翻条件**:
+- v2share 上游恢复活跃且发 1.0 稳定版 → 升级 pin,本决策完成历史使命
+- 我们决定 fork 为 `aegis-share`(选项 D)→ 开新决策 D-NNN 取代本条
+- Marzneshin 上游被 archive → 整个 fork 战略要重审,v2share 只是其中一条线
+
+---
+
 ## D-012 | 2026-04-26 | Reverse-proxy 信任 = per-feature `*_TRUSTED_PROXIES` CIDR env,不做 panel-wide middleware
 
 **决策**: 任何 IP-aware feature(rate limit / billing webhook / 未来 iplimit allowlist 的边缘用例 / 任何端点级 IP 白名单)各自挂一个 `<FEATURE>_TRUSTED_PROXIES` env,**不要**写一个 panel-wide `TrustedProxyMiddleware`。模板代码已经在 `ops/billing/config.py:BILLING_TRUSTED_PROXIES` + `ops/billing/checkout_endpoint.py:_peer_is_trusted_proxy`,下个 IP-aware feature 直接 copy。

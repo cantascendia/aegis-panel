@@ -204,7 +204,7 @@ Round 0 列表的全部 + Round 1 新增:
   - ~~CI 加 PostgreSQL matrix~~ ✅ 已合(`test-postgres` + `test-alembic-stepped` 两 job)
   - ~~TrustedProxyMiddleware (panel-wide)~~ ❌ 撤销:由 D-012 改为 per-feature `*_TRUSTED_PROXIES` env;billing webhook 已用此模式(PR #65)
   - ~~cryptography 46 的 x509 `not_valid_before_utc` 迁移~~ ✅ 已合 PR #11(read-side 用 `_utc`,builder setter 不变,L-009)
-  - `v2share==0.1.0b31` beta 替代评估(仍未做)
+  - ~~`v2share==0.1.0b31` beta 替代评估~~ ✅ 已结案 D-013 + `RESEARCH-v2share-evaluation.md`(保留 + vendor 备胎规划,2026-10-26 日历复评)
   - **`datetime.utcnow()` 全 app 迁移**:PR #65 清了 checkout_endpoint.py 的 3 处,但 `ops/billing/states.py` / `app/dependencies.py` / `app/routes/user.py` / `app/db/models.py` 等仍存(SQLAlchemy `default=datetime.utcnow` 语义需要单独斟酌,不能批量替换)
 
 ## 竞品关键发现
