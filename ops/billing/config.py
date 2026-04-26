@@ -1,6 +1,6 @@
 """Billing-layer environment + crypto primitives.
 
-Two small responsibilities live here together because they share a
+Three small responsibilities live here together because they share a
 trust boundary (the operator's ``.env``):
 
 1. **Public URL** (``BILLING_PUBLIC_BASE_URL``) — external origin that
@@ -14,6 +14,18 @@ trust boundary (the operator's ``.env``):
    at rest. Fernet gives us AES-128-CBC + HMAC-SHA256 in one well-
    vetted primitive; this is the same pattern the rest of the Python
    crypto ecosystem defaults to.
+
+3. **Trusted reverse proxies** (``BILLING_TRUSTED_PROXIES``) — CIDR
+   list of peer addresses we'll trust to set ``X-Forwarded-For``
+   when resolving the webhook caller's IP. Without this, an attacker
+   on the public internet could spoof their source IP by setting
+   the header themselves and bypass the per-channel ``allowed_ips``
+   allowlist; the IP allowlist is documented as a "double 防线"
+   alongside the MD5 sign, so trusting attacker-controlled headers
+   would convert defence-in-depth into security theatre. Empty
+   default == only the transport peer is trusted (the right answer
+   when panel is behind no proxy or when operator hasn't reasoned
+   about the proxy yet).
 
 Design decisions
 ----------------
@@ -37,10 +49,14 @@ Design decisions
 
 from __future__ import annotations
 
+import ipaddress
+import logging
 from functools import lru_cache
 
 from cryptography.fernet import Fernet, InvalidToken
 from decouple import config
+
+logger = logging.getLogger(__name__)
 
 
 class BillingMisconfigured(RuntimeError):
@@ -54,6 +70,42 @@ BILLING_PUBLIC_BASE_URL: str = config("BILLING_PUBLIC_BASE_URL", default="")
 # clear message rather than generating an unreachable notify_url.
 
 _BILLING_SECRET_KEY: str = config("BILLING_SECRET_KEY", default="")
+
+
+def _parse_trusted_proxies(
+    raw: str,
+) -> tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...]:
+    """Parse the comma-separated CIDR list from ``BILLING_TRUSTED_PROXIES``.
+
+    Bad entries are dropped with a startup warning rather than crashing
+    panel boot — a typo in one entry shouldn't take the whole panel
+    down, and the warning surfaces in standard log scrapers.
+    """
+    if not raw:
+        return ()
+    parsed: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
+    for entry in raw.split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        try:
+            parsed.append(ipaddress.ip_network(entry, strict=False))
+        except ValueError:
+            logger.warning(
+                "BILLING_TRUSTED_PROXIES: ignoring malformed CIDR entry %r",
+                entry,
+            )
+    return tuple(parsed)
+
+
+# Comma-separated CIDR list. Operators typically set this to either:
+#   - their reverse-proxy peer IP(s) (Nginx / Caddy / HAProxy), or
+#   - a Cloudflare Tunnel egress range, or
+#   - the loopback "127.0.0.1/32,::1/128" when proxy is on the same host.
+# Empty list == do not trust X-Forwarded-For at all (only request.client.host).
+BILLING_TRUSTED_PROXIES: tuple[
+    ipaddress.IPv4Network | ipaddress.IPv6Network, ...
+] = _parse_trusted_proxies(config("BILLING_TRUSTED_PROXIES", default=""))
 
 
 @lru_cache(maxsize=1)
@@ -114,21 +166,31 @@ def decrypt_merchant_key(ciphertext: bytes | None) -> str:
         ) from exc
 
 
-def _reload_for_tests(secret_key: str, public_base_url: str = "") -> None:
+def _reload_for_tests(
+    secret_key: str,
+    public_base_url: str = "",
+    trusted_proxies: str = "",
+) -> None:
     """Test-only hook to rewire module state without re-importing.
 
     Not part of the public API; production code never calls this.
     Used by ``tests/test_billing_crypto.py`` and checkout/webhook
-    fixtures to isolate Fernet keys between cases.
+    fixtures to isolate Fernet keys, public URLs, and trusted-proxy
+    CIDRs between cases.
     """
-    global _BILLING_SECRET_KEY, BILLING_PUBLIC_BASE_URL
+    global \
+        _BILLING_SECRET_KEY, \
+        BILLING_PUBLIC_BASE_URL, \
+        BILLING_TRUSTED_PROXIES
     _BILLING_SECRET_KEY = secret_key
     BILLING_PUBLIC_BASE_URL = public_base_url
+    BILLING_TRUSTED_PROXIES = _parse_trusted_proxies(trusted_proxies)
     _fernet.cache_clear()
 
 
 __all__ = [
     "BILLING_PUBLIC_BASE_URL",
+    "BILLING_TRUSTED_PROXIES",
     "BillingMisconfigured",
     "decrypt_merchant_key",
     "encrypt_merchant_key",

@@ -111,7 +111,13 @@ def app_with_billing(billing_engine, fake_sudo_admin):
 
 @pytest.fixture
 def client(app_with_billing) -> TestClient:
-    return TestClient(app_with_billing)
+    # FastAPI's TestClient defaults `request.client.host` to the
+    # literal string "testclient", which can't be parsed as an IP
+    # and therefore wouldn't match the loopback CIDR our conftest
+    # sets in BILLING_TRUSTED_PROXIES. Pin the peer to 127.0.0.1
+    # so the trusted-proxy path (the realistic "panel behind same-
+    # host reverse proxy" deployment shape) is what we're testing.
+    return TestClient(app_with_billing, client=("127.0.0.1", 51234))
 
 
 @pytest.fixture
@@ -369,9 +375,7 @@ def test_webhook_valid_sign_transitions_to_paid(
     invoice_id = _do_checkout(
         client, seeded_channel["channel_code"], seeded_plan["id"]
     )
-    params = _build_webhook_params(
-        invoice_id=invoice_id, merchant_id="M100"
-    )
+    params = _build_webhook_params(invoice_id=invoice_id, merchant_id="M100")
     params["sign"] = compute_sign(params, "super-seecret")
 
     r = client.post(
@@ -404,9 +408,7 @@ def test_webhook_invalid_sign_is_rejected_with_400(
     invoice_id = _do_checkout(
         client, seeded_channel["channel_code"], seeded_plan["id"]
     )
-    params = _build_webhook_params(
-        invoice_id=invoice_id, merchant_id="M100"
-    )
+    params = _build_webhook_params(invoice_id=invoice_id, merchant_id="M100")
     params["sign"] = "0" * 32  # bogus
 
     r = client.post(
@@ -429,9 +431,7 @@ def test_webhook_replay_is_idempotent(
     invoice_id = _do_checkout(
         client, seeded_channel["channel_code"], seeded_plan["id"]
     )
-    params = _build_webhook_params(
-        invoice_id=invoice_id, merchant_id="M100"
-    )
+    params = _build_webhook_params(invoice_id=invoice_id, merchant_id="M100")
     params["sign"] = compute_sign(params, "super-seecret")
 
     url = f"/api/billing/webhook/epay/{seeded_channel['channel_code']}"
@@ -446,11 +446,7 @@ def test_webhook_replay_is_idempotent(
         assert inv.state == INVOICE_STATE_PAID
         # Exactly one webhook_received marker, exactly one webhook_epay
         # transition, regardless of retry count.
-        events = (
-            s.query(PaymentEvent)
-            .filter_by(invoice_id=invoice_id)
-            .all()
-        )
+        events = s.query(PaymentEvent).filter_by(invoice_id=invoice_id).all()
         event_types = [e.event_type for e in events]
         assert event_types.count("webhook_received") == 1
         assert event_types.count("webhook_epay") == 1
@@ -494,16 +490,12 @@ def test_webhook_with_key_prefix_dialect_verifies(
     # signed in that dialect — must verify.
     client.patch(
         f"/api/billing/admin/channels/{seeded_channel['id']}",
-        json={
-            "extra_config": {"sign_body_mode": "with_key_prefix"}
-        },
+        json={"extra_config": {"sign_body_mode": "with_key_prefix"}},
     )
     invoice_id = _do_checkout(
         client, seeded_channel["channel_code"], seeded_plan["id"]
     )
-    params = _build_webhook_params(
-        invoice_id=invoice_id, merchant_id="M100"
-    )
+    params = _build_webhook_params(invoice_id=invoice_id, merchant_id="M100")
     params["sign"] = compute_sign(
         params,
         "super-seecret",
@@ -535,9 +527,7 @@ def test_webhook_ip_allowlist_blocks_unknown_ip(
     invoice_id = _do_checkout(
         client, seeded_channel["channel_code"], seeded_plan["id"]
     )
-    params = _build_webhook_params(
-        invoice_id=invoice_id, merchant_id="M100"
-    )
+    params = _build_webhook_params(invoice_id=invoice_id, merchant_id="M100")
     params["sign"] = compute_sign(params, "super-seecret")
 
     r = client.post(
@@ -558,9 +548,7 @@ def test_webhook_ip_allowlist_permits_cidr_match(
     invoice_id = _do_checkout(
         client, seeded_channel["channel_code"], seeded_plan["id"]
     )
-    params = _build_webhook_params(
-        invoice_id=invoice_id, merchant_id="M100"
-    )
+    params = _build_webhook_params(invoice_id=invoice_id, merchant_id="M100")
     params["sign"] = compute_sign(params, "super-seecret")
 
     r = client.post(
@@ -583,9 +571,7 @@ def test_webhook_no_allowlist_permits_any_ip(
     invoice_id = _do_checkout(
         client, seeded_channel["channel_code"], seeded_plan["id"]
     )
-    params = _build_webhook_params(
-        invoice_id=invoice_id, merchant_id="M100"
-    )
+    params = _build_webhook_params(invoice_id=invoice_id, merchant_id="M100")
     params["sign"] = compute_sign(params, "super-seecret")
 
     r = client.post(
@@ -594,3 +580,72 @@ def test_webhook_no_allowlist_permits_any_ip(
         headers={"X-Forwarded-For": "99.99.99.99"},
     )
     assert r.status_code == 200
+
+
+def test_webhook_ip_allowlist_ignores_spoofed_xff_when_peer_untrusted(
+    client, seeded_channel, seeded_plan, monkeypatch
+):
+    """X-Forwarded-For from an untrusted peer must be ignored (not just
+    "respected, then maybe blocked" — actively dropped).
+
+    Threat model: panel directly on the public internet (no reverse
+    proxy) with BILLING_TRUSTED_PROXIES empty. An attacker sets
+    X-Forwarded-For: 8.8.8.8 to spoof a 码商-allowed IP. Without this
+    fix, the allowlist check would see "8.8.8.8" and pass — the
+    documented "double 防线" silently becoming security theatre.
+
+    Expected after fix: peer (TestClient = 127.0.0.1) is NOT in the
+    empty trusted-proxy list, so XFF is ignored, allowed_ips check
+    sees the real peer "127.0.0.1", which isn't in ["8.8.8.8"] →
+    403 Forbidden.
+    """
+    # Override conftest's testing-friendly trusted_proxies setting.
+    monkeypatch.setattr(
+        billing_config,
+        "BILLING_TRUSTED_PROXIES",
+        billing_config._parse_trusted_proxies(""),
+    )
+    client.patch(
+        f"/api/billing/admin/channels/{seeded_channel['id']}",
+        json={"extra_config": {"allowed_ips": ["8.8.8.8"]}},
+    )
+    invoice_id = _do_checkout(
+        client, seeded_channel["channel_code"], seeded_plan["id"]
+    )
+    params = _build_webhook_params(invoice_id=invoice_id, merchant_id="M100")
+    params["sign"] = compute_sign(params, "super-seecret")
+
+    r = client.post(
+        f"/api/billing/webhook/epay/{seeded_channel['channel_code']}",
+        data=params,
+        headers={"X-Forwarded-For": "8.8.8.8"},  # spoofed
+    )
+    assert r.status_code == 403, (
+        "Spoofed X-Forwarded-For from an untrusted peer must NOT bypass "
+        "the allowed_ips allowlist. Peer (127.0.0.1) is not in the "
+        "configured allowlist, regardless of any header value."
+    )
+
+
+def test_webhook_disabled_channel_returns_410(
+    client, seeded_channel, seeded_plan
+):
+    """Disabled channel → 410 Gone (was 404). Vendors retry 404 ten
+    times with backoff; 410 says "stop, this is intentionally off".
+    """
+    invoice_id = _do_checkout(
+        client, seeded_channel["channel_code"], seeded_plan["id"]
+    )
+    params = _build_webhook_params(invoice_id=invoice_id, merchant_id="M100")
+    params["sign"] = compute_sign(params, "super-seecret")
+
+    # Now disable the channel.
+    client.patch(
+        f"/api/billing/admin/channels/{seeded_channel['id']}",
+        json={"enabled": False},
+    )
+    r = client.post(
+        f"/api/billing/webhook/epay/{seeded_channel['channel_code']}",
+        data=params,
+    )
+    assert r.status_code == 410

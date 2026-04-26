@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import ipaddress
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import (
@@ -148,7 +148,7 @@ async def checkout(
             ),
         )
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC).replace(tzinfo=None)
     subject = body.subject or _derive_subject(cart, plans)
 
     invoice = Invoice(
@@ -212,7 +212,7 @@ async def checkout(
                 "failed",
                 event_type="provider_submit_failed",
                 payload={"error": str(exc)},
-                now=datetime.utcnow(),
+                now=datetime.now(UTC).replace(tzinfo=None),
             )
         except InvoiceStateError:
             pass
@@ -235,7 +235,7 @@ async def checkout(
             "provider_invoice_id": result.provider_invoice_id,
             **result.extra_payload,
         },
-        now=datetime.utcnow(),
+        now=datetime.now(UTC).replace(tzinfo=None),
     )
     db.commit()
     db.refresh(invoice)
@@ -298,8 +298,13 @@ async def epay_webhook(
             detail=f"payment channel {channel_code!r} not found",
         )
     if not channel.enabled:
+        # 410 Gone (not 404): the channel exists but is intentionally
+        # off. Vendors retry 404s 10x with backoff before giving up;
+        # 410 is the standardised "stop retrying, this is permanent
+        # for now" signal. Re-enabling the channel will produce a
+        # fresh 200 on the next webhook anyway.
         raise HTTPException(
-            status_code=404,
+            status_code=410,
             detail=f"payment channel {channel_code!r} is disabled",
         )
 
@@ -348,9 +353,7 @@ async def epay_webhook(
             exc,
         )
         # Return success to stop 码商 retrying; we observed it.
-        return Response(
-            content=WEBHOOK_SUCCESS_BODY, media_type="text/plain"
-        )
+        return Response(content=WEBHOOK_SUCCESS_BODY, media_type="text/plain")
 
     invoice = db.get(Invoice, outcome.invoice_id)
     if invoice is None:
@@ -374,9 +377,7 @@ async def epay_webhook(
             channel_code,
             invoice.id,
         )
-        return Response(
-            content=WEBHOOK_SUCCESS_BODY, media_type="text/plain"
-        )
+        return Response(content=WEBHOOK_SUCCESS_BODY, media_type="text/plain")
 
     try:
         transition(
@@ -400,9 +401,7 @@ async def epay_webhook(
             exc,
         )
         db.rollback()
-        return Response(
-            content=WEBHOOK_SUCCESS_BODY, media_type="text/plain"
-        )
+        return Response(content=WEBHOOK_SUCCESS_BODY, media_type="text/plain")
 
     db.commit()
     return Response(content=WEBHOOK_SUCCESS_BODY, media_type="text/plain")
@@ -413,9 +412,7 @@ async def epay_webhook(
 # ---------------------------------------------------------------------
 
 
-def _derive_subject(
-    cart: list[CartLine], plans: dict[int, Plan]
-) -> str:
+def _derive_subject(cart: list[CartLine], plans: dict[int, Plan]) -> str:
     """Pick a short human-readable subject for the payment page.
 
     Single-line cart: the plan's display_name_en. Multi-line:
@@ -428,18 +425,56 @@ def _derive_subject(
     return subject[:128]
 
 
-def _resolve_client_ip(
-    request: Request, x_forwarded_for: str | None
-) -> str:
-    """Extract the caller's IP. Prefers the first entry of
-    ``X-Forwarded-For`` when present (reverse proxy), falls back to
-    the raw transport peer."""
-    if x_forwarded_for:
-        # Format: "client, proxy1, proxy2". We want the leftmost.
-        return x_forwarded_for.split(",")[0].strip()
-    if request.client is not None:
-        return request.client.host
-    return ""
+def _resolve_client_ip(request: Request, x_forwarded_for: str | None) -> str:
+    """Extract the caller's IP for the per-channel ``allowed_ips`` check.
+
+    Threat: ``/api/billing/webhook/epay/{code}`` is unauthenticated at
+    the HTTP layer (the MD5 sign is the primary defence). If we trusted
+    ``X-Forwarded-For`` from any caller, an attacker on the public
+    internet could spoof the header and bypass the per-channel
+    ``allowed_ips`` allowlist — turning a documented "double 防线"
+    into security theatre.
+
+    Rule: only honour ``X-Forwarded-For`` when the immediate transport
+    peer is on the operator-curated ``BILLING_TRUSTED_PROXIES`` CIDR
+    list (``ops.billing.config``). Otherwise the IP we use is the
+    transport peer regardless of any header the caller set.
+
+    A panel sitting directly on the public internet (no reverse proxy,
+    empty ``BILLING_TRUSTED_PROXIES``) therefore checks ``allowed_ips``
+    against the real source IP, which is the correct behaviour.
+    """
+    peer = request.client.host if request.client is not None else ""
+
+    if x_forwarded_for and _peer_is_trusted_proxy(peer):
+        # Format: "client, proxy1, proxy2". We want the leftmost (the
+        # original caller as recorded by our trusted proxy).
+        forwarded = x_forwarded_for.split(",")[0].strip()
+        if forwarded:
+            return forwarded
+        # Trusted proxy sent an empty XFF — fall back to peer rather
+        # than a blank string. Trusted proxies don't usually do this,
+        # but the conservative choice is "use what we know".
+        return peer
+
+    return peer
+
+
+def _peer_is_trusted_proxy(peer_ip: str) -> bool:
+    """True iff ``peer_ip`` falls within ``BILLING_TRUSTED_PROXIES``.
+
+    Reads the tuple from the live module (not a snapshot at import
+    time) so ``_reload_for_tests`` / live env changes take effect.
+    """
+    if not peer_ip:
+        return False
+    if not billing_config.BILLING_TRUSTED_PROXIES:
+        return False
+    try:
+        peer = ipaddress.ip_address(peer_ip)
+    except ValueError:
+        return False
+    return any(peer in cidr for cidr in billing_config.BILLING_TRUSTED_PROXIES)
 
 
 def _ip_is_allowed(channel: PaymentChannel, client_ip: str) -> bool:

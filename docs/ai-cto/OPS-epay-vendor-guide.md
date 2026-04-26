@@ -245,9 +245,34 @@ curl -X PATCH .../channels/{id} -d '{"extra_config": {"sign_body_mode": "with_ke
 ### A.4 IP 白名单(`allowed_ips`)
 
 字符串数组,支持 IPv4/IPv6 字面量和 CIDR(`1.2.3.0/24` / `2001:db8::/32`)。
-空数组 / 未配置 → 不限制。命中顺序:`X-Forwarded-For` 第一个值 →
-transport 层 `request.client.host`。格式错误条目会被跳过并记日志,
-不会整条 webhook 崩掉。
+空数组 / 未配置 → 不限制。格式错误条目会被跳过并记日志,不会整条 webhook 崩掉。
+
+**反代 + X-Forwarded-For 信任规则(防伪关键)**:
+
+`allowed_ips` 是 MD5 sign 之外的"双防线",但**只有正确配置 trusted proxies 时
+才真的是防线**。规则:
+
+1. 先取 transport 层 `request.client.host`(直连 panel 的对端 IP)
+2. **当且仅当** 该对端 IP 落在 `BILLING_TRUSTED_PROXIES` (`.env`,CIDR 列表) 内,
+   才信任 `X-Forwarded-For` 第一个值并改用它
+3. 否则一律用 transport 对端,**忽略** `X-Forwarded-For`(就算来源伪造)
+
+**为什么**: webhook 端点 `/api/billing/webhook/epay/{code}` 在 HTTP 层无认证。
+任何人都可以直连 panel 并设 `X-Forwarded-For: <某条 allowed_ips>` 来绕过白名单。
+所以"双防线"叙述只在 panel 处于受信反代后(Nginx / CF Tunnel / Caddy)且正确
+配置 `BILLING_TRUSTED_PROXIES` 时成立。
+
+**配置示例**(`.env`):
+
+| 部署形态 | `BILLING_TRUSTED_PROXIES` | `allowed_ips` 填什么 |
+|---|---|---|
+| panel 直接公网 | (空) | 码商真实出口 IP / CIDR |
+| panel 后置 Nginx 同机 | `127.0.0.1/32,::1/128` | 码商真实出口 IP / CIDR(从 Nginx forward 过来) |
+| panel 后置 CF Tunnel | CF Tunnel egress 段 | 码商真实出口 IP / CIDR |
+
+如果你的 panel 在反代后但 `BILLING_TRUSTED_PROXIES` 留空,白名单永远比对到反代
+节点 IP —— 等于 `allowed_ips` 必须只填该反代 IP,**整个白名单失去价值**。这个
+配置错误目前 panel **不会** 主动告警(下一个 PR 的事),依赖运营自己看 OPS-guide 修。
 
 ### A.5 首次 ¥0.01 round-trip 验证
 
