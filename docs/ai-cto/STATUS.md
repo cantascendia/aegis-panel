@@ -215,6 +215,10 @@ Round 0 列表的全部 + Round 1 新增:
 
 不变 —— 见 `docs/ai-cto/COMPETITORS.md`。Round 1 未做竞品跟踪刷新,下次 STATUS 更新(Round 2 末)做。
 
+## Upstream sync 状态(quarterly)
+
+最新报告:[`UPSTREAM-SYNC-REPORT-2026-04-26.md`](./UPSTREAM-SYNC-REPORT-2026-04-26.md)。**核心结论**:Marzneshin upstream 自 fork 后 6 个月只 2 个 commit,实质 dormant;sync 风险 ≈ 0,我们已是事实独立项目。下次 sync 抓取:**2026-07-26**(每季度)。
+
 ## 🔀 分支状态
 
 - `main` — PR #1~#14 全部合入(SHA `94b5baf`)
