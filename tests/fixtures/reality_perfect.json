@@ -1,0 +1,32 @@
+{
+  "_comment": "Reality config that should score green across all 5 indicators. SNI not in our top1k.json (static.naver.net is rank-free), port 2083 (recommended), 4 hex shortIds (≤8, ≥4 chars, deduped, non-zero), connIdle 90s (≤120s recommended). asn_match runs in CLI test with --vps-asn matching the static.naver.net ASN we'll monkey-patch.",
+  "policy": {
+    "levels": {
+      "0": {
+        "connIdle": 90,
+        "handshake": 2
+      }
+    }
+  },
+  "inbounds": [
+    {
+      "tag": "reality-jp1",
+      "listen": "0.0.0.0",
+      "port": 2083,
+      "streamSettings": {
+        "security": "reality",
+        "realitySettings": {
+          "serverNames": ["static.naver.net"],
+          "publicKey": "abcdef-test-public-key-32chars-aaaa",
+          "shortIds": ["aabb", "ccdd", "1234", "5678"],
+          "fingerprint": "chrome",
+          "xver": 1,
+          "spiderX": "/some/path"
+        },
+        "sockopt": {
+          "tcpKeepAliveIdle": 90
+        }
+      }
+    }
+  ]
+}
