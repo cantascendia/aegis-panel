@@ -24,6 +24,7 @@ from ops.billing.checkout_endpoint import (
     checkout_router as billing_checkout_router,
 )
 from ops.billing.endpoint import router as billing_admin_router
+from ops.billing.scheduler import install_billing_scheduler
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -67,3 +68,4 @@ def apply_panel_hardening(app: FastAPI) -> None:
     app.include_router(billing_checkout_router)
     app.include_router(reality_router)
     install_iplimit_scheduler(app)
+    install_billing_scheduler(app)
