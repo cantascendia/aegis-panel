@@ -28,4 +28,20 @@
 根 `docker-compose.yml` 是 **upstream 保留**的开发/演示用。生产场景使用
 `deploy/compose/docker-compose.prod.yml`,二者不混淆。
 
+## 运维 runbook(已就位)
+
+虽然 `deploy/install/` / `deploy/compose/` 等代码骨架还在 ⏳,运维侧的
+**故障排查手册**已经按子系统落地到 `docs/ai-cto/OPS-*.md`,先读为快:
+
+| 子系统 | runbook | 主要场景 |
+|---|---|---|
+| 部署主流程 | [`OPS-deploy-runbook.md`](../docs/ai-cto/OPS-deploy-runbook.md) | 节点迁移 / DB 备份 / CF token 应急 |
+| IP 限制 | [`OPS-iplimit-runbook.md`](../docs/ai-cto/OPS-iplimit-runbook.md) | 时区对齐 / 误封解封 / 计数漂移 |
+| **SNI 选型** | [**`OPS-sni-runbook.md`**](../docs/ai-cto/OPS-sni-runbook.md) | **零候选通过 / ASN 查不到 / blacklist 维护 / 上线后验证** |
+| 易支付码商 | [`OPS-epay-vendor-guide.md`](../docs/ai-cto/OPS-epay-vendor-guide.md) | 选码商 / 接入 / 撤离 |
+| 资金提取 | [`OPS-jpy-cashout.md`](../docs/ai-cto/OPS-jpy-cashout.md) | USDT → JPY 链路 |
+
+每份 runbook 默认按 "检测命令 / 判定条件 / 处置步骤 / 验证命令" 四段式
+(deploy / iplimit 已强制此约定)。新加 runbook 沿用该模板。
+
 ## 暂无实现。

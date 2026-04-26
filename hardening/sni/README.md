@@ -4,6 +4,10 @@
 
 **目标**: 输入 VPS 出口 IP → 输出候选 SNI 列表(已通过 6 条硬指标验证)。
 
+> **运维手册**: 故障排查 / 周期性重新验证 / blacklist 与 seeds 编辑 SOP →
+> [`docs/ai-cto/OPS-sni-runbook.md`](../../docs/ai-cto/OPS-sni-runbook.md)。
+> 本 README 是开发侧"模块构成";runbook 是运营侧"出事怎么办"。
+
 ## 六条硬指标(按 cheap-first 顺序执行)
 
 1. **不在 DPI 黑名单**(`blacklist.yaml` 精确匹配,~free dict lookup)
