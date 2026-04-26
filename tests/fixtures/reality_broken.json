@@ -1,0 +1,20 @@
+{
+  "_comment": "Reality config that should score red — every indicator fires worst-case. SNI is www.google.com (rank 2 in our top1k.json → -30 critical), port 443 (-15 critical), shortIds contain '0000' (all-zeros → -25 critical), connIdle missing (-15 critical). Combined = 100 - 30 - 15 - 25 - 15 - 10 (asn_match without --vps-asn) = 5, well below the red threshold.",
+  "inbounds": [
+    {
+      "tag": "reality-broken",
+      "listen": "0.0.0.0",
+      "port": 443,
+      "streamSettings": {
+        "security": "reality",
+        "realitySettings": {
+          "serverNames": ["www.google.com"],
+          "publicKey": "broken-test-public-key-32chars-aa",
+          "shortIds": ["0000", "aabb"],
+          "fingerprint": "chrome",
+          "xver": 0
+        }
+      }
+    }
+  ]
+}
