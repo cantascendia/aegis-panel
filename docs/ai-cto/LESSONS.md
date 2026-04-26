@@ -8,6 +8,74 @@
 
 ---
 
+## L-021 | Round 3 mid late-4 跨 session review | reviewer 推 commit 到他 session 的 PR 前必须同时跑 `ruff check` + `ruff format --check` 全自有目录
+
+**现象**: PR #65 是 S-B 开的,CI 在合入前一直绿。session 0 reviewer (本会话) 推 `de23f5f` 加安全修复后 CI 突然挂 `Lint (ruff)` —— 但失败的不是我新写的文件,是 PR #65 早就在的 `hardening/panel/middleware.py`(I001:`from ops.billing.checkout_endpoint import checkout_router as billing_checkout_router` 一行 85 字符超 79 限)。后又一轮挂在 `ops/billing/endpoint.py`(format ternary)。两轮 CI 失败都是 PR #65 原代码的潜伏问题。
+
+**根因**: CI 的 `ruff check hardening deploy ops tests` + `ruff format --check ...` 跑全自有目录,不只跑 diff 文件。如果 PR 原作者只跑了 `ruff check` 没跑 `ruff format --check`(或反之),issue 留在 PR 直到下一个 reviewer push 触发完整 CI 才暴露。"前几轮 CI 绿"是因为之前没人 push 过新 commit ——但不代表代码干净,只代表 CI **流水线刚好被原作者最后一次 push 之前的状态过了一次**。push 重启 CI,latent 问题就 surface。
+
+**防线**:
+1. **跨 session 推 commit 前的 pre-push checklist(本地一次性跑全自有目录,不只看自己文件)**:
+   ```bash
+   ruff check hardening deploy ops tests
+   ruff format --check hardening deploy ops tests
+   pytest tests/  # 至少跑改动模块的子集
+   ```
+   两条 ruff 命令必须**同时**跑,不要只跑 check —— format 漂移单独失败的次数比 check 多
+2. PR-author 自己提交时同样应该这样做,但 reviewer 不能假设 author 跑过
+3. 当 reviewer push 触发 latent failure,**默认修复后再 push**(像本会话做的),不要把 "先 push 看 CI 怎么说" 当工作流 —— 浪费 CI minutes 和 review attention
+
+**沉淀**: ✅ 已加到 `.agents/rules/ci-workflows.md` 的 "本地 pre-push 流水线" 段(本 PR);未来跨 session push 自动激活。
+
+---
+
+## L-020 | Round 3 mid late-4 cross-session review | FastAPI `TestClient` 默认 peer 是 `"testclient"` 字符串而非 IP
+
+**现象**: 给 PR #65 加 IP-allowlist + trusted-proxy 测试时,`request.client.host` 在 TestClient 下返回 `"testclient"`,**不是 `127.0.0.1`**。我设的 `BILLING_TRUSTED_PROXIES="127.0.0.1/32,::1/128"` 因此匹配不到 → trusted-proxy 路径走不到 → X-Forwarded-For 测试全 403,白调一个小时。
+
+**根因**: FastAPI/Starlette 的 TestClient 是 ASGI in-process 调用,没有真实 TCP 连接,**Starlette 把 `scope["client"]` 写成 `("testclient", 50000)`**(literal hostname,不是 IP)。许多 IP-aware 中间件在这种环境下行为不同,但通常不被注意到(rate limit / CORS 都不解析 client.host 为 IP)。
+
+**防线**:
+- **TestClient 测试涉及 IP 解析时**,初始化时显式传 `client=("127.0.0.1", 51234)`:
+   ```python
+   from fastapi.testclient import TestClient
+   client = TestClient(app, client=("127.0.0.1", 51234))
+   ```
+- 反过来,生产代码里 `_resolve_client_ip` 接收 `request.client.host` 必须用 `try: ipaddress.ip_address(...) except ValueError: ...` 围一圈,否则 `"testclient"` 之类异常输入会抛
+- 任何 "XFF + peer 信任" 类 logic 的测试用例必须**双向**:peer trusted XFF honored / peer untrusted XFF ignored,后者已是 PR #65 `test_webhook_ip_allowlist_ignores_spoofed_xff_when_peer_untrusted` 的模板
+
+**沉淀**: 不转硬规则(单次坑,judgment 类)。LESSONS 留痕。如未来又因 TestClient peer 默认值踩坑,升级到 `.agents/rules/python.md` 测试基础设施段。
+
+---
+
+## L-019 | Round 3 mid late-4 cross-session review | X-Forwarded-For 信任要 per-feature CIDR env,不能"总是信任"或"总是忽略"
+
+**现象**: PR #65(EPay webhook)第一轮代码 `_resolve_client_ip` 见 `X-Forwarded-For` 就直接用,把它定位为 IP 白名单的 "double 防线"。但端点是 HTTP-unauthenticated,任何能直连 panel 的人都能 spoof XFF 绕过 `allowed_ips` —— 文档 + OPS-guide 把 IP 白名单宣传为 "double 防线" 但实际只在 panel 处于受信反代后才成立。direct-on-internet 部署下变成 **security theatre**(误导性安全)。
+
+**根因**: 反代 vs 直连是 **per-deploy** 决策,不是 panel-wide。同一个 panel 进程可能:
+- billing webhook 走 Nginx-on-same-host(只信 `127.0.0.1`)
+- iplimit allowlist 边缘用例走 CF Tunnel(只信 CF egress 段)
+- admin login rate-limit 走双层(CF 在前 + Nginx 在后,信两段)
+
+写一个 panel-wide `TrustedProxyMiddleware` 注入 `request.scope["client"]` 看似"中央化",但**强行让每个 feature 共享同一信任假设**,反而比 per-feature env 更脆弱 —— 一旦 Nginx 配置漂移,全站 IP-aware 行为静默错误。
+
+**防线**:
+- **每个 IP-aware feature 各自挂一个 `<FEATURE>_TRUSTED_PROXIES` env**(CIDR 列表 string),feature 内部解析、feature 内部使用。本 PR 的 `BILLING_TRUSTED_PROXIES` 是模板:
+   ```python
+   def _peer_is_trusted_proxy(peer_ip: str) -> bool:
+       if not peer_ip: return False
+       if not config.BILLING_TRUSTED_PROXIES: return False
+       try: peer = ipaddress.ip_address(peer_ip)
+       except ValueError: return False
+       return any(peer in cidr for cidr in config.BILLING_TRUSTED_PROXIES)
+   ```
+- **空默认 = 不信任**(直接公网部署的安全选)
+- **未来 4+ feature 用同样配置时**,再考虑提到 panel-wide(`app/middleware/trusted_proxy.py`),不提早抽象
+
+**沉淀**: ✅ 决策已落 D-012(本 PR);代码模板在 `ops/billing/config.py:BILLING_TRUSTED_PROXIES` + `ops/billing/checkout_endpoint.py:_peer_is_trusted_proxy`,下个 IP-aware feature 直接 copy。
+
+---
+
 ## L-018 | Round 3 多会话并行 | 同一工作目录并发跑多个 Claude session → branch / stash / PR 全面撞车
 
 **现象**: 2026-04-23 日下午,为了平行推进 S-D(部署)+ S-R(Reality 审计)+ S-F(本会话,前端测试)三线,用户在同一个 `C:/projects/Marzban` 工作目录里并发开了 3 个 Claude Code session。连续发生:

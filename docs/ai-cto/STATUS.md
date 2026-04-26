@@ -1,6 +1,6 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-23 late-3(Round 3 mid — S-D + S-X 正式启动,第三次 S-O 触发)
+> 最后更新:2026-04-26 late-4(Round 3 mid — 差异化 #1 SNI 闭环 + A.2.2 webhook 落地,第四次 S-O 触发)
 > 更新频率:每 3 轮或重大节点
 
 ---
@@ -160,6 +160,12 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | #58 | **S-D OPS-deploy-runbook 骨架**(第一次 S-D 正式交付)| ✅ 合并 | **S-D** | `8a72301` |
 | #59 | **S-X X.2**(test-utils/render helpers + date-range-picker / usePolling 单测)| ✅ 合并 | **S-X** | `a0692bf` |
 | #60 | **AUDIT.md 进度 overlay**(fork-time 基线 + Round 3 mid 状态桥梁;不动原 🔴/🟠 finding)| ✅ 合并 | **S-O** | `009e757` |
+| #61 | STATUS late-3 micro-refresh | ✅ 合并 | **S-O** | `149e0e2` |
+| #62 | tools/setup-session-worktrees 扩到 S-O + S-F | ✅ 合并 | session 0 | `9195737` |
+| #63 | **S-X X.3** dashboard coverage 非阻塞 + test-utils README | ✅ 合并 | **S-X** | `91547df` |
+| #64 | **S-D D.0** SPEC-deploy.md flesh-out(compass 默认值矩阵 / 生产 compose 9 维表 / CF Tunnel 最小权限)| ✅ 合并 | **S-D** | `6c33641` |
+| #65 | **S-B A.2.2** billing cart checkout + EPay webhook + session 0 cross-review 修(X-Forwarded-For 欺骗 / `datetime.utcnow()` × 3 / disabled-channel 410)| ✅ 合并 | **S-B + session 0** | `84ec4e0` |
+| #66 | **OPS-sni-runbook** 落地(SPEC-sni-selector follow-up #3 完成,差异化 #1 SNI 闭环最后一块)| ✅ 合并 | session 0 | `b03ccc0` |
 
 ## 已部署配置文件
 
@@ -180,7 +186,7 @@ Round 0 列表的全部 + Round 1 新增:
   - ✅ SNI dashboard REST 端点(差异化 #1 API 层,PR #16)
   - ✅ SNI dashboard 前端集成(差异化 #1 UI 层,PR #18)→ **用户可见闭环完成**
   - ⏳ SNI rate-limit 回填(slowapi async-def 兼容方案,LESSONS.md L-010)
-  - ⏳ SNI runbook(`deploy/README.md` "全部候选不合格" 排查手册)
+  - ✅ SNI runbook(`docs/ai-cto/OPS-sni-runbook.md`,PR #66) → 差异化 #1 全链路闭环
   - Reality 配置审计器(Skill 已定义,代码未起)
   - Reality 健康度仪表盘(差异化 #3,v0.3)
 - **商业化基础**:
@@ -194,12 +200,12 @@ Round 0 列表的全部 + Round 1 新增:
   - Ansible 多节点 playbook
 - **Round 1 遗留小事**:
   - `UVICORN_HOST` 默认 `0.0.0.0` → `127.0.0.1`(CLAUDE.md 铁律要求,需带 deprecation)
-  - `pyproject.toml` 的 `[tool.black]` 块清理(已被 ruff format 替代)
-  - `v2share==0.1.0b31` beta 替代评估
-  - CI 加 PostgreSQL matrix(捕获 Round 2 新迁移的 PG 兼容)
-  - TrustedProxyMiddleware(反代场景下的 X-Forwarded-For 支持,速率限制真实落地依赖这个)
-  - `datetime.utcnow()` 迁移到 timezone-aware(PyJWT 2.10+ 触发 DeprecationWarning)
-  - cryptography 46 的 x509 `not_valid_before_utc` / `not_valid_after_utc` 迁移
+  - ~~`pyproject.toml` 的 `[tool.black]` 块清理~~ ✅ 已合 PR #9
+  - ~~CI 加 PostgreSQL matrix~~ ✅ 已合(`test-postgres` + `test-alembic-stepped` 两 job)
+  - ~~TrustedProxyMiddleware (panel-wide)~~ ❌ 撤销:由 D-012 改为 per-feature `*_TRUSTED_PROXIES` env;billing webhook 已用此模式(PR #65)
+  - ~~cryptography 46 的 x509 `not_valid_before_utc` 迁移~~ ✅ 已合 PR #11(read-side 用 `_utc`,builder setter 不变,L-009)
+  - `v2share==0.1.0b31` beta 替代评估(仍未做)
+  - **`datetime.utcnow()` 全 app 迁移**:PR #65 清了 checkout_endpoint.py 的 3 处,但 `ops/billing/states.py` / `app/dependencies.py` / `app/routes/user.py` / `app/db/models.py` 等仍存(SQLAlchemy `default=datetime.utcnow` 语义需要单独斟酌,不能批量替换)
 
 ## 竞品关键发现
 
@@ -238,6 +244,27 @@ Round 0 列表的全部 + Round 1 新增:
 S-O 本轮两次触发消化了 #41/#46/#48/#49/#52/#54/#56/#57/#58/#59/#60 共 11 个 PR,STATUS/SESSIONS/DECISIONS/LESSONS/ROADMAP/AUDIT 全部对齐到现状。
 
 **本次 S-O 自身的教训**:首次 S-O 触发在 S-D 分支上混改 docs 被反复回滚(同工作树多 session 竞争),最终按 L-018/铁规则 #7 建 `aegis-O` worktree 隔离后才稳定完成刷新 —— 证明 worktree 规则本身是对的,S-O 不可豁免
+
+---
+
+**late-4 追加同步**(2026-04-26 late-4,承接 late-3 后的 6 个 merge — #61/#62/#63/#64/#65/#66):
+
+- **#61 / #62 / #63** 收尾 S-O late-3 触发 + session 0 工具扩展 + S-X X.3 测试 infra 收口(coverage artifact 非阻塞 + test-utils README)
+- **#64 S-D D.0** SPEC-deploy.md flesh-out:Reality 区域 SNI 矩阵(`REALITY_SNI_DEFAULT_{GLOBAL,JP,KR,US}` 按 compass 选冷门 CDN 域)+ DPI blocklist(`www.google.com` / `speedtest.net` 硬拒)+ uTLS 指纹白名单(只许 `chrome / firefox / edge / safari / ios`,拒 `chrome_pq` / `randomized`)+ 生产 compose 9 维度对比表 + CF Tunnel token 最小权限矩阵 + AC-D.1.10/11/12 + AC-D.4.5/6 + 3 条 risks。session 0 cross-checked `REALITY_*` env 命名空间与 SPEC-sni-selector.md 不冲突
+- **#65 S-B A.2.2 + session 0 安全 review**:S-B 落 `POST /api/billing/cart/checkout` + `POST /api/billing/webhook/epay/{channel_code}` + Fernet `merchant_key_encrypted` + `extra_config_json` (`sign_body_mode` / `allowed_ips`) + 5 张表 schema 微扩 + 19 测试。session 0 加 commits 修了 1 个 🔴 critical(`X-Forwarded-For` 任意来源被信任 → IP 白名单可伪造 → 加 `BILLING_TRUSTED_PROXIES` env)+ 3 处 `datetime.utcnow()` Python 3.12 deprecation + webhook disabled-channel 404 → 410 + 2 个新回归测试(spoofing-detection / disabled-410)。CI 4 轮过(2 轮 ruff format/check 漂移修)
+- **#66 OPS-sni-runbook 落地**(session 0,SPEC-sni-selector follow-up #3):`docs/ai-cto/OPS-sni-runbook.md` ~270 行,9 段(标准流程 / 输出结构 / 退出码 / 零候选 emergency / ASN 查不到 emergency / 上线后验证 / 周期性维护 / blacklist+seeds SOP / 已知限制),按 OPS-deploy-runbook 四段式("检测 / 判定 / 处置 / 验证")。`deploy/README.md` 加 5 份 OPS-* 索引表;`hardening/sni/README.md` 加 runbook 入口
+
+**差异化 #1(SNI 智能选型器)端到端闭环完成**:SPEC(#10)→ core+CLI(#13)→ REST endpoint(#16)→ dashboard UI(#18)→ ops runbook(#66)。**5 段五个 PR**,从 spec-driven 到运维手册 全程符合 D-005 模板规约。Round 2 v0.2 差异化 #1 标记为 ✅ Done。
+
+**A.2.x 计费链路推进**:`A.2.2 webhook 端到端可接收 + 状态机 + 审计 + 加密` 全部就位。下一步 A.5 scheduler(自动 expire / cron 巡检)+ 真实 ¥0.01 round-trip(stage 验证,需 mock 码商或真接一家)。
+
+**新增 LESSONS / DECISIONS**:
+- **L-019** Reverse-proxy 信任 = per-feature CIDR env(不是全局 middleware)
+- **L-020** `TestClient` 默认 peer `"testclient"` 不是 IP,IP-aware 测试要 `client=("127.0.0.1", port)` 显式传
+- **L-021** Cross-session reviewer push commit 前必须同时跑 `ruff check + ruff format --check` 全自有目录
+- **D-012** 锁定"per-feature `*_TRUSTED_PROXIES` env"作为反代信任的设计模式,模板代码已在 `ops/billing/config.py` + `checkout_endpoint.py:_peer_is_trusted_proxy`,下个 IP-aware feature copy 即可
+
+**SESSIONS.md 状态**:S-B / S-D / S-X / S-F / S-O 全部"完成本轮一块",当前 active session count = 0(从 #66 合后到 late-4 触发 之间)。Round 3 mid 节奏在 "merge → S-O 微刷 → 下一 session 启动" 之间稳态。
 
 ---
 
