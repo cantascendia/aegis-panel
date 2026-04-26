@@ -69,7 +69,7 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
   - ✅ **`hardening/iplimit/`**(Round 3)—— policy 表(config / override / disabled_state)+ Xray access 日志 parser(时间戳感知)+ Redis 滚动窗口 + detector + REST + Telegram 告警 + clear-disable endpoint
   - ✅ **`ops/billing/`**(Round 3)—— 5 张 `aegis_billing_*` 表(plans / channels / invoices / invoice_lines / payment_events)+ 状态机 + webhook 去重 + 管理员 REST
   - ✅ **`dashboard/src/modules/nodes/dialogs/sni-suggest/`**(Round 2)+ **`dashboard/src/modules/users/dialogs/iplimit/`**(Round 3)+ **`dashboard/src/modules/billing/`**(Round 3 in-progress)
-- 关键缺口(Round 3+):用户购买 UI(A.4 完结,S-F)/ Reality 审计 dashboard 页(R.4,S-F-2)/ 真实 ¥0.01 round-trip(需用户对接码商)/ 真实 USDT 测试网 round-trip(A.3 已 ship,需 ops 接 Tronscan stage 验证)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志(panel-wide,需 SPEC)/ RBAC(需 SPEC);小债:SNI rate-limit 回填 / `hardening/iplimit` 白名单 + Redis SCAN / TZ 对齐文档
+- 关键缺口(Round 3+):用户购买 UI(A.4 完结,S-F)/ Reality 审计 dashboard 页(R.4,S-F-2)/ 真实 ¥0.01 round-trip(需用户对接码商)/ 真实 USDT 测试网 round-trip(A.3 已 ship,需 ops 接 Tronscan stage 验证)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志(panel-wide,需 SPEC)/ RBAC(需 SPEC);小债已清零:**SNI rate-limit 回填**(L-010 documented,Linux 复现 ROI 负,先放着)/ ✅ **iplimit 白名单**(`hardening/iplimit/allowlist.py` + db schema + endpoint + task 已用)/ ✅ **iplimit Redis SCAN**(`store.py` 用 `scan_iter`,非 KEYS)/ ✅ **TZ 对齐文档**(OPS-iplimit-runbook §"Timezone validation" 已文档化)
 
 ## 当前代码质量评分
 
@@ -307,6 +307,24 @@ S-O 本轮两次触发消化了 #41/#46/#48/#49/#52/#54/#56/#57/#58/#59/#60 共 
 **新增 LESSONS / DECISIONS**:本 wave-2 没有新条目;wave-1 已加 L-023 / L-024 / D-014 / D-015 全四条。
 
 **SESSIONS.md 状态**:**Round 3 mid 后端结块完成,可以开 Round 4 或者由用户决定下一阶段** —— 等用户做战略决策(开始 Round 4 / 启动 S-F-2 前端 / 外部 round-trip 验证 / 新 SPEC 决策)。
+
+---
+
+**late-6 wave-3 小账盘点**(2026-04-26 late-6 wave-3,**没有新 PR,只是核账**):
+
+用户在 wave-2 后说"清小债",清账后发现 STATUS 列出的 3 个小债**全部已经做完了**,只是清单没及时同步:
+
+| 旧"小债"项 | 真实状态 | 证据 |
+|---|---|---|
+| `hardening/iplimit` 白名单 | ✅ 已完工 | `hardening/iplimit/allowlist.py` 全套 + `db.py:35,76` schema 字段 + `endpoint.py:14,37,44,69` 接 + `task.py:64,82-98` 真实使用 |
+| iplimit Redis SCAN | ✅ 已完工 | `store.py:93` 用 `scan_iter`(非 `KEYS`) |
+| TZ 对齐文档 | ✅ 已完工 | `OPS-iplimit-runbook.md` "Run the panel container..." + "## Timezone validation" 整段 |
+
+**唯一**真正的小债 = **SNI endpoint 速率限制回填**(L-010 documented):slowapi async-def 422 兼容性问题 仅在 Linux CI 环境复现,本地 Windows 复现不到。L-010 的"path forward"明确写"必须 Linux VM / Docker python:3.12-slim 内复现 + 走 manual `_check_request_limit` 或 `shared_limit` 替代";session 0 在 Windows 主机环境无法做这个调试,**不是 PR 化问题**,等下次 OPS 在 Linux 跑 stage 时顺手做。
+
+`hardening/sni/scoring.py:31` 的 "Set-Cookie 惩罚未实现" 是 future-feature TODO 不是 debt — 显式写明"等 follow-up GET 检测到位再加",scoring surface 已留口。
+
+**结论**:Round 3 mid 后端**真零债**(除 L-010 documented + 1 个 future-feature)。下一步推进受外部 / 前端 / 决策驱动,而非债务驱动。
 
 ---
 
