@@ -27,6 +27,7 @@ from ops.billing.providers.base import (
     WebhookOutcome,
 )
 from ops.billing.providers.epay import EPayProvider
+from ops.billing.providers.trc20 import Trc20Provider
 
 if TYPE_CHECKING:
     from ops.billing.db import PaymentChannel
@@ -76,9 +77,13 @@ def get_provider(
         )
 
     if kind == "trc20":
-        raise NotImplementedError(
-            "trc20 provider lands in A.3.1; use env-driven singleton"
-        )
+        # ``channel`` is intentionally ignored — TRC20 is a singleton
+        # whose config lives in env. ``callback_base_url`` likewise
+        # unused (no notify_url to embed). See
+        # ops.billing.providers.trc20 module docstring.
+        from ops.billing.trc20_config import get_trc20_provider
+
+        return get_trc20_provider()
 
     raise ValueError(f"unknown payment provider kind: {kind!r}")
 
@@ -88,6 +93,7 @@ __all__ = [
     "CreateInvoiceResult",
     "EPayProvider",
     "InvalidSignature",
+    "Trc20Provider",
     "UnhandledEventType",
     "WebhookOutcome",
     "get_provider",

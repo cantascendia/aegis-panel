@@ -354,7 +354,18 @@ async def run_apply_paid_invoices() -> int:
 
 
 def install_billing_scheduler(app: FastAPI) -> None:
-    """Wire the two billing jobs into the FastAPI app's lifespan.
+    """Wire the billing scheduler jobs into the FastAPI app's lifespan.
+
+    Three jobs:
+    - ``aegis-billing-reap`` — A.5 reaper (awaiting_payment → expired)
+    - ``aegis-billing-apply`` — A.5 applier (paid → applied + grant)
+    - ``aegis-billing-trc20-poll`` — A.3 poller (Tronscan → paid)
+
+    The TRC20 job is added unconditionally, but its body short-circuits
+    when ``BILLING_TRC20_ENABLED`` is False. We do this rather than
+    skipping ``add_job`` because env state is read at startup and
+    flipping ``BILLING_TRC20_ENABLED`` at runtime (via
+    ``_reload_for_tests``) wouldn't activate the job otherwise.
 
     Same shape as :func:`hardening.iplimit.scheduler.install_iplimit_scheduler`:
     we wrap the existing ``router.lifespan_context`` so upstream's
@@ -365,6 +376,14 @@ def install_billing_scheduler(app: FastAPI) -> None:
     """
     if getattr(app.state, "billing_scheduler_installed", False):
         return
+
+    # Local import dodges a top-level cycle: trc20_poller imports the
+    # client which transitively imports trc20_config which imports
+    # providers/__init__.py which imports providers/trc20.py — all OK,
+    # but keeping the heavy import here avoids paying the cost at
+    # `import ops.billing.scheduler` for non-billing test paths.
+    from ops.billing.trc20_config import BILLING_TRC20_POLL_INTERVAL
+    from ops.billing.trc20_poller import run_poll_trc20_invoices
 
     original_lifespan = app.router.lifespan_context
     scheduler = AsyncIOScheduler(timezone="UTC")
@@ -386,6 +405,15 @@ def install_billing_scheduler(app: FastAPI) -> None:
         id="aegis-billing-apply",
         replace_existing=True,
     )
+    scheduler.add_job(
+        run_poll_trc20_invoices,
+        "interval",
+        seconds=BILLING_TRC20_POLL_INTERVAL,
+        coalesce=True,
+        max_instances=1,
+        id="aegis-billing-trc20-poll",
+        replace_existing=True,
+    )
 
     @asynccontextmanager
     async def lifespan_with_billing(app_: FastAPI):
@@ -393,9 +421,11 @@ def install_billing_scheduler(app: FastAPI) -> None:
             scheduler.start()
             logger.info(
                 "billing scheduler started "
-                "reap_interval=%ss apply_interval=%ss",
+                "reap_interval=%ss apply_interval=%ss "
+                "trc20_poll_interval=%ss",
                 BILLING_REAP_INTERVAL,
                 BILLING_APPLY_INTERVAL,
+                BILLING_TRC20_POLL_INTERVAL,
             )
             try:
                 yield
