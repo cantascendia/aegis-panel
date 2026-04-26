@@ -18,6 +18,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from hardening.iplimit.endpoint import router as iplimit_router
 from hardening.iplimit.scheduler import install_iplimit_scheduler
 from hardening.panel.rate_limit import limiter
+from hardening.reality.endpoint import router as reality_router
 from hardening.sni.endpoint import router as sni_router
 from ops.billing.checkout_endpoint import (
     checkout_router as billing_checkout_router,
@@ -64,4 +65,5 @@ def apply_panel_hardening(app: FastAPI) -> None:
     app.include_router(iplimit_router)
     app.include_router(billing_admin_router)
     app.include_router(billing_checkout_router)
+    app.include_router(reality_router)
     install_iplimit_scheduler(app)
