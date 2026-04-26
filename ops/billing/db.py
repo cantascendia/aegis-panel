@@ -36,7 +36,7 @@ Cross-references:
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import (
@@ -54,6 +54,24 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+
+def _now_utc_naive() -> datetime:
+    """Naive UTC ``datetime`` for SQLAlchemy column defaults.
+
+    ``aegis_billing_*`` ``DateTime`` columns are naive (no ``timezone=True``)
+    so all stored timestamps are wall-clock UTC without TZ metadata.
+    Pre-Python-3.12 the canonical default was ``datetime.utcnow``;
+    that's now deprecated. ``datetime.now(UTC).replace(tzinfo=None)``
+    produces the same naive-UTC value without the deprecation warning,
+    matching the existing column shape so we don't have to migrate the
+    schema. See ``docs/ai-cto/LESSONS.md#L-009``.
+
+    Reused by ``ops.billing.states`` for the ``now`` parameter default
+    so every billing-layer "current time" goes through one definition.
+    """
+    return datetime.now(UTC).replace(tzinfo=None)
+
 
 # ---------------------------------------------------------------------
 # Constants — validated at the application layer, not via DB CHECK
@@ -138,7 +156,7 @@ class Plan(Base):
     )
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
+        DateTime, nullable=False, default=_now_utc_naive
     )
 
     __table_args__ = (
@@ -223,7 +241,7 @@ class PaymentChannel(Base):
     # the remaining ones determines what the user sees next.
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
+        DateTime, nullable=False, default=_now_utc_naive
     )
 
     __table_args__ = (
@@ -312,7 +330,7 @@ class Invoice(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
+        DateTime, nullable=False, default=_now_utc_naive
     )
     paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     applied_at: Mapped[datetime | None] = mapped_column(
@@ -409,7 +427,7 @@ class PaymentEvent(Base):
     # record the operator's justification. Optional for other types.
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
+        DateTime, nullable=False, default=_now_utc_naive
     )
 
     __table_args__ = (
