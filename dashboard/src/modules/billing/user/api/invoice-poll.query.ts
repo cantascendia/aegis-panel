@@ -2,33 +2,33 @@ import { useQuery } from "@tanstack/react-query";
 
 import { fetch } from "@marzneshin/common/utils";
 
-import { FIXTURE_AWAITING_TRC20_INVOICE } from "../fixtures";
-import { mockResolve, shouldUseMock } from "./mock-gate";
-import type { Invoice } from "../../types";
+import {
+    INVOICE_TERMINAL_STATES,
+    type Invoice,
+} from "../../types";
 
 /*
- * GET /api/billing/invoices/{id} — poll a specific invoice the
- * current user owns.
+ * Polled view of an invoice for the TRC20 payment screen.
  *
- * Used by the TRC20 payment screen: every 5 s (server-side
- * Tronscan poll runs at 30 s, so 5 s is overkill but keeps the
- * UI snappy during testing) until state is terminal.
+ * Wraps the admin endpoint `GET /api/billing/admin/invoices/{id}`
+ * with `refetchInterval` so the screen reflects state transitions
+ * (awaiting_payment → paid → applied) without manual refresh.
  *
- * Refetch stops automatically when `data.state` is terminal. See
- * INVOICE_TERMINAL_STATES in ../../types.
+ * Polling stops when state hits a terminal value to avoid
+ * hammering the backend on dead invoices.
+ *
+ * Distinct from the sibling `useAdminInvoice` hook (which doesn't
+ * poll) so it can be deleted independently if the operator-side UX
+ * changes — admin pages prefer manual refresh; this screen needs
+ * live update because the operator stays on it while the user pays.
  */
 
-import { INVOICE_TERMINAL_STATES } from "../../types";
-
-export const UserInvoicePollQueryKey = "billing-invoice-poll-user";
+export const InvoicePollQueryKey = "billing-invoice-poll";
 
 const POLL_INTERVAL_MS = 5_000;
 
-async function fetchInvoicePoll(id: number): Promise<Invoice> {
-    if (shouldUseMock()) {
-        return mockResolve(FIXTURE_AWAITING_TRC20_INVOICE);
-    }
-    return fetch<Invoice>(`/billing/invoices/${id}`);
+async function fetchInvoice(id: number): Promise<Invoice> {
+    return fetch<Invoice>(`/billing/admin/invoices/${id}`);
 }
 
 export const useInvoicePoll = (
@@ -36,12 +36,9 @@ export const useInvoicePoll = (
     options: { enabled?: boolean } = {},
 ) =>
     useQuery({
-        queryKey: [UserInvoicePollQueryKey, id],
-        queryFn: () => fetchInvoicePoll(id as number),
+        queryKey: [InvoicePollQueryKey, id],
+        queryFn: () => fetchInvoice(id as number),
         enabled: id !== null && options.enabled !== false,
-        // Stop polling once the invoice reaches a terminal state —
-        // no point hammering the backend for an applied / cancelled
-        // invoice.
         refetchInterval: (query) => {
             const inv = query.state.data as Invoice | undefined;
             if (inv && INVOICE_TERMINAL_STATES.includes(inv.state)) {

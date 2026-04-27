@@ -511,11 +511,21 @@
         }
       },
       "purchase": {
-        "title": "Purchase",
+        "title": "Customer Checkout",
         "plans_title": "Plans",
         "pay_title": "Payment",
+        "user_section_title": "Customer",
         "empty_plans": "No plans available yet. Please check back later.",
         "load_error": "Failed to load plans or payment channels.",
+        "user_selector": {
+          "label": "Pick a customer (VPN user)",
+          "placeholder": "Type username...",
+          "searching": "Searching...",
+          "no_results": "No users found.",
+          "clear": "Clear",
+          "selected_hint": "Selected: {{username}} (#{{id}})",
+          "required_before_pay": "Pick a customer above before continuing to payment."
+        },
         "plan_card": {
           "add_to_cart": "Add to cart",
           "already_added": "Added"
@@ -572,18 +582,6 @@
         "toast": {
           "checkout_success": "Invoice #{{id}} created",
           "checkout_error": "Checkout failed"
-        }
-      },
-      "my_invoices": {
-        "title": "My invoices",
-        "empty": "You haven't made any purchases yet.",
-        "load_error": "Failed to load invoices",
-        "col": {
-          "id": "ID",
-          "state": "State",
-          "provider": "Provider",
-          "total": "Total",
-          "created_at": "Created"
         }
       }
     }

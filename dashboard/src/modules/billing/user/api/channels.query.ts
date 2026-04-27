@@ -2,35 +2,52 @@ import { useQuery } from "@tanstack/react-query";
 
 import { fetch } from "@marzneshin/common/utils";
 
-import { FIXTURE_CHANNELS } from "../fixtures";
-import { mockResolve, shouldUseMock } from "./mock-gate";
 import type { PaymentChannel } from "../../types";
 
 /*
- * Enabled payment channels for the user's checkout picker.
+ * Channels for the admin checkout flow — only enabled rows.
  *
- * Backend `GET /api/billing/channels` (user, not admin) returns
- * only `enabled=true` EPay channels. The TRC20 pseudo-channel is
- * synthesized client-side when the backend's env exposes
- * `BILLING_TRC20_ENABLED=true` — tracked via a separate flag on
- * the response (to be added in A.3.1). For the skeleton, we
- * always include the TRC20 pseudo-row in the fixture path.
+ * Backend admin endpoint returns ALL channels (incl. disabled);
+ * we filter client-side here because the admin list is small
+ * (typically 1-5 rows) and the backend has no `enabled` query
+ * filter (would be a 1-line backend addition for a follow-up).
  *
- * The backend endpoint isn't on main yet; the mock gate returns
- * fixtures so the checkout picker UI renders during preview.
+ * TRC20 is appended client-side as a synthetic pseudo-channel
+ * (channel_code = "trc20") if at least one EPay channel exists,
+ * since the backend doesn't return TRC20 in this list — TRC20
+ * config lives in env vars (BILLING_TRC20_*), not the
+ * PaymentChannel table.
+ *
+ * The pseudo-channel is rendered by CheckoutPaymentPicker as the
+ * second tab. CheckoutPaymentPicker filters it back out of the
+ * EPay-only sub-list using `channel_code === "trc20"`.
  */
 
-export const UserBillingChannelsQueryKey = "billing-channels-user";
+export const UserBillingChannelsQueryKey = "billing-channels-checkout";
 
-async function fetchUserChannels(): Promise<PaymentChannel[]> {
-    if (shouldUseMock()) {
-        return mockResolve(FIXTURE_CHANNELS);
-    }
-    return fetch<PaymentChannel[]>("/billing/channels");
+const TRC20_PSEUDO: PaymentChannel = {
+    id: -1,
+    channel_code: "trc20",
+    display_name: "USDT (TRC20)",
+    kind: "epay", // pseudo — picker special-cases by channel_code
+    gateway_url: "",
+    merchant_id: "",
+    enabled: true,
+    priority: 30,
+    created_at: "1970-01-01T00:00:00Z",
+};
+
+async function fetchEnabledChannels(): Promise<PaymentChannel[]> {
+    const all = await fetch<PaymentChannel[]>("/billing/admin/channels");
+    const enabled = all.filter((c) => c.enabled);
+    // Always offer TRC20 as a tab — the operator decides per-invoice
+    // whether the user wants USDT. Backend rejects with 4xx if TRC20
+    // env not configured, surfacing the misconfig at checkout time.
+    return [...enabled, TRC20_PSEUDO];
 }
 
 export const useUserChannels = () =>
     useQuery({
         queryKey: [UserBillingChannelsQueryKey],
-        queryFn: fetchUserChannels,
+        queryFn: fetchEnabledChannels,
     });
