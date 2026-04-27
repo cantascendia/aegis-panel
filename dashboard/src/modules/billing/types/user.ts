@@ -1,25 +1,24 @@
 /*
- * User-facing billing types.
+ * Cart / checkout types for the admin-on-behalf-of-user flow
+ * (BRIEF-billing-user-auth-blocker.md option A — the chosen path
+ * after PR #41's user-self-serve skeleton hit the user-auth gap).
  *
- * Distinct from the admin types in `./index.ts` so the user purchase
- * flow evolves independently from admin-CRUD shapes. Admin types
- * (Plan, PaymentChannel, Invoice, etc.) are reused as-is for
- * user-side reads; only the cart / checkout request/response shapes
- * are genuinely user-specific.
+ * These mirror the backend Pydantic schemas in `ops/billing/
+ * schemas.py` (`CheckoutLineIn`, `CheckoutIn`, `CheckoutOut`).
+ * Kept in a separate module from `./index.ts` so admin-CRUD shapes
+ * and checkout shapes evolve independently.
  *
- * The backend endpoints that return these shapes are tracked in
- * `docs/ai-cto/SPEC-billing-a2-a3.md` (A.2.2 `/api/billing/cart/
- * checkout`, A.3.1 `/api/billing/invoices/me`, `/api/billing/plans`).
- * The types MAY need to rev when A.2.2 merges — keep an eye on the
- * diff.
+ * No fixture-time / mock shapes here — those moved to test fixtures
+ * after the flip-on. See `user/fixtures.ts` for what remains
+ * (component-test seed data only).
  */
 
-import type { InvoiceState, Plan } from "./index";
+import type { Plan } from "./index";
 
 /**
- * One line in the user's cart. Local state only until checkout —
- * the backend receives the serialized form as {plan_id, quantity}
- * tuples on POST /api/billing/cart/checkout.
+ * One cart line. Local UI state until checkout. Wire shape sent
+ * inside `CheckoutRequest.lines` matches `CheckoutLineIn` on the
+ * backend.
  */
 export interface CartLine {
     plan_id: number;
@@ -27,9 +26,8 @@ export interface CartLine {
 }
 
 /**
- * Snapshot of a cart line augmented with the resolved plan, used by
- * CartSummary / CheckoutPaymentPicker components. Kept out of the
- * wire protocol — it's a UI-only convenience type.
+ * Snapshot augmented with the resolved plan for display.
+ * UI-only convenience; not on the wire.
  */
 export interface ResolvedCartLine {
     plan: Plan;
@@ -40,64 +38,54 @@ export interface ResolvedCartLine {
 }
 
 /**
- * Payment channel choice at checkout time. Mirrors the backend
- * union:
- * - `"trc20"` — self-hosted USDT polling
- * - `"epay:<channel_code>"` — one configured 码商 (multiple can be
- *   active; the user picks one).
+ * Tagged channel identifier emitted by `CheckoutPaymentPicker.onPay`.
+ * The picker collapses (channel_kind, sub_id) into a single string
+ * to keep the callback narrow:
+ *   - `"trc20"` for the singleton TRC20 channel
+ *   - `"epay:<channel_code>"` for one of the configured 码商 rows
+ *
+ * The route handler splits this back into `channel_code` for
+ * `CheckoutRequest.channel_code` (which is just the bare code; the
+ * `epay:` prefix is a UI grouping device, not on the wire).
  */
 export type CheckoutChannelId = "trc20" | `epay:${string}`;
 
 /**
- * POST /api/billing/cart/checkout request body.
+ * `POST /api/billing/cart/checkout` request body. Admin-initiated
+ * (per BRIEF option A): admin picks `user_id` via the UserSelector
+ * component, the backend uses it to attach the new Invoice to the
+ * VPN user. Backend dep is `SudoAdminDep`.
+ *
+ * `success_url` and `cancel_url` are passed verbatim to the EPay
+ * 码商 as the user redirect targets. For TRC20 the backend ignores
+ * cancel_url; success_url is unused too (TRC20 stays in-panel).
+ *
+ * `subject` is the human-readable label that EPay 码商 shows on
+ * the payment page; defaults to a sensible string server-side if
+ * omitted.
  */
 export interface CheckoutRequest {
+    user_id: number;
+    channel_code: string;
     lines: CartLine[];
-    channel: CheckoutChannelId;
+    success_url: string;
+    cancel_url: string;
+    subject?: string;
 }
 
 /**
- * POST /api/billing/cart/checkout response.
+ * `POST /api/billing/cart/checkout` response. Mirrors `CheckoutOut`.
  *
- * For EPay the user is redirected to `payment_url` (外部 码商 页面).
- * For TRC20 `payment_url` is an in-app route like
- * `/dashboard/billing/invoice/{id}` that renders the QR / memo /
- * countdown screen locally.
+ * For EPay: `payment_url` is the 码商-hosted redirect; admin copies
+ * it and pings the user via Telegram / email.
+ * For TRC20: `payment_url` is an in-panel route that renders the
+ * QR + memo + countdown screen.
  */
 export interface CheckoutResponse {
     invoice_id: number;
+    total_cny_fen: number;
     payment_url: string;
-}
-
-/**
- * Light derived type for the "my invoices" list row — trims fields
- * the history view doesn't need so we don't over-fetch. Backend may
- * return the full Invoice shape; UI picks these fields.
- */
-export interface MyInvoiceRow {
-    id: number;
-    total_cny_fen: number;
-    state: InvoiceState;
-    provider: string;
-    created_at: string;
+    provider_invoice_id: string;
+    state: string;
     expires_at: string;
-    paid_at: string | null;
-}
-
-/**
- * Polling-aware invoice view — superset of Invoice used by
- * InvoicePollQuery. Fields below are always present on the backend
- * response; the split exists so the polling component can render a
- * narrower interface without importing the full Invoice shape.
- */
-export interface InvoicePollSnapshot {
-    id: number;
-    state: InvoiceState;
-    provider: string;
-    total_cny_fen: number;
-    trc20_memo: string | null;
-    trc20_expected_amount_millis: number | null;
-    expires_at: string;
-    paid_at: string | null;
-    applied_at: string | null;
 }

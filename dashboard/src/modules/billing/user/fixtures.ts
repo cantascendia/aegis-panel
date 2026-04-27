@@ -1,24 +1,19 @@
 /*
- * Static fixture data for the A.4 user purchase UI skeleton.
+ * Component-test seed data for billing admin checkout components.
  *
- * Used when `VITE_BILLING_USER_UI=off` (default) OR when a `?mock=1`
- * URL param is present. API hooks under `user/api/*` read from this
- * module instead of calling the backend so reviewers can preview the
- * UI without waiting for A.2.2 / A.3.1 to merge.
+ * History: created in PR #41 to back the user-self-serve UI mock
+ * mode. After BRIEF-billing-user-auth-blocker.md option A flipped
+ * the design to admin-on-behalf-of-user, the API hooks now hit real
+ * backend endpoints — no runtime fixture path remains. These exports
+ * survive solely to give component tests stable input data
+ * (see `*.test.tsx` siblings).
  *
- * Delete this file (and the fixture-fallback branches in the hooks)
- * after the flip-on follow-up PR lands. Tracked in
- * `docs/ai-cto/WIP-billing-split.md` "Flip-on checklist".
- *
- * Pricing is in integer fen (1/100 CNY). TRC20 amounts are in
- * integer USDT-millis (1/1000 USDT). Matches the backend's money
- * invariant (see `ops/billing/db.py`).
+ * Pricing in integer fen (1/100 CNY). TRC20 amounts in USDT-millis
+ * (1/1000 USDT). Matches `ops/billing/db.py` money invariants.
  */
 
 import type {
     Invoice,
-    InvoiceState,
-    MyInvoiceRow,
     PaymentChannel,
     Plan,
 } from "../types";
@@ -162,33 +157,7 @@ export const FIXTURE_AWAITING_TRC20_INVOICE: Invoice = {
     ],
 };
 
-/** Helper: generate the "my invoices" list view with a mix of
- *  states so the history page visibly exercises every badge. */
-export const FIXTURE_MY_INVOICES: MyInvoiceRow[] = [
-    row(9001, 3500, "awaiting_payment", "trc20", 0),
-    row(8990, 8800, "applied", "epay:zpay1", -1),
-    row(8980, 3500, "expired", "trc20", -7),
-    row(8970, 19800, "cancelled", "epay:zpay1", -10),
-];
-
-function row(
-    id: number,
-    fen: number,
-    state: InvoiceState,
-    provider: string,
-    daysAgo: number,
-): MyInvoiceRow {
-    const created = new Date();
-    created.setDate(created.getDate() + daysAgo);
-    const expires = new Date(created);
-    expires.setMinutes(expires.getMinutes() + 30);
-    return {
-        id,
-        total_cny_fen: fen,
-        state,
-        provider,
-        created_at: created.toISOString(),
-        expires_at: expires.toISOString(),
-        paid_at: state === "applied" ? created.toISOString() : null,
-    };
-}
+// Note: the `FIXTURE_MY_INVOICES` array (PR #41) was deleted as part
+// of the BRIEF-billing-user-auth-blocker option A flip — the
+// `/billing/my-invoices` user page is gone (admin invoices table at
+// `/billing/invoices` covers operator's view of any user's history).

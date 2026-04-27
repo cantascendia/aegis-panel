@@ -158,7 +158,5 @@ export type {
     CheckoutChannelId,
     CheckoutRequest,
     CheckoutResponse,
-    InvoicePollSnapshot,
-    MyInvoiceRow,
     ResolvedCartLine,
 } from "./user";

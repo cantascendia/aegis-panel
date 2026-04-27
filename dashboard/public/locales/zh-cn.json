@@ -390,11 +390,21 @@
         }
       },
       "purchase": {
-        "title": "购买",
+        "title": "客户结账",
         "plans_title": "套餐",
         "pay_title": "支付",
+        "user_section_title": "客户",
         "empty_plans": "暂无可购买套餐,请稍后再看。",
         "load_error": "套餐或支付通道加载失败。",
+        "user_selector": {
+          "label": "选择客户(VPN 用户)",
+          "placeholder": "输入用户名搜索...",
+          "searching": "搜索中...",
+          "no_results": "未找到匹配的用户。",
+          "clear": "清除",
+          "selected_hint": "已选: {{username}} (#{{id}})",
+          "required_before_pay": "请先在上方选择客户,再继续支付。"
+        },
         "plan_card": {
           "add_to_cart": "加入购物车",
           "already_added": "已加入"
@@ -451,18 +461,6 @@
         "toast": {
           "checkout_success": "订单 #{{id}} 已创建",
           "checkout_error": "结账失败"
-        }
-      },
-      "my_invoices": {
-        "title": "我的订单",
-        "empty": "暂无订单记录。",
-        "load_error": "订单加载失败",
-        "col": {
-          "id": "编号",
-          "state": "状态",
-          "provider": "支付通道",
-          "total": "金额",
-          "created_at": "创建时间"
         }
       }
     }
