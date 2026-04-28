@@ -17,6 +17,17 @@ upstreams are preserved.
 - **Lineage upstream**: https://github.com/Gozargah/Marzban (original, AGPL-3.0,
   last activity 2025-01-09; Marzneshin is the active successor)
 
+## Source (this fork)
+
+- **Source code URL**: https://github.com/cantascendia/aegis-panel
+
+This URL satisfies AGPL-3.0 §13 source-disclosure for users interacting with
+this panel over a network. The deployed panel surfaces it via UI footer and
+the `GET /api/system/info` response (`source_code_url` field). The
+`deploy/compliance/agpl-selfcheck.sh` script verifies both surfaces at install
+time; it reads this URL by parsing the line above (canonical-extraction
+contract — keep the line shape `**Source code URL**: <url>`).
+
 All copyright notices, license files (`LICENSE`), and author attributions
 contained in the upstream source files are preserved and must remain preserved
 in this fork and any subsequent derivative works.
