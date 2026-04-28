@@ -1,0 +1,50 @@
+# =============================================================================
+# Aegis Panel — standalone marznode (data-plane) compose (D.2).
+#
+# Single service. Designed for VPS where ONLY marznode runs — no panel,
+# no postgres, no redis. The control plane is on a different host and
+# initiates gRPC connections to this node.
+#
+# Refs: docs/ai-cto/SPEC-deploy.md §"目录结构" deploy/marznode/.
+# Loaded by deploy/marznode/install-node.sh step 7 with
+# `--env-file /opt/aegis-marznode/.env`.
+# =============================================================================
+
+services:
+  marznode:
+    image: dawsh/marznode:${AEGIS_VERSION:-latest}
+    container_name: aegis-marznode
+    restart: always
+    # host networking matches the upstream marznode service so gRPC, xray
+    # inbound ports, and any sniffed ALPN behave identically.
+    network_mode: host
+    environment:
+      # marznode binds 0.0.0.0:${GRPC_PORT}; the control plane reaches it
+      # at the VPS public IP. ufw must restrict source to the panel IP.
+      SERVICE_ADDRESS: "0.0.0.0"
+      SERVICE_PORT: "${GRPC_PORT:-62051}"
+      # Cert-based authentication. INSECURE=False forces TLS handshake;
+      # the panel side presents a matching client cert.
+      INSECURE: "False"
+      SSL_CERT_FILE: "/var/lib/marznode/marznode-cert.pem"
+      XRAY_EXECUTABLE_PATH: "/usr/local/bin/xray"
+      XRAY_ASSETS_PATH: "/usr/local/lib/xray"
+      XRAY_CONFIG_PATH: "/var/lib/marznode/xray_config.json"
+      # Surface node identity in container logs (useful when grepping
+      # multi-node setups via centralized log shipping).
+      AEGIS_NODE_NAME: "${NODE_NAME:-unknown}"
+    volumes:
+      # Mount the install prefix as the in-container marznode data dir.
+      # install-node.sh writes ${CERT_PATH} (typically marznode-cert.pem)
+      # into this directory and the SSL_CERT_FILE points at it.
+      - /opt/aegis-marznode:/var/lib/marznode
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
