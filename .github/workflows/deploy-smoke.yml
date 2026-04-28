@@ -1,0 +1,160 @@
+name: Deploy Smoke
+
+# AC-CI.1 / AC-CI.2 of docs/ai-cto/SPEC-deploy.md (D.5):
+# additive workflow that does not modify or override any existing required
+# checks. Triggers on push to main and on PRs that touch deploy/** so we
+# catch shell syntax / compose schema regressions before they merge.
+#
+# Scope (intentionally narrow): bash -n parse, --help dry-runs, `docker
+# compose config --quiet` schema validation, and any tests/test_deploy_*.sh
+# the repo ships. Real end-to-end installs need a fresh VPS (see
+# docs/ai-cto/OPS-deploy-runbook.md §1) and are not part of CI.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/**'
+      - 'tests/test_deploy_*.sh'
+      - '.github/workflows/deploy-smoke.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'deploy/**'
+      - 'tests/test_deploy_*.sh'
+      - '.github/workflows/deploy-smoke.yml'
+
+concurrency:
+  group: deploy-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: deploy/** parse + compose + smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show docker compose version
+        run: docker compose version
+
+      # -----------------------------------------------------------------
+      # 1. bash -n parse on every shell script we ship under deploy/**.
+      #    Catches the "missing }" / "unmatched fi" class of regressions
+      #    before reviewers waste time pulling a branch.
+      # -----------------------------------------------------------------
+      - name: bash -n on install/install.sh + libs
+        run: |
+          set -euo pipefail
+          bash -n deploy/install/install.sh
+          for f in deploy/install/lib/*.sh; do
+            echo "  parsing ${f}"
+            bash -n "${f}"
+          done
+
+      - name: bash -n on cloudflare/*.sh
+        run: |
+          set -euo pipefail
+          for f in deploy/cloudflare/*.sh; do
+            echo "  parsing ${f}"
+            bash -n "${f}"
+          done
+
+      - name: bash -n on compliance/*.sh
+        run: |
+          set -euo pipefail
+          for f in deploy/compliance/*.sh; do
+            echo "  parsing ${f}"
+            bash -n "${f}"
+          done
+
+      # marznode/install-node.sh ships in D.2; tolerate its absence so this
+      # workflow can land before that PR. Once D.2 merges this step starts
+      # parsing the file automatically.
+      - name: bash -n on marznode/install-node.sh (if present)
+        run: |
+          set -euo pipefail
+          if [[ -f deploy/marznode/install-node.sh ]]; then
+            bash -n deploy/marznode/install-node.sh
+          else
+            echo "  deploy/marznode/install-node.sh not present yet (lands in D.2); skipping"
+          fi
+
+      # -----------------------------------------------------------------
+      # 2. --help dry-runs. Each entry-point script must exit 0 on --help
+      #    and print a usage banner; this catches accidental side effects
+      #    (e.g. somebody moves dependency checks above arg parsing).
+      # -----------------------------------------------------------------
+      - name: install.sh --help exits 0
+        run: bash deploy/install/install.sh --help
+
+      - name: cloudflare/install-tunnel.sh --help exits 0
+        run: bash deploy/cloudflare/install-tunnel.sh --help
+
+      - name: cloudflare/setup-access.sh --help exits 0
+        run: bash deploy/cloudflare/setup-access.sh --help
+
+      - name: cloudflare/uninstall-tunnel.sh --help exits 0
+        run: bash deploy/cloudflare/uninstall-tunnel.sh --help
+
+      - name: compliance/agpl-selfcheck.sh --help exits 0
+        run: bash deploy/compliance/agpl-selfcheck.sh --help
+
+      # -----------------------------------------------------------------
+      # 3. Compose schema validation. `config --quiet` parses the file,
+      #    interpolates env, and exits non-zero on any schema problem.
+      #    We feed a synthetic env so required vars (POSTGRES_PASSWORD
+      #    etc.) don't trip the `${VAR:?}` guards.
+      # -----------------------------------------------------------------
+      - name: docker compose config --quiet (prod)
+        env:
+          AEGIS_VERSION: v0.0.0-ci
+          POSTGRES_DB: aegis
+          POSTGRES_USER: aegis
+          POSTGRES_PASSWORD: ci-pgpass
+          POSTGRES_PORT: '5432'
+          REDIS_PORT: '6379'
+          REDIS_PASSWORD: ci-redispass
+          PANEL_PORT: '8443'
+          MARZNODE_GRPC_PORT: '62051'
+          DASHBOARD_PATH: /ci-dash
+          XRAY_SUBSCRIPTION_PATH: /ci-sub
+          JWT_SECRET_KEY: ci-jwt-secret
+          UVICORN_HOST: 127.0.0.1
+          UVICORN_PORT: '8443'
+        run: docker compose -f deploy/compose/docker-compose.prod.yml config --quiet
+
+      - name: docker compose config --quiet (sqlite)
+        env:
+          AEGIS_VERSION: v0.0.0-ci
+          PANEL_PORT: '8443'
+          MARZNODE_GRPC_PORT: '62051'
+          DASHBOARD_PATH: /ci-dash
+          XRAY_SUBSCRIPTION_PATH: /ci-sub
+          JWT_SECRET_KEY: ci-jwt-secret
+          UVICORN_HOST: 127.0.0.1
+          UVICORN_PORT: '8443'
+        run: docker compose -f deploy/compose/docker-compose.sqlite.yml config --quiet
+
+      # -----------------------------------------------------------------
+      # 4. Repo-level smoke tests (bash). Loops over every
+      #    tests/test_deploy_*.sh that exists; tolerates the directory
+      #    being empty.
+      # -----------------------------------------------------------------
+      - name: tests/test_deploy_*.sh
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          scripts=(tests/test_deploy_*.sh)
+          if (( ${#scripts[@]} == 0 )); then
+            echo "no tests/test_deploy_*.sh present; skipping"
+            exit 0
+          fi
+          for t in "${scripts[@]}"; do
+            echo "::group::${t}"
+            bash "${t}"
+            echo "::endgroup::"
+          done
