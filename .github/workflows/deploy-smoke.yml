@@ -120,8 +120,11 @@ jobs:
           sudo mkdir -p /opt/aegis
           # Empty file is enough — compose just needs the path to exist;
           # variable values come from the workflow `env:` block below.
+          # 644 (not 600) so the unprivileged github-actions runner can
+          # read it; 600 in production is install.sh's responsibility,
+          # not CI's.
           sudo touch /opt/aegis/.env
-          sudo chmod 600 /opt/aegis/.env
+          sudo chmod 644 /opt/aegis/.env
 
       # Synthetic placeholder values below — they exist only to satisfy
       # ${VAR:?} guards in the compose schema during `config --quiet`
