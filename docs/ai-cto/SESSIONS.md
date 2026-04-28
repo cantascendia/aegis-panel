@@ -15,7 +15,7 @@ _Updated: 2026-04-23 late-2(S-O 刷新:#41/#48/#49/#52/#54 已合入,S-D/S-X wor
 | 编号 | 名字 | 工具 | 模型 | 地盘(独占) | 当前 PR | 状态 |
 |---|---|---|---|---|---|---|
 | **S-B** | 商业化后端 | Claude Code × `aegis-B` | Opus(money) | `ops/billing/**`, `hardening/panel/middleware.py`(billing rows), Alembic, 相关 tests | A.2.1 #46 ✅,A.2.2 待开 | 进行中 |
-| **S-F** | 商业化前端 | Claude Code | Sonnet | `dashboard/src/modules/billing/user/**`, `billing.{purchase,my-invoices}.lazy.tsx`, `dashboard/src/modules/billing/user/components/*.test.tsx` | #41 ✅ merged(A.4 skeleton);#49 ✅ merged(money-critical 单测)| A.5 接力待开 |
+| **S-F** | 商业化前端 | Claude Code | Sonnet | `dashboard/src/modules/billing/admin-checkout/**`, `billing.{purchase,my-invoices}.lazy.tsx`, `dashboard/src/modules/billing/admin-checkout/components/*.test.tsx` | #41 ✅ merged(A.4 skeleton);#49 ✅ merged(money-critical 单测)| A.5 接力待开 |
 | **S-D** | 部署一体化 | Claude Code × `aegis-D`(未正式启)| Opus(SPEC)→Sonnet | `deploy/**`, `docs/ai-cto/SPEC-deploy.md` | `feat/spec-deploy` 分支已建,D.0 spec flesh-out PR 未开 | 待启 |
 | **S-R** | Reality 审计器 | Claude Code × `aegis-R`(待开)| Opus(SPEC)→Sonnet | `hardening/reality/**`, `docs/ai-cto/SPEC-reality-audit.md` | — | 未启 |
 | **S-X** | 前端测试基建 | Claude Code × `aegis-X`(未正式启)| Sonnet | `dashboard/src/**/*.test.tsx`, `dashboard/src/test-utils/**`, `dashboard/vitest.config.*` | `feat/dashboard-tests-x0` 分支已建 | 待启 |
@@ -47,7 +47,7 @@ _Updated: 2026-04-23 late-2(S-O 刷新:#41/#48/#49/#52/#54 已合入,S-D/S-X wor
 
 > **2026-04-26 重定位**:per BRIEF-billing-user-auth-blocker.md option A,A.4 由"用户自助 SPA"转为"admin-on-behalf-of-user 客户结账 UI"。Marzneshin VPN 用户没有 panel web auth,自助路径不可行;实际机场运营也是 Telegram 群人工开单。组件 90% 复用,只换 auth 入口 + 加 UserSelector。
 
-- **独占**:`dashboard/src/modules/billing/user/**`(目录名保留,语义已变;rename 是后续 cleanup PR), 新 route `billing.purchase.lazy.tsx`(SudoRoute 包裹,sidebar Billing 组的 "Checkout" 入口)
+- **独占**:`dashboard/src/modules/billing/admin-checkout/**`,新 route `billing.purchase.lazy.tsx`(SudoRoute 包裹,sidebar Billing 组的 "Checkout" 入口)
 - **共享追加**(append-only 约定):`dashboard/src/modules/billing/types/index.ts`(末尾 re-export `./user`), `dashboard/public/locales/{en,zh-cn}.json`(`page.billing.purchase.*` subtree), `dashboard/src/features/sidebar/items.tsx`(在 Billing 组内追加 "Checkout")
 - **禁动**:`ops/**`, `hardening/**`, `app/**`, 任何其他 `dashboard/src/modules/{billing/api,billing/components,nodes,users,...}/**` 里的现有文件
 - **模型**:Sonnet(UI 不触 money logic)

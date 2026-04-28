@@ -13,7 +13,7 @@ import {
     useCheckout,
     useUserChannels,
     useUserPlans,
-} from "@marzneshin/modules/billing/user";
+} from "@marzneshin/modules/billing/admin-checkout";
 import type {
     CartLine,
     Plan,

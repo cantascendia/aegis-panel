@@ -1,13 +1,11 @@
-# `modules/billing/user/` — admin-on-behalf-of-user checkout
+# `modules/billing/admin-checkout/` — admin-on-behalf-of-user checkout
 
 > **2026-04-26 重定位**:本目录原为 PR #41 的"用户自助购买"skeleton(flag-gated OFF)。BRIEF-billing-user-auth-blocker.md 选项 A 拍板后,A.4 改为 admin 给用户开订单的客户结账 UI,因为 Marzneshin VPN 用户没有 panel web auth,自助路径在当前用户基础上不可行。
->
-> 目录名 `user/` 保留是为最小化 diff;语义"我服务的那个用户"。后续 cleanup PR 会重命名为 `admin-checkout/`。
 
 ## 结构
 
 ```
-user/
+admin-checkout/
 ├── api/
 │   ├── plans.query.ts          # GET /api/billing/admin/plans?include_disabled=false
 │   ├── channels.query.ts       # GET /api/billing/admin/channels (filter enabled, append synth TRC20)
