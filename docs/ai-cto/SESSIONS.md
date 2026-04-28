@@ -6,7 +6,7 @@
 > 手册参考:CTO handbook §5(模型路由)、§7(Spec-Driven)、
 > 铁律 #1/#8/#10(决策服务愿景 / 先建分支 / 国际化+环境分离)。
 
-_Updated: 2026-04-23 late-2(S-O 刷新:#41/#48/#49/#52/#54 已合入,S-D/S-X worktree 分支就位,S-O 独立 worktree 建成)_
+_Updated: 2026-04-28 late-7 wave-2 post-merge(S-O batch 刷新:#99 R.4 + #101 SPEC 双骨架 ship;S-F R.4 双交付完结 + S-F-2 实质合并到 S-F;S-R completed 差异化 #3 全链路闭环;pre-kickoff 行 S-AL/S-RB/S-X-2)_
 
 ---
 
@@ -14,18 +14,30 @@ _Updated: 2026-04-23 late-2(S-O 刷新:#41/#48/#49/#52/#54 已合入,S-D/S-X wor
 
 | 编号 | 名字 | 工具 | 模型 | 地盘(独占) | 当前 PR | 状态 |
 |---|---|---|---|---|---|---|
-| **S-B** | 商业化后端 | Claude Code × `aegis-B` | Opus(money) | `ops/billing/**`, `hardening/panel/middleware.py`(billing rows), Alembic, 相关 tests | A.2.1 #46 ✅,A.2.2 待开 | 进行中 |
-| **S-F** | 商业化前端 | Claude Code | Sonnet | `dashboard/src/modules/billing/admin-checkout/**`, `billing.{purchase,my-invoices}.lazy.tsx`, `dashboard/src/modules/billing/admin-checkout/components/*.test.tsx` | #41 ✅ merged(A.4 skeleton);#49 ✅ merged(money-critical 单测)| A.5 接力待开 |
-| **S-D** | 部署一体化 | Claude Code × `aegis-D`(未正式启)| Opus(SPEC)→Sonnet | `deploy/**`, `docs/ai-cto/SPEC-deploy.md` | `feat/spec-deploy` 分支已建,D.0 spec flesh-out PR 未开 | 待启 |
-| **S-R** | Reality 审计器 | Claude Code × `aegis-R`(待开)| Opus(SPEC)→Sonnet | `hardening/reality/**`, `docs/ai-cto/SPEC-reality-audit.md` | — | 未启 |
-| **S-X** | 前端测试基建 | Claude Code × `aegis-X`(未正式启)| Sonnet | `dashboard/src/**/*.test.tsx`, `dashboard/src/test-utils/**`, `dashboard/vitest.config.*` | `feat/dashboard-tests-x0` 分支已建 | 待启 |
-| **S-O** | 文档 / 流程 | Claude Code × `aegis-O`(part-time)| Sonnet | `docs/ai-cto/**`(非 SPEC-*), `.agents/rules/**` | 本分支 `docs/ai-cto/round-3-mid-late2-refresh`(PR #56) | 触发中 |
+| **S-B** | 商业化后端 | Claude Code × `aegis-B` | Opus(money) | `ops/billing/**`, `hardening/panel/middleware.py`(billing rows), Alembic, 相关 tests | A.2.1 #46 ✅;A.2.2 #65 ✅;A.5 #77 ✅;A.3 TRC20 #79 ✅ | ✅ **completed**(后端 5/5 全工)|
+| **S-F** | 商业化前端 + Reality 审计前端 | Claude Code | Sonnet | `dashboard/src/modules/billing/admin-checkout/**`, `dashboard/src/modules/reality/**`(R.4 frontend),相关 i18n / 路由 / sidebar(append-only)| #41/#49/#86/#87/#89 全 ✅ merged(A.4 admin checkout 完结);**#99 ✅ merged(R.4 reality dashboard)** | ✅ **completed**(A.4 admin checkout + R.4 reality dashboard 双交付,差异化 #3 前端闭环;**S-F-2 命名实质合并到 S-F** — 同 session 同时承担 admin checkout + reality dashboard,实操证明拆分非必要)|
+| **S-D** | 部署一体化 | Claude Code × `aegis-D` | Opus(SPEC)→Sonnet | `deploy/**`, `docs/ai-cto/SPEC-deploy.md` | #58 OPS skeleton + #64 D.0 SPEC + #88 agpl-selfcheck + #94 D.4 CF + #95 D.1 install.sh + #96 D.5 OPS + smoke CI + #97 D.2 marznode + #98 D.3 Ansible 全 ✅ merged | ✅ **completed**(差异化 #4 一体化部署 5/5 全 ship)|
+| **S-R** | Reality 审计器 | Claude Code × `aegis-R` | Opus(SPEC)→Sonnet | `hardening/reality/**`, `docs/ai-cto/SPEC-reality-audit.md` | R.1 #74 + R.2 #75 + R.3 #76 + R.5 OPS-runbook #82 + **R.4 frontend #99(借 S-F 实施)** | ✅ **completed**(差异化 #3 全链路闭环 5/5,R.1-R.3 后端 + R.5 runbook + R.4 frontend) |
+| **S-X** | 前端测试基建 | Claude Code × `aegis-X` | Sonnet | `dashboard/src/**/*.test.tsx`, `dashboard/src/test-utils/**`, `dashboard/vitest.config.*` | #57/#59/#63 ✅ merged | **暂停**(基础齐了,X.3+ 增量低优先级)|
+| **S-O** | 文档 / 流程 | Claude Code × `aegis-O`(part-time)| Sonnet | `docs/ai-cto/**`(非 SPEC-*), `.agents/rules/**` | #48/#52/#56/#60/#61/#67/#78/#80/#84/#85/#91/#100 ✅ + **本批次 wave-2 post-merge batch** | **触发中**(late-7 wave-2 post-merge batch)|
+
+### Pre-kickoff(待用户决策驱动后启动)
+
+| 编号 | 名字 | 触发条件 | 备注 |
+|---|---|---|---|
+| **S-AL** | audit-log 审计日志 session | issue #103 4 TBDs 拍板后启动 | SPEC ✅ ship (PR #101);SPEC `docs/ai-cto/SPEC-audit-log.md` 骨架就位,具体 model/列/写入策略 4 个 TBD 等用户决策 |
+| **S-RB** | RBAC 角色权限 session | issue #104 3 TBDs 拍板 + S-AL 完工 双先决条件 | SPEC ✅ ship (PR #101);SPEC `docs/ai-cto/SPEC-rbac.md` 骨架就位;Role/Permission 表 3 TBD;依赖 S-AL 的 audit_log 表 schema |
+| **S-X-2** | R.4 follow-up tests | issue #102 已建,charter 等用户/CTO 派遣 | 4 个 dashboard component test for reality module(R.4 PR #99 落地后 follow-up 单测覆盖)|
 
 ## 归档(已完成)
 
 | 编号 | 名字 | 工具 | 产出 | 完工 |
 |---|---|---|---|---|
 | **S-I** | iplimit 生产化 | Codex | PR #40/#42/#43/#44/#45 合并 —— runbook + xray 日志样本 + CIDR allowlist + 时区修正 + owned-disable 可见性 | 2026-04-23 |
+| **S-B** | 商业化后端 5/5 | Claude Code × `aegis-B` | A.1 数据/Admin + A.2.1/A.2.2 EPay + A.3 TRC20 + A.5 scheduler 全 5/5 | 2026-04-28 |
+| **S-F** | 商业化前端 + Reality 审计前端 | Claude Code | A.4 admin checkout(BRIEF option A 完结)+ R.4 Reality dashboard module(PR #99) | 2026-04-28 |
+| **S-D** | 部署一体化 D.1-D.5 | Claude Code × `aegis-D` | 差异化 #4 一体化部署 5/5(install.sh / Ansible / CF Tunnel / marznode standalone / OPS-deploy-runbook + deploy-smoke CI) | 2026-04-28 |
+| **S-R** | Reality 审计器 R.1-R.5 | Claude Code × `aegis-R` + S-F | 差异化 #3 全链路闭环(R.1-R.3 后端 + R.5 OPS-runbook + R.4 dashboard frontend PR #99) | 2026-04-28 |
 
 ---
 

@@ -8,6 +8,18 @@
 
 ---
 
+## L-026 | Round 3 mid late-7 wave post-merge | Sub-agent 并行 + 临时 worktree 让 1 session 触发 6 PR + 3 issue 自动收口
+
+**现象**: late-7 wave-2 post-merge batch (本 PR) 中,session 0 在单个会话内通过 5 个 sub-agent 串/并行(2 review + 2 SPEC + 1 调研)+ 后续临时 worktree 隔离的 docs sub-agent + 3 个 gh-only sub-agent,完成: PR #99/#100/#101 (3 个) merge + issue #102/#103/#104 (3 个) 创建 + 后续 batch refresh PR + handbook 路径修复 PR,**用户介入 ≤ 3 次**。
+
+**根因**: SESSIONS.md 铁规则 #7 worktree 隔离原本是为多 Claude session 设计,但**单 session 内的 sub-agent 也适用** — 把 destructive git 操作(commit/push/branch switch)隔离到独立 worktree,主 session 0 的 working tree 永不被污染,sub-agent 之间不撞车。
+
+**防线**: 任何需要并行多 sub-agent 跑 git-heavy 工作时,主会话先 `git worktree add` 临时 worktree(`../aegis-tmp-<task>`),sub-agent prompt 里硬编码 cd 到该 worktree 不去主 repo;完成后主会话清理(`git worktree remove`)。临时 worktree 配独立 branch 名,不复用 fixed session 的 aegis-{B,D,F,O,R,X}。
+
+**沉淀**: 未转 rule(单次 pattern,模式还要再观察 1-2 次)。下一次 multi-sub-agent batch 沿用此模式,如果稳定再转硬规则。
+
+---
+
 ## L-025 | Round 3 mid late-7 | drive-by S-O 触发会和正式 S-O batch 抢占同一文件,要先看 git log 再动手
 
 **现象**:2026-04-28 late-7 wave 5 PR 合入(#86-#90)后,session 0 起了一个 drive-by S-O(分支 `docs/status-refresh-late-7-wave`)只刷 STATUS.md,顺手把 wave-7 块加到底部。当天稍后启动正式 S-O batch session(本 PR),开 worktree 后 `git pull origin main` 拿到的 STATUS.md **已经包含 drive-by 的内容**。如果不先看 `git log docs/ai-cto/STATUS.md` 评估"近期已经被改过没",会直接重写一遍 + 重新加 wave-7 块,造成 commit 内容与已 merge 内容重复 / 冲突 / 丢字。本次幸运是先扫了 git log 才发现 #91 已合入。

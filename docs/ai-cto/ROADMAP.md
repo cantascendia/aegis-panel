@@ -1,9 +1,9 @@
 # 路线图(ROADMAP)
 
-> 最后更新:2026-04-28 late-7 batch + cross-review 修补(Round 3 mid late-7 — 商业化 5/5 完结 + 差异化 #3 后端闭环 + **差异化 #4 一体化部署 5/5 当天 5 PR 并行 ship**)
+> 最后更新:2026-04-28 late-7 wave-2 post-merge(Round 3 mid late-7 wave-2 — **v0.2 实质完工**:商业化 5/5 + 差异化 #1 SNI + 差异化 #3 Reality 全链路闭环 + 差异化 #4 一体化部署 5/5;v0.3 SPEC 双骨架就位等决策驱动)
 > 每阶段末尾或重大优先级变化时更新
 >
-> **当前位置**:v0.1 已完成,v0.2 接近 done(SNI ✅ / **计费 MVP 5/5 完结** ✅ / **一键部署引擎 5/5 全 ship** ✅:agpl-selfcheck #88 + install.sh #95 + marznode standalone #97 + Ansible #98 + CF Tunnel #94 + OPS-deploy-runbook + deploy-smoke CI #96),v0.3 差异化 #2 已落地(IP 限制 MVP + 生产化),**差异化 #3 Reality 后端 ✅(R.1-R.3),R.4 dashboard sibling agent 进行中(PR #99)**
+> **当前位置**:v0.1 已完成,**v0.2 实质完工**(SNI ✅ / **计费 MVP 5/5 完结** ✅ / **一键部署引擎 5/5 全 ship** ✅ / **差异化 #3 Reality 配置审计 全链路闭环** ✅:R.1-R.3 后端 #74-#76 + R.5 OPS-runbook #82 + R.4 dashboard frontend #99),建议进入 v0.3(audit-log + RBAC + XHTTP/Hysteria2 备用通道 + 自动化 upstream 同步);v0.3 audit-log + RBAC SPEC 双骨架已 ship(PR #101),等用户拍 7 个 TBD(issue #103 #104)
 
 ---
 
@@ -15,19 +15,19 @@
 
 ---
 
-## 优先级队列(2026-04-28 late-7 batch + cross-review 修补 视角)
+## 优先级队列(2026-04-28 late-7 wave-2 post-merge 视角)
 
-按"现在该推什么"排序,差异化 #4 D.1-D.5 全 ship 后唯一 in-flight 是 R.4:
+按"现在该推什么"排序,**v0.2 实质完工** → 进入 v0.3 队列;现阶段无 in-flight session,等用户决策驱动:
 
-1. 🔄 **S-R R.4 Reality 审计 dashboard 页**(PR #99 open,sibling agent today) — 后端 R.1-R.3 已 production-ready,前端落地后差异化 #3 闭环完成 —— **唯一 in-flight session**
-2. ✅ **S-D D.1 install.sh 单节点一键**(PR #95 `9787bd4` merged) — 差异化 #4 第三件工具
-3. ✅ **S-D D.4 CF Tunnel 自动化**(PR #94 `b00a9cf` merged) — 差异化 #4 第二件工具
-4. ✅ **S-D D.2 marznode standalone node installer**(PR #97 `cfc3b9a` merged) — 差异化 #4 第四件工具
-5. ✅ **S-D D.3 Ansible multi-node playbook**(PR #98 `5f0ca98` merged) — 差异化 #4 第五件工具,多节点部署
-6. ✅ **S-D D.5 OPS-deploy-runbook + deploy-smoke CI**(PR #96 `3a969a7` merged) — 差异化 #4 第六件,五段流程闭环
-7. ⏳ **A.x 真实 round-trip**(operator 外部任务,需用户行动) — ¥0.01 EPay + USDT 测试网各跑一遍
-8. ⏳ **R.5+ Reality 实时监测**(差异化 #3 v0.3 后段) — Prometheus + Grafana 长期趋势
-9. ⏳ **AuditLog + RBAC SPEC**(决策驱动,需用户提) — 不在自动 queue,等运营触发
+1. ✅ **S-R R.4 Reality 审计 dashboard 页**(PR #99 `5adddfe` merged) — 差异化 #3 用户可见闭环最后一公里完工
+2. ✅ **v0.3 audit-log + RBAC SPEC 双骨架**(PR #101 `349db93` merged) — v0.3 scope SPEC 就位
+3. ⏳ **A.x 真实 round-trip**(operator 外部任务,需用户行动) — ¥0.01 EPay + USDT 测试网各跑一遍;不在自动 queue
+4. ⏳ **issue #103 audit-log 4 TBDs 拍板** — 用户决策后启动 S-AL session
+5. ⏳ **issue #104 RBAC 3 TBDs 拍板**(+ 等 #103 ship 双先决条件)— 用户决策后启动 S-RB session
+6. ⏳ **issue #102 R.4 follow-up tests**(4 个 component test for reality module)— S-X-2 session pre-kickoff,charter 等用户/CTO 派遣
+7. ⏳ **R.5+ Reality 实时监测**(差异化 #3 v0.3 后段) — Prometheus + Grafana 长期趋势
+8. ⏳ **XHTTP / Hysteria2 备用通道**(v0.3 抗封进化) — 未启
+9. ⏳ **自动化 Upstream 同步**(v0.3 运维成熟) — 未启
 
 ---
 
@@ -71,9 +71,11 @@
 
 ---
 
-## v0.2 — 差异化落地 + 一键部署(6-8 周) — **进行中**
+## v0.2 — 差异化落地 + 一键部署(6-8 周) — ✅ **实质完工**(2026-04-28 late-7 wave-2 post-merge)
 
-**目标**: 让项目有**能卖的理由**。SNI 选型器 + 一键部署 + 计费 MVP。
+**目标**: 让项目有**能卖的理由**。SNI 选型器 + 一键部署 + 计费 MVP + 差异化 #3 Reality 配置审计。
+
+**完工度**: 验收 checklist 全部 ✅ 或 stretch goal(real-money round-trip 是 operator 外部环境,不阻塞 v0.3);建议正式进入 v0.3 (audit + RBAC + XHTTP + 备用通道)。
 
 ### 必做
 
@@ -107,40 +109,45 @@
    - **剩余 = 外部环境**:¥0.01 EPay round-trip(operator 接一家码商 stage)+ USDT 测试网 round-trip(operator 接 Tronscan stage)
    - **不做**(D-016):用户公开 web auth / 用户自助 SPA portal,除非客户真实数据点 ≥ 3 触发推翻条件
 
-4. **差异化 #3 Reality 配置审计**(2-3 周)🔄 **后端 ✅,前端 in-flight**(R.4 sibling agent 今日启动)
+4. **差异化 #3 Reality 配置审计**(2-3 周)✅ **全链路闭环 5/5 完工**
    - [x] R.1 core(checks / scoring / report / seeds)—— PR #74
    - [x] R.2 CLI + loader + golden fixtures —— PR #75
    - [x] R.3 REST endpoint(`POST /api/reality/audit`) —— PR #76
-   - [x] OPS-reality-runbook —— PR #82
-   - 🔄 **R.4 dashboard 审计页**(sibling agent 今日启动,前端消费 R.3 endpoint)
+   - [x] R.5 OPS-reality-runbook —— PR #82
+   - [x] **R.4 dashboard reality module**(消费 R.3 endpoint,管理员 dashboard 审计页)—— PR #99 `5adddfe`
+   - ⏳ R.4 follow-up: 4 个 component test(issue #102 跟踪,S-X-2 session pre-kickoff)
 
-5. **审计日志系统**(1 周,可与 #3/#4 合并)—— 未启
-   - `AuditLog` 表 + 中间件自动记录管理员操作
-   - Dashboard 页面查看审计日志(支持筛选 admin、时间段、操作类型)
-   - 备注:billing invoices 的 `payment_events` 表已是一种窄域审计,通用 AuditLog 可在 RBAC 时合并设计
+5. **审计日志系统**(1 周,可与 #3/#4 合并)—— ✅ **SPEC ship,等决策驱动启动 S-AL session**
+   - [x] **SPEC-audit-log skeleton ship**(PR #101) — `AuditLog` 表骨架 + 中间件设计 + dashboard 审计页方向
+   - ⏳ 4 TBDs 拍板(issue #103 跟踪): model schema 细节 / 写入策略 / 保留期限 / dashboard 筛选维度
+   - 备注:billing invoices 的 `payment_events` 表已是一种窄域审计,通用 AuditLog 在 SPEC 中已定位为合并设计
 
 ### 验收
 
 - [x] 新节点创建流程中 SNI 候选自动预填,用户 80% 场景不用手填(PR #18 达成)
-- [ ] 从空 VPS 到面板可访问用时 ≤15 分钟(install.sh 跑完)—— S-D D.1 sibling agent 进行中
+- [x] 从空 VPS 到面板可访问用时 ≤15 分钟(install.sh 跑完,PR #95 达成)
 - [x] 管理员能为用户 "激活订阅" + 查看到期提醒 + 查看订阅历史(激活 ✅;A.5 自动 grant ✅;admin checkout #87 ✅)
-- [ ] 所有关键操作有审计记录(billing 窄域 ✅;通用 AuditLog ⏳)
+- [x] 差异化 #3 Reality 配置审计 用户可见闭环(R.4 dashboard PR #99 ship)
+- [ ] 所有关键操作有审计记录(billing 窄域 ✅;通用 AuditLog SPEC ✅,实施待 S-AL session)
 - [x] AGPL §13 合规可一键自检(`bash deploy/agpl-selfcheck.sh`) —— PR #88 + #90
 
 ---
 
-## v0.3 — 运维成熟 + 抗封进化(8-12 周)
+## v0.3 — 运维成熟 + 抗封进化(8-12 周) — **入口就位**(2026-04-28 late-7 wave-2 post-merge)
 
-**目标**: 从"能卖"走到"可长期运营"。健康度仪表盘 + 原生 IP 限制 + 备用通道 + RBAC。
+**目标**: 从"能卖"走到"可长期运营"。健康度仪表盘 + 原生 IP 限制 + 备用通道 + RBAC + 审计日志。
+
+**当前状态**: v0.2 实质完工(差异化 #3 Reality 全链路闭环已前置完成);v0.3 audit-log + RBAC SPEC 双骨架已 ship(PR #101),等用户拍 7 个 TBD(issue #103 #104)后启动 S-AL / S-RB session。
 
 ### 必做
 
-1. **Reality 配置审计 + 健康度仪表盘**(2-3 周,差异化 #3)🔄 **R.1-R.3 backend ✅(已前置到 v0.2),R.4 frontend sibling agent 进行中**
+1. **Reality 配置审计 + 健康度仪表盘**(2-3 周,差异化 #3)✅ **全链路闭环 5/5 完工(已前置到 v0.2)**
    - [x] R.1 配置审计 core(SNI 冷门度 / ASN 同质性 / 端口非标 / shortId 合规 / connIdle)—— PR #74
    - [x] R.2 CLI + loader + golden fixtures —— PR #75
    - [x] R.3 REST endpoint(`POST /api/reality/audit`,sudo-admin 门控)—— PR #76
-   - [x] OPS-reality-runbook —— PR #82
-   - 🔄 R.4 dashboard 页(sibling agent 今日启动)
+   - [x] R.5 OPS-reality-runbook —— PR #82
+   - [x] **R.4 dashboard reality module**(管理员审计页消费 R.3 endpoint)—— PR #99 `5adddfe`
+   - ⏳ R.4 follow-up: 4 个 component test(issue #102)
    - ⏳ R.5+ 实时监测每节点 SNI 可达性 / 握手成功率 / 历史趋势图(Prometheus + Grafana,留 v0.3 后段)
 
 2. **原生 IP 限制模块**(2 周)✅ **已前置落地**(v0.3 item 提前到 Round 3 opener 完成,差异化 #2 用户可见闭环 + 生产化全套)
@@ -151,18 +158,25 @@
    - ⏳ 真实节点 E2E 验证(留待 S-D 一键部署就位后双向测)
    - ⏳ 小债:Redis SCAN 替代 KEYS / 白名单 UI
 
-3. **备用通道(XHTTP / Hysteria2)**(2-3 周)
+3. **备用通道(XHTTP / Hysteria2)**(2-3 周)— **未启**
    - `hardening/fallback/` 支持多协议回切
    - 订阅链接同时下发 Reality + 备用协议
    - 客户端指南 + dashboard 客户端状态面板
 
-4. **RBAC + 管理员分层**(2 周)
+4. **审计日志系统**(1 周)— ✅ **SPEC ship,等决策驱动启动**
+   - [x] **SPEC-audit-log skeleton ship**(PR #101)
+   - ⏳ 等 issue #103 4 TBDs 拍板后启动 S-AL session
+   - 备注: 实施先于 RBAC,因为 RBAC 的"细化审计 who+action+target"依赖 audit_log 表 schema(SPEC-rbac 已注明先决)
+
+5. **RBAC + 管理员分层**(2 周)— ✅ **SPEC ship,等决策 + S-AL 完工双先决**
+   - [x] **SPEC-rbac skeleton ship**(PR #101)
+   - ⏳ 等 issue #104 3 TBDs 拍板 + S-AL 完工后启动 S-RB session
    - `Role` + `Permission` 表
    - 默认角色:sudo / ops / finance / support
    - UI 管理角色 + 权限矩阵
-   - 细化审计:记录 "who + action + target"
+   - 细化审计:记录 "who + action + target"(消费 audit_log 表)
 
-5. **自动化 Upstream 同步**(1 周)
+6. **自动化 Upstream 同步**(1 周)— **未启**
    - Codex Automation:每周 `git fetch marzneshin-upstream`,diff changelog,生成报告
    - 冲突预警 + 人工审核后合并
 
