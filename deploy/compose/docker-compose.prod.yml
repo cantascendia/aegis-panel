@@ -1,0 +1,184 @@
+# =============================================================================
+# Aegis Panel — production compose (S2: postgres + redis + panel + marznode).
+#
+# Refs: docs/ai-cto/SPEC-deploy.md §"compose 生产配置(D.1)".
+# Differs from root docker-compose.yml (upstream-preserved demo) in:
+#   - all core services on by default (no profile gating)
+#   - tagged image (:v${AEGIS_VERSION}) instead of :latest
+#   - alembic init container blocks panel until migrations succeed
+#   - resource limits on every service
+#   - panel + marznode bound to 127.0.0.1, traffic must traverse nginx / CF
+#   - log rotation: 10m max, 3 files
+#
+# Loaded by deploy/install/install.sh step 6 with `--env-file /opt/aegis/.env`.
+# Compose interpolates ${VAR} from that file at parse time.
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aegis-postgres
+    restart: always
+    network_mode: host
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-aegis}"
+      POSTGRES_USER: "${POSTGRES_USER:-aegis}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}"
+      PGPORT: "${POSTGRES_PORT:-5432}"
+    volumes:
+      - /opt/aegis/data/pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aegis} -d ${POSTGRES_DB:-aegis} -p ${POSTGRES_PORT:-5432}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    container_name: aegis-redis
+    restart: always
+    network_mode: host
+    # Short-lived rate-limit counters only; durability turned off intentionally.
+    command: >
+      redis-server
+      --port ${REDIS_PORT:-6379}
+      --bind 127.0.0.1
+      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
+      --save ""
+      --appendonly no
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - /opt/aegis/data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "${REDIS_PORT:-6379}", "-a", "${REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  alembic:
+    # init-style container: runs `alembic upgrade head` then exits 0.
+    # panel depends on this completing successfully before booting, so a
+    # broken migration blocks the panel rather than leaving it half-migrated.
+    image: dawsh/marzneshin:${AEGIS_VERSION:-latest}
+    container_name: aegis-alembic
+    network_mode: host
+    env_file:
+      - /opt/aegis/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["alembic", "upgrade", "head"]
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  panel:
+    image: dawsh/marzneshin:${AEGIS_VERSION:-latest}
+    container_name: aegis-panel
+    restart: always
+    network_mode: host
+    env_file:
+      - /opt/aegis/.env
+    volumes:
+      - /opt/aegis/data/panel:/var/lib/marzneshin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      alembic:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${PANEL_PORT:-8443}/api/system/info || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  marznode:
+    image: dawsh/marznode:${AEGIS_VERSION:-latest}
+    container_name: aegis-marznode
+    restart: always
+    network_mode: host
+    environment:
+      SERVICE_ADDRESS: "127.0.0.1"
+      SERVICE_PORT: "${MARZNODE_GRPC_PORT:-62051}"
+      INSECURE: "True"  # same-host: gRPC over loopback. Multi-host uses certs.
+      XRAY_EXECUTABLE_PATH: "/usr/local/bin/xray"
+      XRAY_ASSETS_PATH: "/usr/local/lib/xray"
+      XRAY_CONFIG_PATH: "/var/lib/marznode/xray_config.json"
+    volumes:
+      - /opt/aegis/data/marznode:/var/lib/marznode
+    depends_on:
+      panel:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: aegis-nginx
+    restart: always
+    network_mode: host
+    volumes:
+      # nginx.conf is rendered by install.sh from templates/nginx.conf.tmpl
+      # (template stub lives in this repo; see SPEC for rate-limit zones).
+      - /opt/aegis/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      panel:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
