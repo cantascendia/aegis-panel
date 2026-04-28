@@ -1,5 +1,6 @@
 import { SidebarObject } from '@marzneshin/common/components';
 import {
+    Activity,
     Box,
     CreditCard,
     FileText,
@@ -90,6 +91,12 @@ export const sidebarItems: SidebarObject = {
             title: 'Admins',
             to: '/admins',
             icon: <ShieldCheck />,
+            isParent: false,
+        },
+        {
+            title: 'Health',
+            to: '/health',
+            icon: <Activity />,
             isParent: false,
         },
         {
