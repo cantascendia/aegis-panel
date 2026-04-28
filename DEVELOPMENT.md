@@ -216,7 +216,7 @@ fixture 约定(建立中):
 
 ## 更多
 
-- CTO 手册:`C:\projects\ai-guidebook\playbook\handbook.md`
+- CTO 手册:`C:\projects\ai-playbook\playbook\handbook.md`
 - 路线图与轮次:`docs/ai-cto/ROADMAP.md` + `docs/ai-cto/STATUS.md`
 - 竞品与偷学:`docs/ai-cto/COMPETITORS.md`
 - AGPL 合规检查:`.agents/skills/agpl-compliance/SKILL.md`
