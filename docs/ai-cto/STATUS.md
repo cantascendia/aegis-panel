@@ -1,24 +1,24 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-26 late-6 wave-2(Round 3 mid 后端实质收口 — 8 个 session 0 自动 PR + 双 OPS-runbook 闭环 + 健康端点;**三大差异化全部走完五段流程**,商业化双通道 production-ready,自研核心 5/8 已 backend-ready,剩余真功能开发块全在前端 / 外部环境)
+> 最后更新:2026-04-28 late-7 wave(A.4 商业化前端完结为 admin checkout + AGPL §13 合规自检 + 模块改名收口 — 5 PR 联翩 #86/#87/#88/#89/#90;商业化 5/5 端到端跑通,AGPL §13 audit gap 关闭)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid —— 多会话并行,差异化 #2 生产化 + 商业化后端 A.2 推进 + 商业化前端 A.4 skeleton + 协作 kit + worktree 规则合入 + S-D/S-X 正式启动**
+**Round 3 mid —— A.4 商业化前端完结(BRIEF option A: admin checkout)+ AGPL §13 合规自检 ship + 模块改名清理**
 
-状态:🔄 进行中。活跃 + 待启 session 已在 SESSIONS.md 登记,L-018/铁规则 #7 要求各 session 跑独立 worktree:
+状态:🔄 后端已实质收口,A.4 商业化前端 flip-on 为 admin checkout(BRIEF option A — 用户公开 web auth 缺失被显式记录为决策项,改走 admin-on-behalf 路径)。各 session 跑独立 worktree(L-018 / 铁规则 #7):
 
 | Session | PR | 状态 |
 |---|---|---|
-| **S-B 商业化后端**(Claude Code × `aegis-B` worktree) | #46 A.2.1 ✅ merged;A.2.2 待开 | 进行中 |
-| **S-F 商业化前端**(Claude Code) | #41 A.4 skeleton ✅ merged;#49 money-critical 测试 ✅ merged | A.5 接力待开 |
-| **S-D 部署一体化**(Claude Code × `aegis-D` worktree) | #58 OPS-deploy-runbook skeleton ✅ merged;D.0 SPEC flesh-out 待开 | 进行中 |
-| **S-X 前端测试基建**(Claude Code × `aegis-X` worktree) | #57 X.1 watch-mode + pnpm unify ✅ merged;#59 X.2 test-utils/render + picker/poll tests ✅ merged | 进行中 |
+| **S-B 商业化后端**(Claude Code × `aegis-B` worktree) | #46 A.2.1 ✅ merged;#65 A.2.2 ✅ merged;#77 A.5 scheduler ✅;#79 A.3 TRC20 ✅ | 后端 5/5 完工 |
+| **S-F 商业化前端**(Claude Code) | #41 skeleton + #49 money-critical 测试 + **#86 BRIEF decision doc** + **#87 A.4 flip-on as admin checkout** + **#89 rename → admin-checkout** ✅ 全 merged | **completed; flip-on landed PR #87**(BRIEF option A,admin checkout 路径) |
+| **S-D 部署一体化**(Claude Code × `aegis-D` worktree) | #58 OPS-deploy-runbook + #64 D.0 SPEC + **#88 agpl-selfcheck.sh**(差异化 #4 工具)✅ merged;D.1 install.sh / Ansible 待开 | 进行中 |
+| **S-X 前端测试基建**(Claude Code × `aegis-X` worktree) | #57/#59/#63 ✅ merged | 已完工本轮一块 |
 | **S-I iplimit 生产化**(Codex × `Marzban-iplimit-production` worktree) | #40/#42/#43/#44/#45 全 ✅ merged | 已完工(归档)|
-| **S-O 文档守护**(Claude Code × `aegis-O` worktree,part-time) | #48 协作 kit + #52 worktree 规则 + #56 第一次刷新 + #60 AUDIT overlay ✅ merged;本分支 `docs/ai-cto/round-3-mid-late3-refresh` 微刷 STATUS | 触发中 |
+| **S-O 文档守护**(Claude Code × `aegis-O` worktree,part-time) | #48/#52/#56/#60/#61/#67/#78/#80/#84/#85 ✅ merged;**本分支 `docs/status-refresh-late-7-wave` 一次性 drive-by 触发**(非 S-O 正式 session,留给下次 S-O batch 整合) | 一次性触发 |
 
 多会话协作索引见 `docs/ai-cto/SESSIONS.md`(本轮新增)。
 
@@ -48,7 +48,9 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 ## 产品完成度
 
 - 上游功能 6/6 保留(面板 / 多节点 / Reality / 订阅 / Telegram / 多语言)
-- 自研核心功能 **5/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**计费完整后端 = 数据面 + Admin UI + A.5 scheduler + A.3 TRC20 双支付通道**,**Reality 配置审计 R.1+R.2+R.3 + OPS runbook**)
+- 自研核心功能 **5/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**商业化 5/5 端到端 = 数据面 + Admin UI + EPay 后端 + TRC20 后端 + A.4 admin checkout UI(BRIEF option A 完结)**,**Reality 配置审计 R.1+R.2+R.3 + OPS runbook**)
+- **AGPL-3.0 合规自检工具**(2026-04-28 late-7,PR #88 + #90):`deploy/agpl-selfcheck.sh`(302 LOC bash,差异化 #4 第一件工具)+ `NOTICE.md` 声明 fork source URL。AGPL §13 长悬 audit gap 关闭
+- **`dashboard/src/modules/billing/admin-checkout/`** 是 A.4 改名后规范路径(PR #89,原 `modules/billing/user/`,改名清理 BRIEF option A 命名一致性)
 - **健康度后端**(2026-04-26 late-6 wave-2):`/api/aegis/health`(public liveness)+ `/api/aegis/health/extended`(sudo,6 个子系统并发探针,worst-of 聚合)。LB / k8s / Prometheus 接入直接可用
 - 自研基础设施 **全部就绪**:
   - ✅ 安全基线(JWT 外置 / CORS 白名单 / bcrypt 固化 / JWT 时效 60min)
@@ -69,7 +71,7 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
   - ✅ **`hardening/iplimit/`**(Round 3)—— policy 表(config / override / disabled_state)+ Xray access 日志 parser(时间戳感知)+ Redis 滚动窗口 + detector + REST + Telegram 告警 + clear-disable endpoint
   - ✅ **`ops/billing/`**(Round 3)—— 5 张 `aegis_billing_*` 表(plans / channels / invoices / invoice_lines / payment_events)+ 状态机 + webhook 去重 + 管理员 REST
   - ✅ **`dashboard/src/modules/nodes/dialogs/sni-suggest/`**(Round 2)+ **`dashboard/src/modules/users/dialogs/iplimit/`**(Round 3)+ **`dashboard/src/modules/billing/`**(Round 3 in-progress)
-- 关键缺口(Round 3+):用户购买 UI(A.4 完结,S-F)/ Reality 审计 dashboard 页(R.4,S-F-2)/ 真实 ¥0.01 round-trip(需用户对接码商)/ 真实 USDT 测试网 round-trip(A.3 已 ship,需 ops 接 Tronscan stage 验证)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志(panel-wide,需 SPEC)/ RBAC(需 SPEC);小债已清零:**SNI rate-limit 回填**(L-010 documented,Linux 复现 ROI 负,先放着)/ ✅ **iplimit 白名单**(`hardening/iplimit/allowlist.py` + db schema + endpoint + task 已用)/ ✅ **iplimit Redis SCAN**(`store.py` 用 `scan_iter`,非 KEYS)/ ✅ **TZ 对齐文档**(OPS-iplimit-runbook §"Timezone validation" 已文档化)
+- 关键缺口(Round 3+):**install.sh + Ansible playbook**(S-D D.1+,部署一体化下一块)/ **Reality CLI + endpoint 端到端 hookup**(S-R R.2-R.3 包装入用户工作流;后端 R.1-R.3 已 ship,缺 deploy / cron 化合入)/ **真实端到端 real-money round-trip**(operator 任务,非 session 任务:¥0.01 EPay + USDT 测试网均需对接外部环境)/ Reality 审计 dashboard 页(R.4,S-F-2)/ IP 限制真实节点 E2E / CF Tunnel 集成 / 审计日志(panel-wide,需 SPEC)/ RBAC(需 SPEC);小债已清零:**SNI rate-limit 回填**(L-010 documented,Linux 复现 ROI 负,先放着)/ ✅ **iplimit 白名单**(`hardening/iplimit/allowlist.py` + db schema + endpoint + task 已用)/ ✅ **iplimit Redis SCAN**(`store.py` 用 `scan_iter`,非 KEYS)/ ✅ **TZ 对齐文档**(OPS-iplimit-runbook §"Timezone validation" 已文档化)/ ✅ **A.4 用户购买 UI**(完结于 PR #87 走 BRIEF option A admin checkout 路径,改名清理在 #89)
 
 ## 当前代码质量评分
 
@@ -171,6 +173,24 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | #68 | `datetime.utcnow()` 自有目录 sweep(`ops/billing/{db,states}.py` 6 处 → 共享 `_now_utc_naive` helper)| ✅ 合并 | session 0 | `42eb68f` |
 | #69 | `v2share` beta 评估结案(D-013 + `RESEARCH-v2share-evaluation.md`;keep + vendor hedge plan,2026-10-26 复评)| ✅ 合并 | session 0 | `c831150` |
 | #70 | `datetime.utcnow()` upstream `app/` sweep(26 callsites 跨 10 文件 + 1 `utcfromtimestamp` → `app/utils/_aegis_clocks.now_utc_naive`)| ✅ 合并 | session 0 | `f4e73cd` |
+
+**Round 3 mid late-6 wave-1 + wave-2 + late-7 wave**(13 个 PR):
+
+| PR | 内容 | 状态 | Session | SHA |
+|---|---|---|---|---|
+| #74 | R.1 Reality 配置审计 core(差异化 #3) | ✅ 合并 | session 0 | - |
+| #75 | R.2 Reality CLI + loader + golden fixtures | ✅ 合并 | session 0 | - |
+| #76 | R.3 Reality REST endpoint(`POST /api/reality/audit`) | ✅ 合并 | session 0 | - |
+| #77 | A.5 计费 scheduler(reap_expired + apply_paid + lifespan) | ✅ 合并 | session 0 | - |
+| #79 | **A.3 TRC20 直收支付通道**(5 模块 + memo+exact-amount 匹配 + Tronscan poll)| ✅ 合并 | session 0 | - |
+| #81 | OPS-trc20-runbook(521 行,closes A.3 五段流程) | ✅ 合并 | session 0 | - |
+| #82 | OPS-reality-runbook(383 行,closes 差异化 #3 五段流程) | ✅ 合并 | session 0 | - |
+| #83 | 健康端点 backend(`/api/aegis/health` public + `/health/extended` sudo)| ✅ 合并 | session 0 | `189f892` |
+| **#86** | **docs(ai-cto): BRIEF — A.4 用户购买流程被缺失 user web auth 阻塞**(决策文档:走 admin checkout 路径) | ✅ 合并 | **S-F** | `f7b58c3` |
+| **#87** | **feat(dashboard): A.4 flip-on as admin checkout**(BRIEF option A — A.4 商业化前端完结) | ✅ 合并 | **S-F** | `34681f2` |
+| **#88** | **feat(deploy): agpl-selfcheck.sh**(AGPL §13 合规自检,302 LOC bash,**差异化 #4 第一件工具**) | ✅ 合并 | **S-D** | `9d0ff76` |
+| **#89** | **chore(dashboard): rename modules/billing/user → admin-checkout**(BRIEF option A 命名清理) | ✅ 合并 | **S-F** | `27529e2` |
+| **#90** | **docs(notice): aegis-panel fork source URL 声明**(closes #88 surfaced 的 AGPL §13 audit gap) | ✅ 合并 | **S-D** | `a1fb7f6` |
 
 ## 已部署配置文件
 
@@ -325,6 +345,22 @@ S-O 本轮两次触发消化了 #41/#46/#48/#49/#52/#54/#56/#57/#58/#59/#60 共 
 `hardening/sni/scoring.py:31` 的 "Set-Cookie 惩罚未实现" 是 future-feature TODO 不是 debt — 显式写明"等 follow-up GET 检测到位再加",scoring surface 已留口。
 
 **结论**:Round 3 mid 后端**真零债**(除 L-010 documented + 1 个 future-feature)。下一步推进受外部 / 前端 / 决策驱动,而非债务驱动。
+
+---
+
+**late-7 wave 追加同步**(2026-04-28 late-7,**A.4 商业化前端完结 + AGPL §13 合规自检 + 改名清理** 5 PR 联翩):
+
+- **#86 BRIEF decision doc**(S-F):明示 A.4 用户购买 web auth 缺失 — 用户公开注册 / 登录链路 在本 fork 现状不存在。决策走 BRIEF option A:把 A.4 改成 admin-on-behalf checkout(管理员代下单代付),不另起 user portal 子项目
+- **#87 A.4 flip-on as admin checkout**(S-F):A.4 商业化前端从 skeleton(flag-gated OFF)升到 fully wired admin checkout — 与 admin invoice 列表 / 详情 dialog 互通,完成"管理员侧端到端售卖闭环"
+- **#88 agpl-selfcheck.sh**(S-D,**差异化 #4 工具**):302 LOC bash 一键校验 AGPL-3.0 §13 合规(NOTICE 文件存在 / 网络服务源码可获 / 上游版权头未删 / fork URL 声明)。**差异化 #4 (一体化部署 / 运营加固)第一件工具落地**;同时 surface 出 fork URL 在 NOTICE 中缺失声明 → #90 关闭
+- **#89 rename modules/billing/user → admin-checkout**(S-F):BRIEF option A 命名清理 — `dashboard/src/modules/billing/admin-checkout/` 是改名后的规范路径,`user` 命名歧义性消除(它从来不是用户侧 UI,从 #87 起就是 admin 工具)
+- **#90 NOTICE fork source URL declaration**(S-D):closes #88 surfaced 的最后一项审计 gap — `NOTICE.md` 声明 `https://github.com/cantascendia/aegis-panel` 作为 AGPL §13 网络服务用户可获取源码的位置
+
+**商业化 5/5 端到端跑通**(数据模型 #28-#30 + Admin UI #32-#35 + EPay 后端 #46/#65 + TRC20 后端 #77/#79 + **A.4 admin checkout UI #87**)。剩余 = real-money round-trip(operator 外部任务)+ Reality R.4 dashboard 页(S-F-2)+ install.sh / Ansible(S-D D.1+)。
+
+**AGPL §13 audit point 关闭**:本项目从 fork 起就背着这个长悬合规义务 — Marzneshin / Marzban 上游均无原生 AGPL §13 自检工具,本 fork 的 #88 是把 "AGPL 合规验证" 从 doc-only 升到可执行,#90 关上最后一个声明式 gap。差异化 #4 由此正式启动。
+
+**本次 S-O 触发是一次性 drive-by**(非常规 S-O 正式 session),只刷 STATUS.md。下次正式 S-O batch 该整合的事:LESSONS / DECISIONS 是否需要新条目(BRIEF option A 决策 = D-016 候选?AGPL §13 自检 path = L-025 候选?)/ SESSIONS.md S-F session 状态 / ROADMAP 差异化 #4 工具系列规划。
 
 ---
 
