@@ -108,21 +108,41 @@ jobs:
       #    interpolates env, and exits non-zero on any schema problem.
       #    We feed a synthetic env so required vars (POSTGRES_PASSWORD
       #    etc.) don't trip the `${VAR:?}` guards.
+      #
+      #    The compose files declare `env_file: /opt/aegis/.env` which
+      #    install.sh creates at first install. On CI the path doesn't
+      #    exist; create a stub before parsing or compose-config refuses
+      #    with `env file ... not found`.
       # -----------------------------------------------------------------
+      - name: stub /opt/aegis/.env for compose env_file resolution
+        run: |
+          set -euo pipefail
+          sudo mkdir -p /opt/aegis
+          # Empty file is enough — compose just needs the path to exist;
+          # variable values come from the workflow `env:` block below.
+          sudo touch /opt/aegis/.env
+          sudo chmod 600 /opt/aegis/.env
+
+      # Synthetic placeholder values below — they exist only to satisfy
+      # ${VAR:?} guards in the compose schema during `config --quiet`
+      # parsing. They are NEVER used at runtime; install.sh generates
+      # real values via render lib. The "PLACEHOLDER" prefix is to
+      # placate scanners (GitGuardian) that flag short opaque strings
+      # in `*_PASSWORD`-shaped vars as potential secrets.
       - name: docker compose config --quiet (prod)
         env:
           AEGIS_VERSION: v0.0.0-ci
           POSTGRES_DB: aegis
           POSTGRES_USER: aegis
-          POSTGRES_PASSWORD: ci-pgpass
+          POSTGRES_PASSWORD: PLACEHOLDER_NOT_A_SECRET_synthetic_for_compose_config_validation_only
           POSTGRES_PORT: '5432'
           REDIS_PORT: '6379'
-          REDIS_PASSWORD: ci-redispass
+          REDIS_PASSWORD: PLACEHOLDER_NOT_A_SECRET_synthetic_for_compose_config_validation_only
           PANEL_PORT: '8443'
           MARZNODE_GRPC_PORT: '62051'
           DASHBOARD_PATH: /ci-dash
           XRAY_SUBSCRIPTION_PATH: /ci-sub
-          JWT_SECRET_KEY: ci-jwt-secret
+          JWT_SECRET_KEY: PLACEHOLDER_NOT_A_SECRET_synthetic_for_compose_config_validation_only
           UVICORN_HOST: 127.0.0.1
           UVICORN_PORT: '8443'
         run: docker compose -f deploy/compose/docker-compose.prod.yml config --quiet
@@ -134,7 +154,7 @@ jobs:
           MARZNODE_GRPC_PORT: '62051'
           DASHBOARD_PATH: /ci-dash
           XRAY_SUBSCRIPTION_PATH: /ci-sub
-          JWT_SECRET_KEY: ci-jwt-secret
+          JWT_SECRET_KEY: PLACEHOLDER_NOT_A_SECRET_synthetic_for_compose_config_validation_only
           UVICORN_HOST: 127.0.0.1
           UVICORN_PORT: '8443'
         run: docker compose -f deploy/compose/docker-compose.sqlite.yml config --quiet
