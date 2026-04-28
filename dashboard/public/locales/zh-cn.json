@@ -463,6 +463,38 @@
           "checkout_error": "结账失败"
         }
       }
+    },
+    "health": {
+      "title": "运行状态",
+      "subtitle": "面板与自研子系统的实时健康状态。",
+      "refresh": "刷新",
+      "loading": "正在加载健康报告...",
+      "version": "版本",
+      "uptime": "运行时长",
+      "overall": {
+        "green": "正常",
+        "yellow": "降级",
+        "red": "故障",
+        "unknown": "未知"
+      },
+      "subsystem": {
+        "db": "数据库",
+        "billing_scheduler": "计费调度器",
+        "iplimit_scheduler": "IP 限制调度器",
+        "trc20": "USDT (TRC20) 通道",
+        "reality_seeds": "Reality 审计种子",
+        "sni_seeds": "SNI 候选种子"
+      },
+      "column": {
+        "name": "子系统",
+        "status": "状态",
+        "latency": "延迟",
+        "detail": "详情"
+      },
+      "error": {
+        "load_failed": "加载健康报告失败。",
+        "unauthorized": "查看扩展健康报告需要超级管理员权限。"
+      }
     }
   },
   "events": {

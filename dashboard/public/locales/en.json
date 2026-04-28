@@ -584,6 +584,38 @@
           "checkout_error": "Checkout failed"
         }
       }
+    },
+    "health": {
+      "title": "Health",
+      "subtitle": "Live status of the panel and its self-developed subsystems.",
+      "refresh": "Refresh",
+      "loading": "Loading health report...",
+      "version": "Version",
+      "uptime": "Uptime",
+      "overall": {
+        "green": "Healthy",
+        "yellow": "Degraded",
+        "red": "Down",
+        "unknown": "Unknown"
+      },
+      "subsystem": {
+        "db": "Database",
+        "billing_scheduler": "Billing scheduler",
+        "iplimit_scheduler": "IP limiter scheduler",
+        "trc20": "USDT (TRC20) provider",
+        "reality_seeds": "Reality audit seeds",
+        "sni_seeds": "SNI selector seeds"
+      },
+      "column": {
+        "name": "Subsystem",
+        "status": "Status",
+        "latency": "Latency",
+        "detail": "Detail"
+      },
+      "error": {
+        "load_failed": "Failed to load health report.",
+        "unauthorized": "You must be a sudo admin to view the extended health report."
+      }
     }
   },
   "events": {
