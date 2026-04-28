@@ -1,0 +1,149 @@
+---
+# =============================================================================
+# roles/common — Docker CE + ufw + fail2ban + aegis user + /opt/aegis
+#
+# Runs on every host (control_plane and data_plane). Idempotent: every task
+# uses state: present / creates: / when: guards.
+#
+# Refs: docs/ai-cto/SPEC-deploy.md §"roles/common/" bullets 1-4.
+# =============================================================================
+
+- name: Assert OS is supported (Ubuntu 22/24 or Debian 12)
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['os_family'] == "Debian"
+      - (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_major_version'] in ["22", "24"]) or
+        (ansible_facts['distribution'] == "Debian" and ansible_facts['distribution_major_version'] == "12")
+    fail_msg: >-
+      Unsupported OS ({{ ansible_facts['distribution'] }}
+      {{ ansible_facts['distribution_version'] }}). Aegis Panel D.3 supports
+      Ubuntu 22.04 / 24.04 LTS and Debian 12. See SPEC-deploy.md §Risks.
+
+- name: Ensure base packages present
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+      - jq
+      - openssl
+      - python3
+      - ufw
+      - fail2ban
+      - git
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure /etc/apt/keyrings exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Add Docker apt signing key
+  ansible.builtin.get_url:
+    url: "{{ docker_apt_release_url }}/gpg"
+    dest: "{{ docker_apt_keyring }}"
+    mode: "0644"
+    force: false
+
+- name: Add Docker apt repository (NOT snap — SPEC §roles/common)
+  ansible.builtin.apt_repository:
+    repo: "{{ docker_apt_repo }}"
+    state: present
+    filename: docker
+
+- name: Install Docker CE + compose v2 plugin
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+
+- name: Ensure docker service running and enabled
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Create aegis system group
+  ansible.builtin.group:
+    name: "{{ aegis_group }}"
+    gid: "{{ aegis_gid }}"
+    system: true
+    state: present
+
+- name: Create aegis system user
+  ansible.builtin.user:
+    name: "{{ aegis_user }}"
+    uid: "{{ aegis_uid }}"
+    group: "{{ aegis_group }}"
+    home: "{{ aegis_home }}"
+    shell: /usr/sbin/nologin
+    system: true
+    create_home: false
+    state: present
+
+- name: Create /opt/aegis directory tree (mode 0750, owner aegis:aegis)
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ aegis_user }}"
+    group: "{{ aegis_group }}"
+    mode: "0750"
+  loop:
+    - "{{ aegis_home }}"
+    - "{{ aegis_home }}/data"
+    - "{{ aegis_home }}/certs"
+    - "{{ aegis_home }}/backups"
+
+- name: Configure ufw default policies (deny incoming, allow outgoing)
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+
+- name: Allow public TCP ingress (SSH + HTTPS + per-host extras)
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ common_ufw_allow_tcp }}"
+
+- name: Allow marznode gRPC from control plane only (data_plane hosts)
+  community.general.ufw:
+    rule: allow
+    port: "{{ marznode_grpc_port }}"
+    proto: tcp
+    src: "{{ hostvars[item]['ansible_host'] }}"
+  loop: "{{ groups['control_plane'] | default([]) }}"
+  when:
+    - "'data_plane' in group_names"
+    - groups['control_plane'] is defined
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
+    logging: "on"
+
+- name: Render /etc/fail2ban/jail.local
+  ansible.builtin.copy:
+    content: "{{ fail2ban_jail_local_template }}"
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart fail2ban
+
+- name: Ensure fail2ban running and enabled
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: true

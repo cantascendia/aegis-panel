@@ -1,0 +1,44 @@
+---
+# =============================================================================
+# roles/common — defaults
+# Override in inventory or group_vars; never edit this file in production.
+# =============================================================================
+
+# Public ingress allow-list (TCP). 22 + 443 should always be in here.
+common_ufw_allow_tcp:
+  - 22
+  - 443
+
+# Marznode gRPC port. Locked down to control_plane source IPs at the host
+# scope by tasks/main.yml when running on data_plane hosts.
+marznode_grpc_port: 62051
+
+# System user that owns /opt/aegis. shell intentionally /usr/sbin/nologin
+# — Ansible escalates via ansible_user / become, not by SSHing in as aegis.
+aegis_user: aegis
+aegis_group: aegis
+aegis_home: /opt/aegis
+aegis_uid: 6500
+aegis_gid: 6500
+
+# Docker upstream apt repo (Ubuntu 22.04+, Debian 12+). roles/common does
+# NOT use snap — see SPEC §roles/common bullet 1.
+docker_apt_keyring: /etc/apt/keyrings/docker.asc
+docker_apt_release_url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}"
+docker_apt_repo: "deb [arch={{ ansible_architecture | replace('x86_64', 'amd64') | replace('aarch64', 'arm64') }} signed-by={{ docker_apt_keyring }}] {{ docker_apt_release_url }} {{ ansible_distribution_release }} stable"
+
+# fail2ban defaults — ssh + nginx-badbots is the SPEC's minimum viable set.
+fail2ban_jail_local_template: |
+  [DEFAULT]
+  bantime = 1h
+  findtime = 10m
+  maxretry = 5
+
+  [sshd]
+  enabled = true
+
+  [nginx-badbots]
+  enabled = true
+  filter = nginx-badbots
+  logpath = /var/log/nginx/access.log
+  maxretry = 2

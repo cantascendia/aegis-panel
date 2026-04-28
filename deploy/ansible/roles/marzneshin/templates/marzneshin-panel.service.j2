@@ -1,0 +1,36 @@
+# =============================================================================
+# marzneshin-panel.service — systemd wrapper for `docker compose`
+# Rendered by deploy/ansible/roles/marzneshin/tasks/main.yml.
+#
+# Why a systemd unit on top of docker compose's own restart: always:
+#   * single source of truth for `systemctl status` / journalctl on the box
+#   * ordering against docker.service (we wait for it, not the other way)
+#   * ExecStartPre runs `compose pull` so a new image tag in /opt/aegis/.env
+#     is honoured on `systemctl restart`, without forcing a full reinstall
+#   * declarative `docker compose down` on stop; no orphan containers
+#
+# install.sh is the source of truth for the *initial* compose up + healthwait;
+# this unit takes over for everyday lifecycle (restart, stop, status).
+# =============================================================================
+
+[Unit]
+Description=Aegis Panel — control plane (docker compose wrapper)
+Documentation=https://github.com/cantascendia/aegis-panel
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory={{ aegis_src_dir }}
+EnvironmentFile={{ aegis_prefix }}/.env
+ExecStartPre=/usr/bin/docker compose -f {{ aegis_src_dir }}/deploy/compose/docker-compose.prod.yml --env-file {{ aegis_prefix }}/.env pull --quiet
+ExecStart=/usr/bin/docker compose -f {{ aegis_src_dir }}/deploy/compose/docker-compose.prod.yml --env-file {{ aegis_prefix }}/.env up -d
+ExecStop=/usr/bin/docker compose -f {{ aegis_src_dir }}/deploy/compose/docker-compose.prod.yml --env-file {{ aegis_prefix }}/.env down
+TimeoutStartSec=300
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

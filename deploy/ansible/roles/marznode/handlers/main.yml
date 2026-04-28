@@ -1,0 +1,13 @@
+---
+# =============================================================================
+# roles/marznode — handlers
+# =============================================================================
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart marznode-node
+  ansible.builtin.systemd:
+    name: marznode-node.service
+    state: restarted

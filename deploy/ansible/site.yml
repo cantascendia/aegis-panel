@@ -1,0 +1,46 @@
+---
+# =============================================================================
+# Aegis Panel — top-level Ansible playbook (D.3)
+#
+# Refs: docs/ai-cto/SPEC-deploy.md §"Ansible 职责(D.3,多节点)".
+# Acceptance: AC-D.3.1 (≤30 min from zero), AC-D.3.2 (3rd node via --limit),
+#             AC-D.3.3 (idempotent: --check on deployed = 0 change).
+#
+# Two-pass run:
+#   1. control_plane → roles: common + marzneshin
+#   2. data_plane    → roles: common + marznode
+#
+# Hosts come from inventory.yml (see inventory.example.yml). Vault-encrypted
+# variables (marznode_cert_pem, marznode_client_cert_pem) must be supplied
+# via --vault-password-file or --ask-vault-pass.
+#
+# Limit usage:
+#   --limit control_plane     # only the panel host
+#   --limit data_plane        # only marznode hosts
+#   --limit node-tokyo        # one named host (e.g. for a 3rd-node addition)
+#
+# License: AGPL-3.0-or-later. Aegis Panel is a hard fork of Marzneshin
+# (https://github.com/marzneshin/marzneshin). See NOTICE.md.
+# =============================================================================
+
+- name: Aegis Panel — control plane provisioning
+  hosts: control_plane
+  become: true
+  gather_facts: true
+  any_errors_fatal: true
+  roles:
+    - role: common
+      tags: [common]
+    - role: marzneshin
+      tags: [control_plane, panel]
+
+- name: Aegis Panel — data plane (marznode) provisioning
+  hosts: data_plane
+  become: true
+  gather_facts: true
+  serial: 2  # roll out 2 nodes at a time so a bad cert does not break the fleet
+  roles:
+    - role: common
+      tags: [common]
+    - role: marznode
+      tags: [data_plane, marznode]
