@@ -8,6 +8,29 @@
 
 ---
 
+## L-025 | Round 3 mid late-7 | drive-by S-O 触发会和正式 S-O batch 抢占同一文件,要先看 git log 再动手
+
+**现象**:2026-04-28 late-7 wave 5 PR 合入(#86-#90)后,session 0 起了一个 drive-by S-O(分支 `docs/status-refresh-late-7-wave`)只刷 STATUS.md,顺手把 wave-7 块加到底部。当天稍后启动正式 S-O batch session(本 PR),开 worktree 后 `git pull origin main` 拿到的 STATUS.md **已经包含 drive-by 的内容**。如果不先看 `git log docs/ai-cto/STATUS.md` 评估"近期已经被改过没",会直接重写一遍 + 重新加 wave-7 块,造成 commit 内容与已 merge 内容重复 / 冲突 / 丢字。本次幸运是先扫了 git log 才发现 #91 已合入。
+
+**根因**:S-O 文档的"我是 single writer"假设只在没 drive-by 时成立。一旦 session 0 / 其他 worker 在 batch S-O 之间做单文件刷新(典型场景:wave 后立刻刷 STATUS 让团队看到最新数字),batch S-O 启动时的工作目录已不是 batch 启动设计当时的状态。如果 batch S-O 直接照"上次 batch 后的 mental model"全文重写,会覆盖 drive-by 的合理增量。
+
+**防线**:
+
+1. **每次 S-O session 起手三步**(顺序固定,不能跳):
+   ```bash
+   git log --oneline -20                             # 看近 20 条提交
+   git log --oneline docs/ai-cto/STATUS.md | head -10  # 专看 STATUS 改动
+   gh pr list --state all --limit 15 --json number,title,mergedAt  # 看近 15 PR
+   ```
+   如果 STATUS.md 在最近 24h 被改过,**默认是 incremental refresh** 而不是 full rewrite,否则会撞 drive-by 的成果。
+2. **drive-by S-O 自身的契约**(防引爆下游 batch):drive-by 必须在 commit message / STATUS metadata 里**明确标记**"留给下次 batch S-O 整合"(本次 #91 已有这条),且**只动 STATUS.md 一个文件**,不顺手碰 LESSONS / DECISIONS / ROADMAP / SESSIONS(那会让 batch 难以判断哪些已经更新)。
+3. **batch S-O 接手时的 incremental 处理动作**:把 drive-by 块作为"已合入数据"读进来,不做 full rewrite;只在 batch S-O 该做的事(L/D 新条目、ROADMAP 升级、SESSIONS 状态切换、STATUS 结构压缩)上做增量。drive-by 的 wave 块会被压缩进"历史 wave 索引"表,自然消化。
+4. **跨 session 共识**:STATUS.md 的最后更新时间戳 + "本批次"段是 fingerprint,batch S-O 见到不属于自己的 fingerprint 时就**知道有 drive-by**。
+
+**沉淀**:本 entry。drive-by S-O 与 batch S-O 的交接路径明确化;`SESSIONS.md` 铁规则不变(S-O 仍是 part-time),只是触发时机要分类。未来如果 drive-by S-O 被滥用(频次 > 1 / 周或动多文件),升级为 `.agents/rules/*.md` 硬规则强制 "drive-by S-O 只能改 STATUS.md 一个文件"。
+
+---
+
 ## L-024 | Round 3 mid late-6 | 链上支付 = 拉模型,不是没装好的推模型 — TRC20 必须 poll 而不是想着搞 webhook
 
 **现象**:实现 A.3 TRC20 时第一直觉是 "EPay 都有 webhook,TRC20 应该也搞个 webhook 路径,统一接口"。停下来想了 30 秒后明确:**Tron 协议本身不会向任何 endpoint 推送**。Tronscan / Trongrid / 自建节点都是 "我读"。所谓的"TRC20 webhook" 只能是:第三方 indexer 读链 → 推到我们这。等于在我们和链之间加了一个新 trust boundary。

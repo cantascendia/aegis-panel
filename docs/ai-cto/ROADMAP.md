@@ -1,9 +1,9 @@
 # 路线图(ROADMAP)
 
-> 最后更新:2026-04-23 late-2(Round 3 mid late-2 — S-O 触发对齐)
+> 最后更新:2026-04-28 late-7 batch(Round 3 mid late-7 — 商业化 5/5 完结 + 差异化 #3 后端闭环 + 差异化 #4 启动)
 > 每阶段末尾或重大优先级变化时更新
 >
-> **当前位置**:v0.1 已完成,v0.2 进行中(SNI ✅ / 计费 A.1 + A.2.1 + A.4 skeleton + money-critical 单测合入 / 一键部署 S-D worktree 就位),v0.3 差异化 #2 已部分前置落地(IP 限制 MVP + 生产化 S-I 完工)
+> **当前位置**:v0.1 已完成,v0.2 接近 done(SNI ✅ / **计费 MVP 5/5 完结** ✅ / 一键部署进行中:agpl-selfcheck ✅ #88,install.sh + Ansible + CF Tunnel S-D sibling 进行中),v0.3 差异化 #2 已落地(IP 限制 MVP + 生产化),**差异化 #3 Reality 后端 ✅(R.1-R.3),R.4 dashboard sibling agent 进行中**
 
 ---
 
@@ -12,6 +12,20 @@
 **先加固基底,再建差异化,再上商业化**。任何阶段未达标,不进入下一阶段。
 
 时间基于"每周 20-30 小时开发投入 + CTO 并行规划"的节奏估算,实际可能浮动 30%。
+
+---
+
+## 优先级队列(2026-04-28 late-7 batch 视角)
+
+按"现在该推什么"排序,前三件 today-2026-04-28 已并行启动:
+
+1. 🔄 **S-R R.4 Reality 审计 dashboard 页**(sibling agent today) — 后端 R.1-R.3 已 production-ready,前端落地后差异化 #3 闭环完成
+2. 🔄 **S-D D.1 install.sh 单节点一键**(sibling agent today) — 差异化 #4 第二件工具,从空 VPS 到面板可访问 ≤15 分钟
+3. 🔄 **S-D D.4 CF Tunnel 自动化**(sibling agent today) — 差异化 #4 第三件工具,Zero Trust API 调用自动建 tunnel
+4. ⏳ **S-D D.2 Ansible playbook**(D.1 后启动) — 多节点部署
+5. ⏳ **A.x 真实 round-trip**(operator 外部任务,需用户行动) — ¥0.01 EPay + USDT 测试网各跑一遍
+6. ⏳ **R.5+ Reality 实时监测**(差异化 #3 v0.3 后段) — Prometheus + Grafana 长期趋势
+7. ⏳ **AuditLog + RBAC SPEC**(决策驱动,需用户提) — 不在自动 queue,等运营触发
 
 ---
 
@@ -68,25 +82,35 @@
    - ✅ 41 + 10 单测 mock 网络,CI 离线可跑
    - ⏳ 遗留:SNI rate-limit(slowapi async-def 兼容,LESSONS L-010)/ runbook / 前端单测
 
-2. **一键部署引擎 v1**(2-3 周)⏳ **S-D session 已就位**(`feat/spec-deploy` 分支 + `aegis-D` worktree + SPEC-deploy.md 骨架合入于 #48)
-   - `deploy/install.sh` — 单节点一键(幂等):apt / docker / compose / 初始化 DB / 生成 .env / 启动
-   - `deploy/compose/` — 生产 compose 配置(含 postgres + redis + marzneshin + marznode + nginx)
-   - `deploy/ansible/` — 多节点部署 playbook
-   - `deploy/cloudflare/` — CF Tunnel 自动配置脚本(Zero Trust API 调用)
-   - 下一步:S-D D.0 flesh-out PR(spec 补完 TBD 段)→ D.1 install.sh 单节点 MVP
+2. **一键部署引擎 v1 + 差异化 #4 工具系列**(2-3 周)🔄 **进行中**(差异化 #4 由 D-017 锁定 "agpl-selfcheck → install.sh → Ansible → CF Tunnel" 序列)
+   - [x] **D.0 SPEC-deploy.md flesh-out** —— PR #64
+   - [x] **agpl-selfcheck.sh**(差异化 #4 第一件工具,AGPL §13 自检) —— PR #88
+   - [x] **NOTICE.md fork source URL declaration** —— PR #90(closes AGPL §13 audit gap)
+   - 🔄 **D.1 install.sh 单节点一键**(sibling agent 今日 2026-04-28 启动)
+   - 🔄 **D.4 CF Tunnel 自动化**(sibling agent 今日 2026-04-28 启动)
+   - ⏳ **D.2 Ansible playbook**(D.1 后)
+   - ⏳ `deploy/compose/` 生产 compose(含 postgres + redis + marzneshin + marznode + nginx)
+   - ⏳ OPS-deploy-runbook 完整化(骨架已在 #58)
 
-3. **计费系统 MVP**(2-3 周)🔄 **进行中 — A.1 全 5 子 PR + A.2.1 + A.4 skeleton + money-critical 单测落地**
+3. **计费系统 MVP**(2-3 周)✅ **完结 — 5/5 端到端跑通**(2026-04-28 late-7)
    - [x] A.1 数据模型 + 状态机 + Admin REST + Admin UI 三页(plans/channels/invoices)—— PR #28-#35
    - [x] A.2.1 provider 抽象 + EPay adapter —— PR #46
-   - [x] A.4 用户购买 UI skeleton(flag-gated OFF)—— PR #41
-   - [x] A.4 money-critical 组件单测(CartSummary + PlanCard)—— PR #49
-   - ⏳ A.2.2 webhook endpoint(S-B 下一步)
-   - ⏳ A.3.1-A.3.3 TRC20 matcher + poller + admin stub(S-B 后续)
-   - ⏳ A.5 APScheduler 自动化(续期 / 到期提醒)
-   - **支付策略决策** D-010:易支付 + TRC20 双轨,放弃 Stripe(见 DECISIONS.md)
-   - 用户到期/超额告警(email + Telegram)—— 未启
+   - [x] A.2.2 cart checkout + EPay webhook —— PR #65
+   - [x] A.3 TRC20 直收支付通道 5 模块 —— PR #79
+   - [x] A.5 APScheduler reap_expired + apply_paid grants —— PR #77
+   - [x] **A.4 admin-on-behalf-of-user checkout UI**(BRIEF option A,见 D-016)—— PR #87 + #89(rename)
+   - [x] OPS-trc20-runbook —— PR #81
+   - **剩余 = 外部环境**:¥0.01 EPay round-trip(operator 接一家码商 stage)+ USDT 测试网 round-trip(operator 接 Tronscan stage)
+   - **不做**(D-016):用户公开 web auth / 用户自助 SPA portal,除非客户真实数据点 ≥ 3 触发推翻条件
 
-4. **审计日志系统**(1 周,可与 #3 合并)—— 未启
+4. **差异化 #3 Reality 配置审计**(2-3 周)🔄 **后端 ✅,前端 in-flight**(R.4 sibling agent 今日启动)
+   - [x] R.1 core(checks / scoring / report / seeds)—— PR #74
+   - [x] R.2 CLI + loader + golden fixtures —— PR #75
+   - [x] R.3 REST endpoint(`POST /api/reality/audit`) —— PR #76
+   - [x] OPS-reality-runbook —— PR #82
+   - 🔄 **R.4 dashboard 审计页**(sibling agent 今日启动,前端消费 R.3 endpoint)
+
+5. **审计日志系统**(1 周,可与 #3/#4 合并)—— 未启
    - `AuditLog` 表 + 中间件自动记录管理员操作
    - Dashboard 页面查看审计日志(支持筛选 admin、时间段、操作类型)
    - 备注:billing invoices 的 `payment_events` 表已是一种窄域审计,通用 AuditLog 可在 RBAC 时合并设计
@@ -94,9 +118,10 @@
 ### 验收
 
 - [x] 新节点创建流程中 SNI 候选自动预填,用户 80% 场景不用手填(PR #18 达成)
-- [ ] 从空 VPS 到面板可访问用时 ≤15 分钟(install.sh 跑完)—— 待 S-D D.1
-- [~] 管理员能为用户 "激活订阅" + 查看到期提醒 + 查看订阅历史(激活 + 订阅列表 ✅;到期提醒 ⏳ 待 A.5)
+- [ ] 从空 VPS 到面板可访问用时 ≤15 分钟(install.sh 跑完)—— S-D D.1 sibling agent 进行中
+- [x] 管理员能为用户 "激活订阅" + 查看到期提醒 + 查看订阅历史(激活 ✅;A.5 自动 grant ✅;admin checkout #87 ✅)
 - [ ] 所有关键操作有审计记录(billing 窄域 ✅;通用 AuditLog ⏳)
+- [x] AGPL §13 合规可一键自检(`bash deploy/agpl-selfcheck.sh`) —— PR #88 + #90
 
 ---
 
@@ -106,11 +131,13 @@
 
 ### 必做
 
-1. **Reality 健康度仪表盘**(2-3 周,差异化 #3)
-   - 实时监测每节点 SNI 可达性、延迟、握手成功率
-   - DPI 黑名单变化监测(外部情报源 + 内部事件统计)
-   - 自动告警 + 推荐新 SNI 切换
-   - 历史趋势图(Prometheus + Grafana)
+1. **Reality 配置审计 + 健康度仪表盘**(2-3 周,差异化 #3)🔄 **R.1-R.3 backend ✅(已前置到 v0.2),R.4 frontend sibling agent 进行中**
+   - [x] R.1 配置审计 core(SNI 冷门度 / ASN 同质性 / 端口非标 / shortId 合规 / connIdle)—— PR #74
+   - [x] R.2 CLI + loader + golden fixtures —— PR #75
+   - [x] R.3 REST endpoint(`POST /api/reality/audit`,sudo-admin 门控)—— PR #76
+   - [x] OPS-reality-runbook —— PR #82
+   - 🔄 R.4 dashboard 页(sibling agent 今日启动)
+   - ⏳ R.5+ 实时监测每节点 SNI 可达性 / 握手成功率 / 历史趋势图(Prometheus + Grafana,留 v0.3 后段)
 
 2. **原生 IP 限制模块**(2 周)✅ **已前置落地**(v0.3 item 提前到 Round 3 opener 完成,差异化 #2 用户可见闭环 + 生产化全套)
    - [x] `hardening/iplimit/` MVP —— PR #24(policy 表 / Xray access 日志 parser / Redis 滚动窗口 / detector / REST / Telegram 告警 / clear-disable endpoint)

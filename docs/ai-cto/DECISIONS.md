@@ -5,6 +5,65 @@
 
 ---
 
+## D-017 | 2026-04-28 | 差异化 #4(一体化部署)首件工具 = AGPL §13 自检脚本(`agpl-selfcheck.sh`),把 "合规验证" 从 doc-only 升到可执行
+
+**决策**:差异化 #4("一体化部署 / 运营加固")的第一件 ship 工具是 `deploy/agpl-selfcheck.sh`(PR #88,302 LOC bash),**不是** install.sh / Ansible / CF Tunnel 自动化。这条排序固定下来,后续工具按下方"工具序列"推进,不打乱。
+
+**Why**:
+
+- **AGPL §13 是 fork 的 day-1 合规义务**,从 2026-04-21 fork 起就背着这个长悬 audit gap。Marzneshin / Marzban 上游均无原生 AGPL §13 自检工具,本 fork 第一件工具就把这个 gap 关闭,等同于把"合规自动化"作为差异化的开局亮相。运营客户看一眼 README 就知道这个 fork 比 Marzneshin 上游更靠谱(后者跑了 5 年也没原生自检)
+- **一体化部署的工具序列**应该按"风险递减"排:agpl-selfcheck < install.sh < Ansible playbook < CF Tunnel 自动化。前者出错只是 false-warn(运营手工核账),后者出错可能炸全节点(install.sh 错配)/ 重复 OS 配置(Ansible)/ 泄露 token(CF API misuse)。先 ship 低风险的把工具链规范跑通,再上高风险的
+- **bash 选择 vs Python 选择**:agpl-selfcheck 是部署侧脚本,运营 VPS 上不一定有 Python 3.12,bash 4+ 几乎无环境依赖,适合"一键校验"场景;后续 install.sh / CF Tunnel 同思路 bash;Ansible playbook 是 YAML(Ansible 自带 Python runner)。Python 工具留给"在 panel 进程内"跑的(billing scheduler / Reality audit endpoint)
+- **"compliance-as-feature"设计意图**:把合规当差异化卖点,不当成纯成本中心。AGPL 原本是"约束 fork 必须开源",我们反过来把"自动校验合规"包装成产品价值 —— 这是面向商业化机场客户(他们也是 AGPL 下游)的额外好处
+
+**How to apply**:
+
+- `deploy/agpl-selfcheck.sh` 是模板,后续 deploy 工具可参考其结构(顶部 banner / 颜色 / 子检查函数 / 退出码契约 / NOTICE / 文档段)
+- 工具序列按 "agpl-selfcheck → install.sh(D.1)→ Ansible(D.4 or D.2)→ CF Tunnel" 推进,**不并行,不调序**(降低 S-D 复杂度,sibling agent 一次推一个)
+- 每件工具 ship 前后必须更新 `deploy/README.md` 索引段(类似 OPS-* runbook 索引)
+- 每件工具必须有"零依赖运行" + "退出码契约 0/1/2" + "支持 `--help` 输出"三条 invariant
+- 日历提醒(本批次未做):2026-07-28 评估差异化 #4 整体进度,如果 install.sh / Ansible / CF Tunnel 还没 ship,触发优先级提升
+
+**推翻条件**:
+- 客户真实反馈把 install.sh 看得比 AGPL 自检更重要(数据点 ≥ 3 个客户) → 重排工具序列
+- 上游 Marzneshin 自己出了 AGPL 自检 → 我们的差异化优势消失,转而做更复杂的 deployment audit(广义合规审计)
+- AGPL 在某主权法域被强制注释化 / 替换 → 本工具变成历史代码,差异化 #4 整个重构
+
+---
+
+## D-016 | 2026-04-28 | A.4 商业化前端 = admin-on-behalf-of-user checkout(BRIEF option A),不另起 user portal 子项目
+
+**决策**:A.4 用户购买 UI(`dashboard/src/modules/billing/admin-checkout/`)flip-on 路径选 **BRIEF-billing-user-auth-blocker.md option A**:把 A.4 重定位为管理员代下单代付的 admin-on-behalf-of-user checkout 工具,**不**为终端用户建独立 SPA / web auth / 自助门户。
+
+- 复用 admin sudo 路径(已有 panel auth)+ 加 UserSelector debounced search(`/users?username=<typed>`)+ 接真 `POST /api/billing/cart/checkout` admin endpoint
+- sidebar 路径:`Billing → Checkout`(SudoRoute 包裹)
+- 路径改名:`dashboard/src/modules/billing/user/` → `dashboard/src/modules/billing/admin-checkout/`(PR #89 命名清理)
+- 删除 mock-gate / `MyInvoiceRow` / `InvoicePollSnapshot` 等用户侧专用代码(admin invoices 页 #35 已覆盖)
+
+**Why**:
+
+- **Marzneshin upstream 现状**:VPN 用户**没有**panel web auth;现有用户认证只针对管理员(`Admin` 表 + JWT)。给最终用户做 web 自助意味着新建 user 表 / 注册流程 / 邮箱验证 / 密码重置 / OAuth(可选)/ 会话管理 / RBAC 边界划分 —— 等同新起一个 user portal 子项目,工程量 2-4 周,且会引入新攻击面(暴力撞库 / 重置流程钓鱼 / 会话劫持等),与"商业化机场 MVP" 时间盒不匹配
+- **现实运营观察**:中国小型机场实际运营都是 Telegram 群人工开单(运营方在群里收用户付款截图,手工延期或开新订阅);自助 SPA 即使做出来,真实使用率也低,客户不会感激
+- **组件 90% 复用**:cart summary / plan card / payment method picker / checkout flow 在 admin checkout 路径下功能相同,只换 auth 入口 + 加 UserSelector
+- **决策对齐架构哲学**:A.4 完结让商业化(A.x)5/5 端到端跑通(数据模型 + Admin UI + EPay 后端 + TRC20 后端 + admin checkout UI),关键路径不依赖未建的 user portal;真实业务侧"用户自助"诉求成熟时(数据点 ≥ 3 个客户问)再开 SPEC-user-portal,不被这次决策锁死
+- **完整 BRIEF 在 `docs/ai-cto/BRIEF-billing-user-auth-blocker.md`**(PR #86)— 决策上下文 + option A/B/C 对比 + 选 A 的具体理由 + 后续打开 user portal 的硬条件全在那
+
+**How to apply**:
+
+- A.4 后续动作收口:今后所有 "用户购买 UI" 工作只指 `dashboard/src/modules/billing/admin-checkout/` 这一处
+- 路由导出:`billing.purchase.lazy.tsx`(SudoRoute),sidebar `Billing` 组追加 "Checkout"(append-only,SESSIONS.md 冲突地带表已记录)
+- 删除已弃用代码:`my-invoices` route / mock-gate / `MyInvoice*` types(已在 #87/#89 完成)
+- i18n 子树:`page.billing.purchase.*`(en/zh-cn 已加,其他 4 语言走 i18next defaultValue fallback,符合 L-012 防线)
+- **不写**任何 user-side auth / register / login 代码;真有人提此请求 → 引用本决策驳回,要求先开 SPEC-user-portal
+
+**推翻条件**:
+
+- ≥ 3 个真实客户独立请求"让用户自助充值",且**无管理员愿代办**(现实数据点,不是脑补) → 开 SPEC-user-portal,A.4 之上加 user-side checkout layer,本决策升级为 D-NNN-user-portal-launch
+- Marzneshin upstream 引入原生 user web auth → 本 fork 直接消费 upstream 的 auth 而非自建,本决策的"无 web auth"前提不再成立
+- 法律 / 合规要求 PoP(proof-of-purchase by user)签字必须用户本人完成 → admin-on-behalf 路径在该司法管辖区作废,需重新设计
+
+---
+
 ## D-015 | 2026-04-26 | 链上支付匹配策略 = "memo > exact-amount + window";拒绝模糊;cents-dither 解并发;rate 操作员锁定
 
 **决策**:在 A.3 TRC20 落地中固化三条配套政策:
