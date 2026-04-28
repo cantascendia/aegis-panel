@@ -6,6 +6,7 @@ import {
     FileText,
     Home,
     Landmark,
+    ShieldAlert,
     ShieldCheck,
     ShoppingCart,
     Server,
@@ -97,6 +98,12 @@ export const sidebarItems: SidebarObject = {
             title: 'Health',
             to: '/health',
             icon: <Activity />,
+            isParent: false,
+        },
+        {
+            title: 'Reality audit',
+            to: '/reality',
+            icon: <ShieldAlert />,
             isParent: false,
         },
         {

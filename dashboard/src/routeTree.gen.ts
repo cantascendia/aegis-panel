@@ -48,6 +48,7 @@ const DashboardIndexLazyImport = createFileRoute('/_dashboard/')()
 const DashboardUsersLazyImport = createFileRoute('/_dashboard/users')()
 const DashboardSettingsLazyImport = createFileRoute('/_dashboard/settings')()
 const DashboardServicesLazyImport = createFileRoute('/_dashboard/services')()
+const DashboardRealityLazyImport = createFileRoute('/_dashboard/reality')()
 const DashboardNodesLazyImport = createFileRoute('/_dashboard/nodes')()
 const DashboardHostsLazyImport = createFileRoute('/_dashboard/hosts')()
 const DashboardHealthLazyImport = createFileRoute('/_dashboard/health')()
@@ -107,6 +108,14 @@ const DashboardServicesLazyRoute = DashboardServicesLazyImport.update({
   getParentRoute: () => DashboardRoute,
 } as any).lazy(() =>
   import('./routes/_dashboard/services.lazy').then((d) => d.Route),
+)
+
+const DashboardRealityLazyRoute = DashboardRealityLazyImport.update({
+  id: '/reality',
+  path: '/reality',
+  getParentRoute: () => DashboardRoute,
+} as any).lazy(() =>
+  import('./routes/_dashboard/reality.lazy').then((d) => d.Route),
 )
 
 const DashboardNodesLazyRoute = DashboardNodesLazyImport.update({
@@ -399,6 +408,13 @@ declare module '@tanstack/react-router' {
       path: '/nodes'
       fullPath: '/nodes'
       preLoaderRoute: typeof DashboardNodesLazyImport
+      parentRoute: typeof DashboardImport
+    }
+    '/_dashboard/reality': {
+      id: '/_dashboard/reality'
+      path: '/reality'
+      fullPath: '/reality'
+      preLoaderRoute: typeof DashboardRealityLazyImport
       parentRoute: typeof DashboardImport
     }
     '/_dashboard/services': {
@@ -801,6 +817,7 @@ interface DashboardRouteChildren {
   DashboardHealthLazyRoute: typeof DashboardHealthLazyRoute
   DashboardHostsLazyRoute: typeof DashboardHostsLazyRouteWithChildren
   DashboardNodesLazyRoute: typeof DashboardNodesLazyRouteWithChildren
+  DashboardRealityLazyRoute: typeof DashboardRealityLazyRoute
   DashboardServicesLazyRoute: typeof DashboardServicesLazyRouteWithChildren
   DashboardSettingsLazyRoute: typeof DashboardSettingsLazyRoute
   DashboardUsersLazyRoute: typeof DashboardUsersLazyRouteWithChildren
@@ -816,6 +833,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardHealthLazyRoute: DashboardHealthLazyRoute,
   DashboardHostsLazyRoute: DashboardHostsLazyRouteWithChildren,
   DashboardNodesLazyRoute: DashboardNodesLazyRouteWithChildren,
+  DashboardRealityLazyRoute: DashboardRealityLazyRoute,
   DashboardServicesLazyRoute: DashboardServicesLazyRouteWithChildren,
   DashboardSettingsLazyRoute: DashboardSettingsLazyRoute,
   DashboardUsersLazyRoute: DashboardUsersLazyRouteWithChildren,
@@ -837,6 +855,7 @@ export interface FileRoutesByFullPath {
   '/health': typeof DashboardHealthLazyRoute
   '/hosts': typeof DashboardHostsLazyRouteWithChildren
   '/nodes': typeof DashboardNodesLazyRouteWithChildren
+  '/reality': typeof DashboardRealityLazyRoute
   '/services': typeof DashboardServicesLazyRouteWithChildren
   '/settings': typeof DashboardSettingsLazyRoute
   '/users': typeof DashboardUsersLazyRouteWithChildren
@@ -879,6 +898,7 @@ export interface FileRoutesByTo {
   '/health': typeof DashboardHealthLazyRoute
   '/hosts': typeof DashboardHostsLazyRouteWithChildren
   '/nodes': typeof DashboardNodesLazyRouteWithChildren
+  '/reality': typeof DashboardRealityLazyRoute
   '/services': typeof DashboardServicesLazyRouteWithChildren
   '/settings': typeof DashboardSettingsLazyRoute
   '/users': typeof DashboardUsersLazyRouteWithChildren
@@ -918,6 +938,7 @@ export interface FileRoutesById {
   '/_dashboard/health': typeof DashboardHealthLazyRoute
   '/_dashboard/hosts': typeof DashboardHostsLazyRouteWithChildren
   '/_dashboard/nodes': typeof DashboardNodesLazyRouteWithChildren
+  '/_dashboard/reality': typeof DashboardRealityLazyRoute
   '/_dashboard/services': typeof DashboardServicesLazyRouteWithChildren
   '/_dashboard/settings': typeof DashboardSettingsLazyRoute
   '/_dashboard/users': typeof DashboardUsersLazyRouteWithChildren
@@ -962,6 +983,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/hosts'
     | '/nodes'
+    | '/reality'
     | '/services'
     | '/settings'
     | '/users'
@@ -1003,6 +1025,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/hosts'
     | '/nodes'
+    | '/reality'
     | '/services'
     | '/settings'
     | '/users'
@@ -1040,6 +1063,7 @@ export interface FileRouteTypes {
     | '/_dashboard/health'
     | '/_dashboard/hosts'
     | '/_dashboard/nodes'
+    | '/_dashboard/reality'
     | '/_dashboard/services'
     | '/_dashboard/settings'
     | '/_dashboard/users'
@@ -1113,6 +1137,7 @@ export const routeTree = rootRoute
         "/_dashboard/health",
         "/_dashboard/hosts",
         "/_dashboard/nodes",
+        "/_dashboard/reality",
         "/_dashboard/services",
         "/_dashboard/settings",
         "/_dashboard/users",
@@ -1154,6 +1179,10 @@ export const routeTree = rootRoute
         "/_dashboard/nodes/$nodeId",
         "/_dashboard/nodes/create"
       ]
+    },
+    "/_dashboard/reality": {
+      "filePath": "_dashboard/reality.lazy.tsx",
+      "parent": "/_dashboard"
     },
     "/_dashboard/services": {
       "filePath": "_dashboard/services.lazy.tsx",

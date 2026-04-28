@@ -616,6 +616,56 @@
         "load_failed": "Failed to load health report.",
         "unauthorized": "You must be a sudo admin to view the extended health report."
       }
+    },
+    "reality": {
+      "title": "Reality audit",
+      "subtitle": "Score your panel's Reality config against the 2026 hardening checklist (cold SNI, same ASN, non-standard port, shortId compliance, short connIdle).",
+      "run": "Run audit",
+      "rerun": "Re-run audit",
+      "running": "Running audit...",
+      "empty": "Click \"Run audit\" to score the panel's current Reality configuration.",
+      "no_targets": "No Reality inbounds found in the panel database.",
+      "summary": {
+        "total": "Total",
+        "green": "Green",
+        "yellow": "Yellow",
+        "red": "Red",
+        "worst": "Worst score",
+        "audited_at": "Audited at"
+      },
+      "score": {
+        "green": "Green",
+        "yellow": "Yellow",
+        "red": "Red"
+      },
+      "column": {
+        "host": "Host",
+        "sni": "SNI",
+        "port": "Port",
+        "score": "Score",
+        "grade": "Grade",
+        "findings": "Issues"
+      },
+      "check": {
+        "sni_coldness": "SNI coldness",
+        "asn_match": "ASN match",
+        "port_canonical": "Port canonicality",
+        "shortid_compliance": "shortId compliance",
+        "timeout_config": "connIdle / timeouts"
+      },
+      "finding": {
+        "remediation": "Fix",
+        "empty": "No findings emitted for this target."
+      },
+      "target": {
+        "expand": "Show findings",
+        "collapse": "Hide findings"
+      },
+      "error": {
+        "unauthorized": "You must be a sudo admin to run a Reality audit.",
+        "timeout": "Audit timed out (likely a slow ASN WHOIS lookup). Try again, or omit the ASN to skip ASN matching.",
+        "failed": "Reality audit failed. See panel logs for details."
+      }
     }
   },
   "events": {
