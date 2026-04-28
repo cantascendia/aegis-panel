@@ -1,0 +1,29 @@
+# =============================================================================
+# marznode-node.service — systemd wrapper for the marznode container
+# Rendered by deploy/ansible/roles/marznode/tasks/main.yml.
+#
+# install-node.sh (D.2) handles the initial pull + run; this unit owns the
+# everyday lifecycle (restart, stop, status). Mirror of marzneshin-panel.service.
+# =============================================================================
+
+[Unit]
+Description=Aegis marznode — data plane (xray-core)
+Documentation=https://github.com/cantascendia/aegis-panel
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory={{ marznode_prefix }}
+EnvironmentFile={{ marznode_prefix }}/.env
+ExecStartPre=/usr/bin/docker compose -f {{ aegis_src_dir }}/deploy/marznode/docker-compose.yml --env-file {{ marznode_prefix }}/.env pull --quiet
+ExecStart=/usr/bin/docker compose -f {{ aegis_src_dir }}/deploy/marznode/docker-compose.yml --env-file {{ marznode_prefix }}/.env up -d
+ExecStop=/usr/bin/docker compose -f {{ aegis_src_dir }}/deploy/marznode/docker-compose.yml --env-file {{ marznode_prefix }}/.env down
+TimeoutStartSec=180
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

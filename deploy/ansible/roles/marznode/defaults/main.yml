@@ -1,0 +1,29 @@
+---
+# =============================================================================
+# roles/marznode — data plane defaults
+# =============================================================================
+
+# Marznode install root. Separate from /opt/aegis to avoid shared state on
+# co-located dev/staging boxes; production keeps them apart for clarity.
+marznode_prefix: "/opt/aegis-marznode"
+
+aegis_repo_url: "https://github.com/cantascendia/aegis-panel.git"
+aegis_repo_tag: "v0.2.0"
+aegis_src_dir: "{{ marznode_prefix }}/src"
+
+aegis_user: aegis
+aegis_group: aegis
+
+marznode_grpc_port: 62051
+marznode_image_tag: "v0.2.0"
+
+# Cert distribution mode: "file" (vault PEM written to disk) or "bootstrap"
+# (one-time token exchange — out of scope for v0.2). Default mirrors SPEC
+# §risks: vault is the production-recommended path.
+marznode_cert_mode: "file"
+
+# Vault-encrypted variables — empty defaults so a missing vault file fails
+# loudly at the assert step rather than silently propagating "".
+marznode_cert_pem: ""
+marznode_cert_key_pem: ""
+marznode_client_cert_pem: ""

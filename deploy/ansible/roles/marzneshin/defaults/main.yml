@@ -1,0 +1,30 @@
+---
+# =============================================================================
+# roles/marzneshin — control plane defaults
+# =============================================================================
+
+aegis_repo_url: "https://github.com/cantascendia/aegis-panel.git"
+aegis_repo_tag: "v0.2.0"
+aegis_version: "v0.2.0"
+aegis_prefix: "/opt/aegis"
+aegis_user: aegis
+aegis_group: aegis
+aegis_src_dir: "{{ aegis_prefix }}/src"
+
+# Marznode gRPC port — also used by ufw rule on the control plane to
+# initiate outbound to data_plane hosts. Outbound is allow-by-default in
+# roles/common, so no ufw task needed here.
+marznode_grpc_port: 62051
+
+# Panel HTTP port (compose interpolates).
+panel_port: 8443
+
+# Optional pre-supplied admin secrets — empty makes install.sh generate
+# random 24-byte values and write them to /opt/aegis/INSTALL-SUMMARY.txt.
+aegis_admin_username: ""
+aegis_admin_password: ""
+aegis_jwt_secret: ""
+
+# Cloudflare Tunnel toggles (chained into deploy/cloudflare/install-tunnel.sh).
+cf_tunnel_enabled: false
+cf_access_admin_emails: ""

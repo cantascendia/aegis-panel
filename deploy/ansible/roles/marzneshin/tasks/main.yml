@@ -1,0 +1,134 @@
+---
+# =============================================================================
+# roles/marzneshin — Aegis Panel control plane
+#
+# Refs: docs/ai-cto/SPEC-deploy.md §"roles/marzneshin/(控制面)" bullets 1-5.
+# Acceptance: AC-D.3.1 (≤30 min from zero), AC-D.3.3 (idempotent --check).
+#
+# Steps (all idempotent):
+#   1. git clone aegis-panel into /opt/aegis/src @ aegis_repo_tag
+#   2. Render /opt/aegis/.env from templates/env.j2
+#   3. Invoke deploy/install/install.sh --non-interactive --from-env
+#   4. (optional) chain into deploy/cloudflare/install-tunnel.sh
+#   5. Install + enable marzneshin-panel.service systemd unit
+# =============================================================================
+
+- name: Assert running on a control_plane host
+  ansible.builtin.assert:
+    that: "'control_plane' in group_names"
+    fail_msg: "marzneshin role must run on hosts in the control_plane group only"
+
+- name: Ensure {{ aegis_src_dir }} parent exists
+  ansible.builtin.file:
+    path: "{{ aegis_prefix }}"
+    state: directory
+    owner: "{{ aegis_user }}"
+    group: "{{ aegis_group }}"
+    mode: "0750"
+
+- name: Clone aegis-panel repo (or fetch new revisions)
+  ansible.builtin.git:
+    repo: "{{ aegis_repo_url }}"
+    dest: "{{ aegis_src_dir }}"
+    version: "{{ aegis_repo_tag }}"
+    force: false
+    update: true
+  register: aegis_git
+  notify: Restart marzneshin-panel
+
+- name: Set ownership of /opt/aegis/src to aegis user
+  ansible.builtin.file:
+    path: "{{ aegis_src_dir }}"
+    state: directory
+    owner: "{{ aegis_user }}"
+    group: "{{ aegis_group }}"
+    recurse: true
+
+- name: Render /opt/aegis/.env (mode 0600)
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ aegis_prefix }}/.env"
+    owner: "{{ aegis_user }}"
+    group: "{{ aegis_group }}"
+    mode: "0600"
+  notify: Restart marzneshin-panel
+
+- name: Check for install.sh sentinel (step 9 = full success)
+  ansible.builtin.stat:
+    path: "{{ aegis_prefix }}/.install-step-9.done"
+  register: aegis_install_sentinel
+
+- name: Run install.sh --non-interactive (skipped if step-9 sentinel exists)
+  ansible.builtin.command:
+    cmd: >-
+      bash {{ aegis_src_dir }}/deploy/install/install.sh
+      --non-interactive
+      --from-env {{ aegis_prefix }}/.env
+      --domain {{ aegis_domain }}
+      --version {{ aegis_version }}
+      --prefix {{ aegis_prefix }}
+    creates: "{{ aegis_prefix }}/.install-step-9.done"
+  register: aegis_install_run
+  changed_when: aegis_install_run.rc == 0
+  when: not aegis_install_sentinel.stat.exists
+
+- name: Check for Cloudflare Tunnel install marker
+  ansible.builtin.stat:
+    path: "{{ aegis_prefix }}/.cf-tunnel-installed"
+  register: cf_tunnel_marker
+  when: cf_tunnel_enabled | bool
+
+- name: Verify CF_API_TOKEN is in environment when CF Tunnel requested
+  ansible.builtin.assert:
+    that:
+      - lookup('ansible.builtin.env', 'CF_API_TOKEN') | length > 0
+    fail_msg: >-
+      cf_tunnel_enabled=true but CF_API_TOKEN is not exported on the
+      operator workstation. Export it and re-run, or set
+      cf_tunnel_enabled=false in inventory.
+  when:
+    - cf_tunnel_enabled | bool
+    - not cf_tunnel_marker.stat.exists
+
+- name: Run install-tunnel.sh (D.4) when cf_tunnel_enabled
+  ansible.builtin.command:
+    cmd: >-
+      bash {{ aegis_src_dir }}/deploy/cloudflare/install-tunnel.sh
+      --domain {{ aegis_domain }}
+      --panel-port {{ panel_port }}
+    creates: "{{ aegis_prefix }}/.cf-tunnel-installed"
+  environment:
+    CF_API_TOKEN: "{{ lookup('ansible.builtin.env', 'CF_API_TOKEN') }}"
+  when:
+    - cf_tunnel_enabled | bool
+    - not cf_tunnel_marker.stat.exists
+  register: cf_tunnel_run
+  changed_when: cf_tunnel_run.rc == 0
+
+- name: Mark CF Tunnel installed (sentinel for idempotency)
+  ansible.builtin.file:
+    path: "{{ aegis_prefix }}/.cf-tunnel-installed"
+    state: touch
+    owner: "{{ aegis_user }}"
+    group: "{{ aegis_group }}"
+    mode: "0600"
+  when:
+    - cf_tunnel_enabled | bool
+    - cf_tunnel_run is defined and cf_tunnel_run.changed | default(false)
+
+- name: Render systemd unit /etc/systemd/system/marzneshin-panel.service
+  ansible.builtin.template:
+    src: marzneshin-panel.service.j2
+    dest: /etc/systemd/system/marzneshin-panel.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart marzneshin-panel
+
+- name: Enable marzneshin-panel.service
+  ansible.builtin.systemd:
+    name: marzneshin-panel.service
+    enabled: true
+    daemon_reload: true

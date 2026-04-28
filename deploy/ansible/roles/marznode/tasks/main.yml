@@ -1,0 +1,132 @@
+---
+# =============================================================================
+# roles/marznode — Aegis Panel data plane (xray-core via marznode container)
+#
+# Refs: docs/ai-cto/SPEC-deploy.md §"roles/marznode/(数据面)" bullets 1-4.
+# Acceptance: AC-D.3.1, AC-D.3.2 (3rd node via --limit), AC-D.3.4 (vault).
+#
+# Steps (all idempotent):
+#   1. Clone aegis-panel repo (we need deploy/marznode/install-node.sh)
+#   2. Distribute mTLS cert from Ansible Vault to /opt/aegis-marznode/certs/
+#   3. Render /opt/aegis-marznode/.env from templates/env.j2
+#   4. Invoke deploy/marznode/install-node.sh --non-interactive --cert-mode file
+#   5. Install + enable marznode-node.service systemd unit
+# =============================================================================
+
+- name: Assert running on a data_plane host
+  ansible.builtin.assert:
+    that: "'data_plane' in group_names"
+    fail_msg: "marznode role must run on hosts in the data_plane group only"
+
+- name: Assert vault provided marznode cert PEM (cert_mode=file)
+  ansible.builtin.assert:
+    that:
+      - marznode_cert_pem | length > 0
+    fail_msg: >-
+      marznode_cert_mode=file but marznode_cert_pem is empty. Encrypt the
+      certificate in Ansible Vault and reference it from inventory — see
+      deploy/ansible/README.md §"Vault setup".
+  when: marznode_cert_mode == "file"
+
+- name: Assert at least one control_plane host exists
+  ansible.builtin.assert:
+    that:
+      - groups['control_plane'] | default([]) | length > 0
+    fail_msg: "marznode hosts need a control_plane host to register against"
+
+- name: Ensure {{ marznode_prefix }} dir tree exists (mode 0750)
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ aegis_user }}"
+    group: "{{ aegis_group }}"
+    mode: "0750"
+  loop:
+    - "{{ marznode_prefix }}"
+    - "{{ marznode_prefix }}/data"
+    - "{{ marznode_prefix }}/certs"
+
+- name: Clone aegis-panel repo (for deploy/marznode/install-node.sh)
+  ansible.builtin.git:
+    repo: "{{ aegis_repo_url }}"
+    dest: "{{ aegis_src_dir }}"
+    version: "{{ aegis_repo_tag }}"
+    force: false
+    update: true
+  notify: Restart marznode-node
+
+- name: Write marznode mTLS certificate from vault (mode 0600)
+  ansible.builtin.copy:
+    content: "{{ marznode_cert_pem }}"
+    dest: "{{ marznode_prefix }}/certs/marznode.pem"
+    owner: "{{ aegis_user }}"
+    group: "{{ aegis_group }}"
+    mode: "0600"
+  when: marznode_cert_mode == "file"
+  no_log: true
+  notify: Restart marznode-node
+
+- name: Write marznode mTLS key from vault (mode 0600)
+  ansible.builtin.copy:
+    content: "{{ marznode_cert_key_pem }}"
+    dest: "{{ marznode_prefix }}/certs/marznode.key"
+    owner: "{{ aegis_user }}"
+    group: "{{ aegis_group }}"
+    mode: "0600"
+  when:
+    - marznode_cert_mode == "file"
+    - marznode_cert_key_pem | length > 0
+  no_log: true
+  notify: Restart marznode-node
+
+- name: Write control plane client certificate (peer auth)
+  ansible.builtin.copy:
+    content: "{{ marznode_client_cert_pem }}"
+    dest: "{{ marznode_prefix }}/certs/client.pem"
+    owner: "{{ aegis_user }}"
+    group: "{{ aegis_group }}"
+    mode: "0600"
+  when:
+    - marznode_cert_mode == "file"
+    - marznode_client_cert_pem | length > 0
+  no_log: true
+  notify: Restart marznode-node
+
+- name: Render /opt/aegis-marznode/.env (mode 0600)
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ marznode_prefix }}/.env"
+    owner: "{{ aegis_user }}"
+    group: "{{ aegis_group }}"
+    mode: "0600"
+  notify: Restart marznode-node
+
+- name: Run install-node.sh --non-interactive (D.2) idempotently
+  ansible.builtin.command:
+    cmd: >-
+      bash {{ aegis_src_dir }}/deploy/marznode/install-node.sh
+      --non-interactive
+      --cert-mode file
+      --prefix {{ marznode_prefix }}
+      --node-id {{ marznode_id }}
+      --control-plane {{ hostvars[groups['control_plane'][0]]['ansible_host'] }}
+    creates: "{{ marznode_prefix }}/.install-node.done"
+  register: marznode_install_run
+  changed_when: marznode_install_run.rc == 0
+
+- name: Render systemd unit /etc/systemd/system/marznode-node.service
+  ansible.builtin.template:
+    src: marznode-node.service.j2
+    dest: /etc/systemd/system/marznode-node.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart marznode-node
+
+- name: Enable marznode-node.service
+  ansible.builtin.systemd:
+    name: marznode-node.service
+    enabled: true
+    daemon_reload: true

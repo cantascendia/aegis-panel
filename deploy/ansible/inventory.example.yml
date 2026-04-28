@@ -1,0 +1,126 @@
+# =============================================================================
+# Aegis Panel — Ansible inventory example (D.3)
+#
+# Refs: docs/ai-cto/SPEC-deploy.md §"Ansible 职责(D.3,多节点)"
+#       and §"Inventory 示例". Acceptance: AC-D.3.1..AC-D.3.4.
+#
+# Copy this file to inventory.yml (gitignored), edit hostnames + IPs +
+# secrets, then drive site.yml with it:
+#
+#   ansible-playbook -i inventory.yml site.yml --check        # dry-run
+#   ansible-playbook -i inventory.yml site.yml                # real
+#   ansible-playbook -i inventory.yml site.yml --limit data_plane  # nodes only
+#
+# Secret variables (marznode_cert_pem, marznode_cert_key, etc.) MUST live in
+# Ansible Vault — see deploy/ansible/README.md §"Vault setup".
+#
+# License: AGPL-3.0-or-later. Aegis Panel is a hard fork of Marzneshin.
+# =============================================================================
+
+all:
+  vars:
+    # -------------------------------------------------------------------------
+    # Repository / version pin
+    # -------------------------------------------------------------------------
+    # Tag or branch to check out under /opt/aegis/src on every host. Pin to
+    # an immutable tag in production; a branch is OK for staging.
+    aegis_repo_url: "https://github.com/cantascendia/aegis-panel.git"
+    aegis_repo_tag: "v0.2.0"
+    aegis_version: "v0.2.0"
+
+    # Public domain for the panel (subscription URL, CF Tunnel, nginx
+    # server_name). REQUIRED. Must resolve to a host in `control_plane`.
+    aegis_domain: "panel.example.com"
+
+    # Install root on every host. Created by roles/common.
+    aegis_prefix: "/opt/aegis"
+
+    # System user that owns /opt/aegis. Created by roles/common.
+    aegis_user: "aegis"
+
+    # -------------------------------------------------------------------------
+    # Firewall — roles/common reads these
+    # -------------------------------------------------------------------------
+    # Public ingress on every host (SSH + HTTPS).
+    common_ufw_allow_tcp:
+      - 22
+      - 443
+
+    # Marznode gRPC port. Restricted to control_plane source IPs by
+    # roles/common at the host level — see common/tasks/main.yml.
+    marznode_grpc_port: 62051
+
+    # -------------------------------------------------------------------------
+    # Cloudflare Tunnel (optional) — roles/marzneshin honours these
+    # -------------------------------------------------------------------------
+    # Set true to chain into deploy/cloudflare/install-tunnel.sh after the
+    # panel is healthy. Requires CF_API_TOKEN exported on the operator
+    # workstation; the role passes it through via environment.
+    cf_tunnel_enabled: false
+
+    # Optional: Cloudflare Access policy admin emails (comma-separated). If
+    # set and cf_tunnel_enabled, roles/marzneshin will run setup-access.sh.
+    cf_access_admin_emails: ""
+
+    # -------------------------------------------------------------------------
+    # Marznode certificate distribution (D.3 vault path is recommended)
+    # -------------------------------------------------------------------------
+    # Mode: "file" reads the literal PEM out of marznode_cert_pem (set in
+    # Vault). "bootstrap" defers to the node's first-boot exchange with the
+    # control plane (out-of-scope for v0.2; SPEC §risks calls it
+    # "production not recommended").
+    marznode_cert_mode: "file"
+
+    # Per-host vars (see data_plane below) provide marznode_cert_pem and
+    # marznode_id; this top-level default is empty so a missing vault file
+    # surfaces loud rather than silently propagating.
+    marznode_cert_pem: ""
+
+    # gRPC client public certificate the control plane uses to authenticate
+    # outgoing connections to nodes. Vault-encrypted, same as above.
+    marznode_client_cert_pem: ""
+
+    # -------------------------------------------------------------------------
+    # SSH defaults — operator workstation reaches every host as this user
+    # -------------------------------------------------------------------------
+    ansible_user: "root"
+    ansible_python_interpreter: "/usr/bin/python3"
+
+  children:
+    # -------------------------------------------------------------------------
+    # Control plane — the panel + postgres + redis + nginx host. Exactly one
+    # host in production; multi-CP HA is out of scope for v0.2.
+    # -------------------------------------------------------------------------
+    control_plane:
+      hosts:
+        panel.example.com:
+          # Public IP / hostname Ansible SSHes into. Often == aegis_domain
+          # in production; split if you tunnel SSH separately.
+          ansible_host: "1.2.3.4"
+
+          # Optional: pre-generated admin credentials. Empty values cause
+          # install.sh to generate 24-byte random secrets and write them
+          # into /opt/aegis/INSTALL-SUMMARY.txt (mode 600).
+          aegis_admin_username: ""
+          aegis_admin_password: ""
+          aegis_jwt_secret: ""
+
+    # -------------------------------------------------------------------------
+    # Data plane — N marznode hosts, each runs xray-core via the marznode
+    # container. Add a third by appending another host block; rerun with
+    # --limit <new-host> to avoid touching the others.
+    # -------------------------------------------------------------------------
+    data_plane:
+      hosts:
+        node-tokyo:
+          ansible_host: "5.6.7.8"
+          # Numeric ID the panel registers this node under. Must be unique
+          # across the data plane and stable across re-runs.
+          marznode_id: 1
+          # Optional region tag (free-form; consumed by panel /api/nodes).
+          marznode_region: "ap-tokyo"
+
+        node-singapore:
+          ansible_host: "9.10.11.12"
+          marznode_id: 2
+          marznode_region: "ap-sg"

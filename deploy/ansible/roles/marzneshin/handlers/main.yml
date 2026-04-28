@@ -1,0 +1,13 @@
+---
+# =============================================================================
+# roles/marzneshin — handlers
+# =============================================================================
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart marzneshin-panel
+  ansible.builtin.systemd:
+    name: marzneshin-panel.service
+    state: restarted
