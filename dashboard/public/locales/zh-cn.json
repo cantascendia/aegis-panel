@@ -495,6 +495,56 @@
         "load_failed": "加载健康报告失败。",
         "unauthorized": "查看扩展健康报告需要超级管理员权限。"
       }
+    },
+    "reality": {
+      "title": "Reality 审计",
+      "subtitle": "按 2026 加固清单（冷门 SNI、同 ASN、非标准端口、shortId 合规、短 connIdle）为面板的 Reality 配置打分。",
+      "run": "运行审计",
+      "rerun": "重新运行审计",
+      "running": "审计运行中...",
+      "empty": "点击「运行审计」对当前面板的 Reality 配置打分。",
+      "no_targets": "面板数据库中没有 Reality 入站。",
+      "summary": {
+        "total": "总计",
+        "green": "绿",
+        "yellow": "黄",
+        "red": "红",
+        "worst": "最低分",
+        "audited_at": "审计时间"
+      },
+      "score": {
+        "green": "绿",
+        "yellow": "黄",
+        "red": "红"
+      },
+      "column": {
+        "host": "主机",
+        "sni": "SNI",
+        "port": "端口",
+        "score": "得分",
+        "grade": "等级",
+        "findings": "问题"
+      },
+      "check": {
+        "sni_coldness": "SNI 冷门度",
+        "asn_match": "ASN 同质性",
+        "port_canonical": "端口非标准性",
+        "shortid_compliance": "shortId 合规",
+        "timeout_config": "connIdle / 超时"
+      },
+      "finding": {
+        "remediation": "修复",
+        "empty": "此目标无发现项。"
+      },
+      "target": {
+        "expand": "展开发现项",
+        "collapse": "折叠发现项"
+      },
+      "error": {
+        "unauthorized": "运行 Reality 审计需要超级管理员权限。",
+        "timeout": "审计超时（可能 ASN WHOIS 查询缓慢）。请重试，或省略 ASN 以跳过 ASN 校验。",
+        "failed": "Reality 审计失败。请查看面板日志获取详情。"
+      }
     }
   },
   "events": {
