@@ -1,21 +1,21 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-28 late-7 batch(S-O 正式 batch refresh:STATUS 结构压缩 + LESSONS L-025 + DECISIONS D-016/D-017 + ROADMAP/SESSIONS 全口径同步;并行 sibling agents 启动 S-D D.1+D.4 / S-R R.4)
+> 最后更新:2026-04-28 late-7 batch + cross-review 修补(S-O batch refresh 后差异化 #4 D.1-D.5 当天全 ship,本次修补补回 #94/#95/#96/#97/#98 + S-D completed + 7.7→7.8 + D-017 修订;唯一仍 in-flight 是 R.4)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid —— 商业化 5/5 完结 + 差异化 #3 后端闭环 + 差异化 #4 工具系列启动 + 健康端点前端落地(#93)**
+**Round 3 mid —— 商业化 5/5 完结 + 差异化 #3 后端闭环 + 差异化 #4 一体化部署 D.1-D.5 当天 5 PR 并行 ship + 健康端点前端落地(#93)**
 
-状态:🔄 后端实质收口,商业化(A.x)5/5 端到端跑通,Reality 配置审计 R.1-R.3 后端 ✅ + R.4 frontend in-flight(S-R sibling agent 今日并行启动);差异化 #4(一体化部署)首件工具(`agpl-selfcheck.sh`)已 ship,install.sh + Ansible + CF Tunnel 由 S-D sibling agent 今日并行推进。各 session 跑独立 worktree(L-018 / 铁规则 #7):
+状态:🔄 后端实质收口,商业化(A.x)5/5 端到端跑通,Reality 配置审计 R.1-R.3 后端 ✅ + R.4 frontend in-flight(S-R sibling agent 今日并行启动);差异化 #4(一体化部署)5/5 全 ship —— `agpl-selfcheck.sh`(#88) + install.sh(#95) + marznode standalone(#97) + Ansible playbook(#98) + CF Tunnel(#94) + OPS-deploy-runbook + deploy-smoke CI(#96)当天并行 merged。各 session 跑独立 worktree(L-018 / 铁规则 #7):
 
 | Session | PR | 状态 |
 |---|---|---|
 | **S-B 商业化后端**(Claude Code × `aegis-B` worktree) | #46 A.2.1 ✅;#65 A.2.2 ✅;#77 A.5 scheduler ✅;#79 A.3 TRC20 ✅ | **completed**(后端 5/5 全工)|
 | **S-F 商业化前端**(Claude Code) | #41 skeleton + #49 money-critical 测试 + #86 BRIEF + #87 A.4 flip-on + #89 rename ✅ 全 merged | **completed**(BRIEF option A admin checkout 路径,A.4 完结)|
-| **S-D 部署一体化**(Claude Code × `aegis-D` worktree) | #58 OPS-deploy-runbook + #64 D.0 SPEC + #88 agpl-selfcheck.sh(差异化 #4 #1)✅;**D.1 install.sh + D.4 CF Tunnel 自动化今日 sibling agent 并行启动** | **进行中**(D.1+D.4 in-flight)|
+| **S-D 部署一体化**(Claude Code × `aegis-D` worktree) | #58 OPS-deploy-runbook + #64 D.0 SPEC + #88 agpl-selfcheck.sh + **#94 D.4 CF Tunnel + #95 D.1 install.sh + #96 D.5 OPS-deploy-runbook + deploy-smoke CI + #97 D.2 marznode standalone + #98 D.3 Ansible playbook** ✅ 全 merged | ✅ **completed**(差异化 #4 一体化部署 5/5 全 ship,#94 #95 #96 #97 #98 当天并行 merged)|
 | **S-R Reality 配置审计**(Claude Code × `aegis-R` worktree) | R.1-R.3 后端 ✅ #74/#75/#76;**R.4 dashboard 页今日 sibling agent 并行启动** | **进行中**(R.4 in-flight) |
 | **S-X 前端测试基建**(Claude Code × `aegis-X` worktree) | #57/#59/#63 ✅ merged | **暂停**(基础齐了,X.3+ 增量低优先级) |
 | **S-I iplimit 生产化**(Codex × `Marzban-iplimit-production` worktree) | #40/#42/#43/#44/#45 全 ✅ merged | 已完工(归档)|
@@ -49,8 +49,8 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 ## 产品完成度
 
 - 上游功能 6/6 保留(面板 / 多节点 / Reality / 订阅 / Telegram / 多语言)
-- 自研核心功能 **6/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**商业化 5/5 端到端 = 数据面 + Admin UI + EPay 后端 + TRC20 后端 + A.4 admin checkout UI(BRIEF option A 完结)**,**Reality 配置审计 R.1+R.2+R.3 后端 + OPS runbook**(R.4 dashboard 前端 in-flight,sibling agent 今日启动),**健康端点 backend + frontend**(`/api/aegis/health{,/extended}` PR #83 + admin health dashboard page PR #93))
-- **AGPL-3.0 合规自检工具**(2026-04-28 late-7,PR #88 + #90):`deploy/agpl-selfcheck.sh`(302 LOC bash,**差异化 #4 第一件工具**)+ `NOTICE.md` 声明 fork source URL。AGPL §13 长悬 audit gap 关闭。差异化 #4(一体化部署 / 运营加固)正式启动,后续 install.sh / Ansible / CF Tunnel 自动化今日 S-D sibling agent 并行推进
+- 自研核心功能 **6/8** 落地(admin 速率限制,SNI 智能选型器,**IP 限制 MVP**,**商业化 5/5 端到端 = 数据面 + Admin UI + EPay 后端 + TRC20 后端 + A.4 admin checkout UI(BRIEF option A 完结)**,**Reality 配置审计 R.1+R.2+R.3 后端 + OPS runbook + 健康端点 backend + frontend** 算一项产品级核心,**差异化 #4 一体化部署 D.1-D.5 当天 5 PR 并行 ship** 计第 6 件 = `agpl-selfcheck.sh`(#88) + install.sh(#95) + marznode standalone(#97) + Ansible playbook(#98) + CF Tunnel(#94) + OPS-deploy-runbook + deploy-smoke CI(#96))
+- **AGPL-3.0 合规自检工具**(2026-04-28 late-7,PR #88 + #90):`deploy/agpl-selfcheck.sh`(302 LOC bash,**差异化 #4 第一件工具**)+ `NOTICE.md` 声明 fork source URL。AGPL §13 长悬 audit gap 关闭。**差异化 #4(一体化部署 / 运营加固)D.1-D.5 当天 5 PR 并行 ship**:#94 D.4 CF Tunnel + Access scripts(`b00a9cf`)、#95 D.1 install.sh + compose + .env.example + README(`9787bd4`)、#96 D.5 OPS-deploy-runbook + deploy-smoke CI(`3a969a7`)、#97 D.2 marznode standalone node installer(`cfc3b9a`)、#98 D.3 Ansible multi-node playbook(`5f0ca98`),全部 06:03-06:41 UTC 区间 merged。D-017 原序列约束实操证伪 → 修订承认 deploy 工具可独立 ship 不必前后依赖(详见 DECISIONS.md D-017 2026-04-28 修订段)
 - **`dashboard/src/modules/billing/admin-checkout/`** 是 A.4 改名后规范路径(PR #89,原 `modules/billing/user/`,改名清理 BRIEF option A 命名一致性)
 - **健康度全栈**(2026-04-26 PR #83 backend + 2026-04-28 PR #93 frontend admin page):`/api/aegis/health` public + `/health/extended` sudo(6 子系统并发探针)+ admin dashboard 健康页直接消费 extended endpoint。LB / k8s / Prometheus 接入直接可用
 - 自研基础设施 **全部就绪**:
@@ -76,13 +76,14 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 
 ## 当前代码质量评分
 
-**7.7 / 10**(R0 5.0 → R1 6.8 → R2 前半 7.1 → R2 v0.2 7.3 → R3 opener 7.6 → **R3 mid late-7 7.7**)
+**7.8 / 10**(R0 5.0 → R1 6.8 → R2 前半 7.1 → R2 v0.2 7.3 → R3 opener 7.6 → **R3 mid late-7 7.8**)
 
-升分 +0.1 的 concrete delta(批次内 4 项):
+升分 +0.2 的 concrete delta(批次内 5 项):
 1. AGPL §13 自检工具(#88) ship —— 长悬合规义务从 doc-only 升到可执行,差异化 #4 启动
 2. 商业化 A.4 admin checkout 完结(#87 + #89) —— 5/5 端到端跑通,UX 维度获实质前进
 3. 健康端点前端落地(#93) —— 健康度从"后端可调"升到"管理员可见",运维闭环完整
-4. 自研核心 5/8 → 6/8(Reality 后端闭环 + 健康全栈算一项产品级核心)
+4. **差异化 #4 一体化部署 D.1-D.5 当天 5 PR 并行 ship**(#94 #95 #96 #97 #98) —— v0.2 验收第二里程碑(install.sh + Ansible + CF Tunnel + deploy-smoke CI 一次性完工),D-017 序列约束实操证伪,差异化 #4 完整闭环
+5. 自研核心 5/8 → 6/8(差异化 #4 一体化部署计第 6 件)
 
 | 维度 | R0 | R1 | R2 v0.2 | R3 opener | **R3 mid late-7** | 变化驱动 |
 |---|---|---|---|---|---|---|
@@ -92,7 +93,7 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | 安全 | 3 ⚠️ | 8 | 8 | 8 | **8** | 保持(AGPL §13 audit 关闭是合规分,不重复升安全分)|
 | 测试 | 1 ⚠️ | 5 | 6 | 7 | **7** | health 15 + reality 74 + billing 197 + R3 opener 全套合计 ~250+ tests,保持高位 |
 | DX | 6 | 8 | 8 | 8 | **8** | 保持;批次新增 D-016/D-017 + L-025 进 LESSONS,rules 未新增硬条 |
-| 功能完整性 | 4 | 4 | 5 | 6 | **7** | **+1**:自研核心 5/8 → 6/8(R.1-R.3 闭环 + 健康全栈合算一项),A.x 5/5 端到端 |
+| 功能完整性 | 4 | 4 | 5 | 5 | **6** | **+1**:自研核心 5/8 → 6/8 —— **差异化 #4 一体化部署 D.1-D.5 当天 5 PR 并行 ship**(#94/#95/#96/#97/#98)计第 6 件;A.x 5/5 端到端 + Reality 后端闭环 + 健康全栈持续 |
 | UX | 7 | 7 | 7 | 7 | **8** | **+1**:admin checkout 完结(#87) + 健康 dashboard 页(#93) + R.4 in-flight 即将落地;管理员侧端到端体验显著提升 |
 
 ## 关键决策记录
@@ -200,6 +201,11 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 | **#90** | **docs(notice): aegis-panel fork source URL 声明**(closes #88 surfaced 的 AGPL §13 audit gap) | ✅ 合并 | **S-D** | `a1fb7f6` |
 | **#91** | docs(ai-cto): STATUS late-7 wave drive-by refresh(单文件 STATUS,留给 batch S-O 整合) | ✅ 合并 | **S-O drive-by** | `a548751` |
 | **#93** | **feat(dashboard): admin health dashboard page**(消费 `/api/aegis/health/extended`,健康全栈闭环) | ✅ 合并 | session 0 / 健康全栈 | `8ac2ff7` |
+| **#94** | **feat(deploy): D.4 — Cloudflare Tunnel + Access scripts**(差异化 #4 工具 #2)| ✅ 合并 | **S-D** | `b00a9cf` |
+| **#95** | **feat(deploy): D.1 — install.sh + compose + .env.example + README**(差异化 #4 工具 #3,单节点一键)| ✅ 合并 | **S-D** | `9787bd4` |
+| **#96** | **feat(deploy): D.5 — OPS-deploy-runbook + deploy-smoke CI**(差异化 #4 工具 #6,五段流程闭环)| ✅ 合并 | **S-D** | `3a969a7` |
+| **#97** | **feat(deploy): D.2 — marznode standalone node installer**(差异化 #4 工具 #4)| ✅ 合并 | **S-D** | `cfc3b9a` |
+| **#98** | **feat(deploy): D.3 — Ansible multi-node playbook**(差异化 #4 工具 #5,多节点部署)| ✅ 合并 | **S-D** | `5f0ca98` |
 | **本批次 (late-7 batch)** | docs(ai-cto): late-7 wave batch S-O refresh — STATUS 结构压缩 + LESSONS L-025 + DECISIONS D-016/D-017 + ROADMAP/SESSIONS 全口径同步 | (本 PR) | **S-O 正式 batch** | - |
 
 ## 已部署配置文件
@@ -261,13 +267,17 @@ Round 0 列表的全部 + Round 1 新增:
 
 ## 📅 最后同步确认
 
-**Round 3 mid late-7 batch S-O refresh**(2026-04-28,本批次 S-O 正式 batch,本 PR):
+**Round 3 mid late-7 batch S-O refresh + cross-review 修补**(2026-04-28,本批次 S-O 正式 batch + 后续 stale-by-3h 修补,本 PR + 修补 commit):
 
 - **STATUS 结构压缩**:从 7 个 nested late-N wave block 收口到本节单段历史索引(下方),+ 顶部 wave-7 batch 摘要
-- **本批次更新动作**:metadata 时间戳 → 2026-04-28;Session table → S-F completed / S-D in-progress (D.1+D.4 sibling) / S-R in-progress (R.4 sibling) / S-X 暂停;自研核心 5/8 → 6/8(健康全栈算一项);代码质量 7.6 → **7.7**(具体 4 项 delta 见上方"当前代码质量评分");PR 累计表 backfill #91 + #93 + 本批次行;新 LESSONS L-025;新 DECISIONS D-016 / D-017
-- **并行 sibling agents 今日启动(2026-04-28)**:
-  - **S-D D.1 install.sh 单节点一键** + **S-D D.4 CF Tunnel 自动化**(差异化 #4 后续工具)
-  - **S-R R.4 Reality 审计 dashboard 页**(`hardening/reality` 后端 R.1-R.3 ✅ 后,前端消费层落地)
+- **本批次更新动作**:metadata 时间戳 → 2026-04-28;Session table → S-F completed / **S-D ✅ completed**(差异化 #4 一体化部署 5/5 全 ship #94/#95/#96/#97/#98)/ S-R in-progress (R.4 sibling) / S-X 暂停;自研核心 5/8 → 6/8(D.1-D.5 一体化部署计第 6 件);代码质量 7.6 → **7.8**(+0.2 信号强度,5 项 delta 见上方"当前代码质量评分");PR 累计表 backfill #91 + #93 + #94/#95/#96/#97/#98 + 本批次行;新 LESSONS L-025;新 DECISIONS D-016 / D-017(D-017 含 2026-04-28 修订段)
+- **当天并行 ship 实绩(2026-04-28 06:03-06:41 UTC)**:
+  - **#94 D.4 CF Tunnel + Access scripts** `b00a9cf`
+  - **#95 D.1 install.sh + compose + .env.example + README** `9787bd4`
+  - **#96 D.5 OPS-deploy-runbook + deploy-smoke CI** `3a969a7`
+  - **#97 D.2 marznode standalone node installer** `cfc3b9a`
+  - **#98 D.3 Ansible multi-node playbook** `5f0ca98`
+- **唯一 in-flight**:**S-R R.4 Reality 审计 dashboard 页**(PR #99 open,sibling agent today)
 - 本批次只动 docs(STATUS / LESSONS / DECISIONS / ROADMAP / SESSIONS),零代码改动,L-022 三条件全不满足 = 不动 upstream 文件
 
 ---
@@ -284,7 +294,7 @@ Round 0 列表的全部 + Round 1 新增:
 | Round 3 mid late-6 wave-1 | 2026-04-26 | 差异化 #3 Reality 后端闭环 + A.x 后端补完 | #72/#73 季度 upstream/COMPETITORS / #74 R.1 / #75 R.2 / #76 R.3 / #77 A.5 scheduler / #79 A.3 TRC20(L-023/L-024 + D-014/D-015)|
 | Round 3 mid late-6 wave-2 | 2026-04-26 | Round 3 mid 后端实质收口 | #81 OPS-trc20-runbook(A.3 五段 close) / #82 OPS-reality-runbook(差异化 #3 五段 close) / #83 健康端点 backend |
 | Round 3 mid late-6 wave-3 | 2026-04-26 | 小账盘点(无新 PR) | iplimit 白名单 / Redis SCAN / TZ 文档**全部已完工**;唯一余债 = SNI rate-limit Linux 复现(L-010 documented)|
-| Round 3 mid late-7 wave | 2026-04-28 | A.4 完结 + AGPL §13 合规自检 + 改名清理 | #86 BRIEF / #87 A.4 flip-on / #88 agpl-selfcheck.sh(差异化 #4 #1) / #89 rename / #90 NOTICE / #91 STATUS drive-by / #93 admin health dashboard 页 |
+| Round 3 mid late-7 wave | 2026-04-28 | A.4 完结 + AGPL §13 合规自检 + 改名清理 + **差异化 #4 一体化部署 D.1-D.5 当天 5 PR 并行 ship** | #86 BRIEF / #87 A.4 flip-on / #88 agpl-selfcheck.sh(差异化 #4 #1) / #89 rename / #90 NOTICE / #91 STATUS drive-by / #93 admin health dashboard 页 / **#94 D.4 CF Tunnel / #95 D.1 install.sh / #96 D.5 OPS-deploy-runbook + deploy-smoke CI / #97 D.2 marznode standalone / #98 D.3 Ansible playbook** |
 | **Round 3 mid late-7 batch**(本 PR) | 2026-04-28 | **S-O 正式 batch refresh** | 全 docs 同步 + L-025 + D-016/D-017 |
 
 详细历史信息保留在 git log + 各 PR description + LESSONS/DECISIONS 条目中,STATUS 不再展开。

@@ -29,6 +29,8 @@
 - 上游 Marzneshin 自己出了 AGPL 自检 → 我们的差异化优势消失,转而做更复杂的 deployment audit(广义合规审计)
 - AGPL 在某主权法域被强制注释化 / 替换 → 本工具变成历史代码,差异化 #4 整个重构
 
+**2026-04-28 修订**:D.1-D.5 实操当天并行 ship(#94 D.4 CF Tunnel `b00a9cf` + #95 D.1 install.sh `9787bd4` + #96 D.5 OPS-deploy-runbook + deploy-smoke CI `3a969a7` + #97 D.2 marznode standalone `cfc3b9a` + #98 D.3 Ansible playbook `5f0ca98`,06:03-06:41 UTC 全部 merged),原 "How to apply" 第二条"不并行,不调序"序列约束首版未坚持。**修订**:序列约束推迟到下一波 deploy 工具(若有)再评估,本批 5 PR 并行落地证明 deploy 工具可独立 ship,不必前后依赖 —— 工具间无运行时耦合(install.sh 不 import Ansible,CF Tunnel 不依赖 marznode 安装路径),只共享 `deploy/` README 索引这一处文档冲突点(append-only 解决)。决策本身(差异化 #4 第一件 = AGPL §13 自检 + "compliance-as-feature" 包装路径)仍然成立,**只是序列假设过严**。下一波若再加新 deploy 工具(Kubernetes operator / monitoring overlay 等),先回到本节判断是否需要序列约束 —— 默认 = 并行 ship,除非有运行时依赖链。
+
 ---
 
 ## D-016 | 2026-04-28 | A.4 商业化前端 = admin-on-behalf-of-user checkout(BRIEF option A),不另起 user portal 子项目

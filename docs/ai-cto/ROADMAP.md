@@ -1,9 +1,9 @@
 # 路线图(ROADMAP)
 
-> 最后更新:2026-04-28 late-7 batch(Round 3 mid late-7 — 商业化 5/5 完结 + 差异化 #3 后端闭环 + 差异化 #4 启动)
+> 最后更新:2026-04-28 late-7 batch + cross-review 修补(Round 3 mid late-7 — 商业化 5/5 完结 + 差异化 #3 后端闭环 + **差异化 #4 一体化部署 5/5 当天 5 PR 并行 ship**)
 > 每阶段末尾或重大优先级变化时更新
 >
-> **当前位置**:v0.1 已完成,v0.2 接近 done(SNI ✅ / **计费 MVP 5/5 完结** ✅ / 一键部署进行中:agpl-selfcheck ✅ #88,install.sh + Ansible + CF Tunnel S-D sibling 进行中),v0.3 差异化 #2 已落地(IP 限制 MVP + 生产化),**差异化 #3 Reality 后端 ✅(R.1-R.3),R.4 dashboard sibling agent 进行中**
+> **当前位置**:v0.1 已完成,v0.2 接近 done(SNI ✅ / **计费 MVP 5/5 完结** ✅ / **一键部署引擎 5/5 全 ship** ✅:agpl-selfcheck #88 + install.sh #95 + marznode standalone #97 + Ansible #98 + CF Tunnel #94 + OPS-deploy-runbook + deploy-smoke CI #96),v0.3 差异化 #2 已落地(IP 限制 MVP + 生产化),**差异化 #3 Reality 后端 ✅(R.1-R.3),R.4 dashboard sibling agent 进行中(PR #99)**
 
 ---
 
@@ -15,17 +15,19 @@
 
 ---
 
-## 优先级队列(2026-04-28 late-7 batch 视角)
+## 优先级队列(2026-04-28 late-7 batch + cross-review 修补 视角)
 
-按"现在该推什么"排序,前三件 today-2026-04-28 已并行启动:
+按"现在该推什么"排序,差异化 #4 D.1-D.5 全 ship 后唯一 in-flight 是 R.4:
 
-1. 🔄 **S-R R.4 Reality 审计 dashboard 页**(sibling agent today) — 后端 R.1-R.3 已 production-ready,前端落地后差异化 #3 闭环完成
-2. 🔄 **S-D D.1 install.sh 单节点一键**(sibling agent today) — 差异化 #4 第二件工具,从空 VPS 到面板可访问 ≤15 分钟
-3. 🔄 **S-D D.4 CF Tunnel 自动化**(sibling agent today) — 差异化 #4 第三件工具,Zero Trust API 调用自动建 tunnel
-4. ⏳ **S-D D.2 Ansible playbook**(D.1 后启动) — 多节点部署
-5. ⏳ **A.x 真实 round-trip**(operator 外部任务,需用户行动) — ¥0.01 EPay + USDT 测试网各跑一遍
-6. ⏳ **R.5+ Reality 实时监测**(差异化 #3 v0.3 后段) — Prometheus + Grafana 长期趋势
-7. ⏳ **AuditLog + RBAC SPEC**(决策驱动,需用户提) — 不在自动 queue,等运营触发
+1. 🔄 **S-R R.4 Reality 审计 dashboard 页**(PR #99 open,sibling agent today) — 后端 R.1-R.3 已 production-ready,前端落地后差异化 #3 闭环完成 —— **唯一 in-flight session**
+2. ✅ **S-D D.1 install.sh 单节点一键**(PR #95 `9787bd4` merged) — 差异化 #4 第三件工具
+3. ✅ **S-D D.4 CF Tunnel 自动化**(PR #94 `b00a9cf` merged) — 差异化 #4 第二件工具
+4. ✅ **S-D D.2 marznode standalone node installer**(PR #97 `cfc3b9a` merged) — 差异化 #4 第四件工具
+5. ✅ **S-D D.3 Ansible multi-node playbook**(PR #98 `5f0ca98` merged) — 差异化 #4 第五件工具,多节点部署
+6. ✅ **S-D D.5 OPS-deploy-runbook + deploy-smoke CI**(PR #96 `3a969a7` merged) — 差异化 #4 第六件,五段流程闭环
+7. ⏳ **A.x 真实 round-trip**(operator 外部任务,需用户行动) — ¥0.01 EPay + USDT 测试网各跑一遍
+8. ⏳ **R.5+ Reality 实时监测**(差异化 #3 v0.3 后段) — Prometheus + Grafana 长期趋势
+9. ⏳ **AuditLog + RBAC SPEC**(决策驱动,需用户提) — 不在自动 queue,等运营触发
 
 ---
 
@@ -82,15 +84,17 @@
    - ✅ 41 + 10 单测 mock 网络,CI 离线可跑
    - ⏳ 遗留:SNI rate-limit(slowapi async-def 兼容,LESSONS L-010)/ runbook / 前端单测
 
-2. **一键部署引擎 v1 + 差异化 #4 工具系列**(2-3 周)🔄 **进行中**(差异化 #4 由 D-017 锁定 "agpl-selfcheck → install.sh → Ansible → CF Tunnel" 序列)
+2. **一键部署引擎 v1 + 差异化 #4 工具系列**(2-3 周)✅ **已完工 (D.1-D.5 全 ship)** —— D-017 原序列约束实操证伪(2026-04-28 修订),5 PR 当天并行 merged
    - [x] **D.0 SPEC-deploy.md flesh-out** —— PR #64
    - [x] **agpl-selfcheck.sh**(差异化 #4 第一件工具,AGPL §13 自检) —— PR #88
    - [x] **NOTICE.md fork source URL declaration** —— PR #90(closes AGPL §13 audit gap)
-   - 🔄 **D.1 install.sh 单节点一键**(sibling agent 今日 2026-04-28 启动)
-   - 🔄 **D.4 CF Tunnel 自动化**(sibling agent 今日 2026-04-28 启动)
-   - ⏳ **D.2 Ansible playbook**(D.1 后)
-   - ⏳ `deploy/compose/` 生产 compose(含 postgres + redis + marzneshin + marznode + nginx)
-   - ⏳ OPS-deploy-runbook 完整化(骨架已在 #58)
+   - [x] **D.1 install.sh + compose + .env.example + README**(单节点一键) —— PR #95 `9787bd4`
+   - [x] **D.2 marznode standalone node installer** —— PR #97 `cfc3b9a`
+   - [x] **D.3 Ansible multi-node playbook** —— PR #98 `5f0ca98`
+   - [x] **D.4 Cloudflare Tunnel + Access scripts** —— PR #94 `b00a9cf`
+   - [x] **D.5 OPS-deploy-runbook + deploy-smoke CI**(五段流程闭环) —— PR #96 `3a969a7`
+   - [x] `deploy/compose/` 生产 compose 已在 #95 落地
+   - [x] OPS-deploy-runbook 完整化(骨架 #58 → 完整 #96)
 
 3. **计费系统 MVP**(2-3 周)✅ **完结 — 5/5 端到端跑通**(2026-04-28 late-7)
    - [x] A.1 数据模型 + 状态机 + Admin REST + Admin UI 三页(plans/channels/invoices)—— PR #28-#35
