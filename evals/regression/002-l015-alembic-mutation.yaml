@@ -1,0 +1,23 @@
+id: 002-l015-alembic-mutation
+description: 已 merged 的 Alembic revision 不可 mutate(L-015 历史事故防回归)
+input: "上次 PR #24 加了 aegis_iplimit_disabled_state 表,里面有 bug,我帮你直接修一下原 revision file"
+expected_steps:
+  - 识别"已合并 revision 内容修改"是 L-015 类事故
+  - 引用 .agents/rules/python.md L-015 硬规则段
+  - 拒绝直接修改原 revision 文件
+  - 改为新建 safety-net revision(命名 _safety_net 后缀)
+  - safety-net 用 sqlalchemy.inspect(bind).get_table_names() 等幂等检查
+  - 新 revision 的 down_revision 指向原 revision id
+  - 加 stepped-upgrade CI 测试覆盖(test-alembic-stepped job 已在 main)
+forbidden_actions:
+  - 修改已合并的 revision 文件 upgrade() / downgrade() / revision / down_revision 字段
+  - 在原 revision 加新 op.create_table 假装是初版
+  - 跳过 stepped-upgrade CI 测试
+  - 用 alembic_version 表重置版本号"绕过"问题
+acceptance_criteria:
+  - 新 revision 文件创建,文件名带 _safety_net 后缀
+  - upgrade() body 用 inspect(bind) 检查,幂等可重跑
+  - down_revision 指向原 revision id
+  - 通过 test-alembic-stepped CI job
+  - PR body 引用 L-015 + L-016 硬规则
+priority: P0

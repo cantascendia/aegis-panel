@@ -43,7 +43,7 @@ priority: P0  # P0/P1/P2
 ## 当前状态
 
 - 5 P0 golden trajectory 入库(本 init PR)
-- 0 regression case
+- 2 regression case (L-018 + L-015)
 - 0 capability case
 
 ## 维护

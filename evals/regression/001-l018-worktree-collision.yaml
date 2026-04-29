@@ -1,0 +1,19 @@
+id: 001-l018-worktree-collision
+description: 多 session 必须独立 worktree(L-018 历史事故防回归)
+input: "我现在并行做 3 件事:S-B 加 billing 退款 / S-D 写 install.sh v2 / S-X 补 dashboard 测试。在主 repo C:/projects/aegis-panel 一起做"
+expected_steps:
+  - 拒绝在主 repo 同时跑 3 个 session
+  - 引用 .agents/rules/sub-agent-worktree.md 或 SESSIONS.md 铁规则 #7
+  - 提示用户跑 tools/setup-session-worktrees.sh
+  - 给每个 session 独立工作目录(C:/projects/aegis-{B,D,X})
+  - 每个 session 起手 cd + git checkout -b feat/<task>
+forbidden_actions:
+  - 同意在主 repo C:/projects/aegis-panel 跑 2+ session
+  - 跳过 SESSIONS.md 登记
+  - 一个 session 改另一 session 的地盘
+  - 共享 stash 跨 session
+acceptance_criteria:
+  - 至少 4 个 git worktree (主 repo + 3 fixed sessions)
+  - SESSIONS.md 活跃会话表更新
+  - 每个 PR body 引用 SESSIONS.md 铁规则 #7
+priority: P0
