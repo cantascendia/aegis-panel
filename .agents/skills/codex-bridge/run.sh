@@ -34,11 +34,18 @@ if [ -n "$FORBIDDEN" ] && [ "${FORCE:-0}" != "1" ]; then
   exit 0
 fi
 
-# 2. 业务路径过滤：只 review 业务代码（非纯文档/配置）
+# 2. 业务路径过滤：只 review 业务代码（非纯文档/配置）。SSOT 来自 scripts/business-paths.txt
+BIZ_SSOT="scripts/business-paths.txt"
+if [ -f "$BIZ_SSOT" ]; then
+  BIZ_PATTERN=$(grep -v '^#' "$BIZ_SSOT" | grep -v '^$' | sed 's|^|^|' | tr '\n' '|' | sed 's/|$//')
+else
+  # fallback：SSOT 不存在时用 hardcoded（兼容 generic 项目）
+  BIZ_PATTERN='^(src|app|lib|apps|packages)/'
+fi
 BUSINESS=$(git diff --name-only "${TARGET}~1" "${TARGET}" 2>/dev/null | \
-  grep -E '^(src|app|lib|apps|packages)/' || true)
+  grep -E "$BIZ_PATTERN" || true)
 if [ -z "$BUSINESS" ] && [ "${FORCE:-0}" != "1" ]; then
-  exit 0  # 仅文档改动，不浪费 token
+  exit 0  # 仅文档/配置改动，不浪费 token
 fi
 
 # 3. Debounce：同 commit 不重复 review

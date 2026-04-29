@@ -10,6 +10,12 @@ user-invocable: true
 
 把 Claude Code 任务产物送给 Codex（gpt-5.5）做跨模型八维评审。
 
+## 项目特定配置
+
+业务路径过滤走 SSOT：`scripts/business-paths.txt`（与 `scripts/forbidden-paths.txt` 同模式）。`run.sh` 读取该文件按行首锚定（`^片段`）拼接 grep -E 正则；SSOT 缺失时回落到 upstream playbook 的 generic pattern `^(src|app|lib|apps|packages)/`。
+
+aegis-panel 业务路径：`dashboard/src/`、`hardening/`、`ops/`、`deploy/`、`tests/`、`app/`（Marzneshin upstream 同步区，本 fork 改动也算业务）。新增自研目录时只改 SSOT，不动 `run.sh`。
+
 ## 触发链路
 
 ```
