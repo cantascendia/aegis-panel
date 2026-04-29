@@ -6,6 +6,7 @@ import {
     FileText,
     Home,
     Landmark,
+    ScrollText,
     ShieldAlert,
     ShieldCheck,
     ShoppingCart,
@@ -104,6 +105,12 @@ export const sidebarItems: SidebarObject = {
             title: 'Reality audit',
             to: '/reality',
             icon: <ShieldAlert />,
+            isParent: false,
+        },
+        {
+            title: 'Audit log',
+            to: '/audit',
+            icon: <ScrollText />,
             isParent: false,
         },
         {

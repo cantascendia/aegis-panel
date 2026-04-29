@@ -30,4 +30,5 @@ from __future__ import annotations
 # ruff: noqa: F401  -- imports exist purely to register ORM models.
 
 import hardening.iplimit.db  # aegis_iplimit_{config,override,disabled_state}
+import ops.audit.db  # aegis_audit_events
 import ops.billing.db  # aegis_billing_{plans,channels,invoices,invoice_lines,payment_events}

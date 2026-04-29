@@ -545,6 +545,32 @@
         "timeout": "审计超时（可能 ASN WHOIS 查询缓慢）。请重试，或省略 ASN 以跳过 ASN 校验。",
         "failed": "Reality 审计失败。请查看面板日志获取详情。"
       }
+    },
+    "audit": {
+      "title": "审计日志",
+      "subtitle": "管理员操作历史 — 谁在何时做了什么。",
+      "export_csv": "导出 CSV",
+      "empty": "当前筛选条件下没有审计事件。",
+      "load_error": "加载审计事件失败",
+      "filter": {
+        "actor": "管理员",
+        "result": "结果",
+        "result_any": "全部结果"
+      },
+      "col": {
+        "ts": "时间",
+        "actor": "操作人",
+        "action": "操作",
+        "result": "结果"
+      },
+      "detail": {
+        "title": "审计事件",
+        "subtitle": "解密后的请求/响应快照，仅超级管理员可见。",
+        "before_state": "请求载荷（操作前）",
+        "after_state": "响应载荷（操作后）",
+        "error": "错误信息",
+        "load_error": "加载事件详情失败"
+      }
     }
   },
   "events": {

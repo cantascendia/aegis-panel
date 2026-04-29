@@ -666,6 +666,32 @@
         "timeout": "Audit timed out (likely a slow ASN WHOIS lookup). Try again, or omit the ASN to skip ASN matching.",
         "failed": "Reality audit failed. See panel logs for details."
       }
+    },
+    "audit": {
+      "title": "Audit log",
+      "subtitle": "Admin operation history — who did what and when.",
+      "export_csv": "Export CSV",
+      "empty": "No audit events found matching the current filters.",
+      "load_error": "Failed to load audit events",
+      "filter": {
+        "actor": "Admin",
+        "result": "Result",
+        "result_any": "Any result"
+      },
+      "col": {
+        "ts": "Time",
+        "actor": "Admin",
+        "action": "Action",
+        "result": "Result"
+      },
+      "detail": {
+        "title": "Audit event",
+        "subtitle": "Decrypted before/after state visible to sudo admins only.",
+        "before_state": "Request payload (before)",
+        "after_state": "Response payload (after)",
+        "error": "Error",
+        "load_error": "Failed to load event detail"
+      }
     }
   },
   "events": {

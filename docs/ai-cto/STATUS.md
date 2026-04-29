@@ -1,6 +1,6 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-29 late-7 wave-3 (post-harness-audit)(Harness 健康分 78→94 + 项目治理 3 大文件就位:CONSTITUTION DRAFT / HARNESS-CHANGELOG / evals/ 5 P0;wave-2 batch 后又 ship 5 PR + 3 issue 收口)
+> 最后更新:2026-04-29 late-7 wave-4 (S-AL 审计日志全交付:AL.1–AL.4 4 期闭环,ops/audit/ 7 文件 + 58 单测 + Dashboard 审计页 + Runbook)
 > 更新频率:每 3 轮或重大节点
 
 ---
@@ -24,7 +24,7 @@
 | **S-O 文档守护**(Claude Code × `aegis-O` worktree,part-time) | 累计 #48/#52/#56/#60/#61/#67/#78/#80/#84/#85/#91/#100/#106/#110 + **本批次 wave-3 batch refresh** | **本次触发**(late-7 wave-3 post-harness-audit batch)|
 
 **Pre-kickoff(待用户决策驱动后启动)**:
-- **S-AL** audit-log session: SPEC ✅ ship (PR #101);等 issue #103 4 TBDs 拍板 + CONSTITUTION SEALED 双先决条件
+- **S-AL** audit-log session: ✅ **全交付**(2026-04-29 wave-4) AL.1–AL.4 全 4 期:ops/audit/ 骨架(7 文件) + Alembic 迁移 + middleware 挂载 + retention scheduler + REST endpoint + 58 单测 + Dashboard audit 页(sudo-only) + OPS Runbook;PR 待合(requires-double-review)
 - **S-RB** RBAC session: SPEC ✅ ship (PR #101);等 issue #104 3 TBDs + S-AL 完工双先决条件
 - **S-X-2** R.4 follow-up tests: issue #102 open(4 component tests for reality module),**in-flight 临时 worktree test PR 并行中**(本会话 wave-3 第八波)
 - **S-CI** CI eval-gate workflow: 等 SPEC + 双签(forbidden 路径 `.github/workflows/**`,§32 强制双签);issue 待建
@@ -427,3 +427,6 @@ Round 0 列表的全部 + Round 1 新增:
 | C | **IP 限制(防账号共享)自研**(Hiddify `shared_limit` 算法 port 到 Marzneshin API) | 3-5 天 | 差异化 #2 |
 
 **CTO 建议**:B → A 串行。B 一两天清掉 CI 债让未来每一个 PR 更爽;然后 A 专注商业化 MVP。C 可以委派 Codex worktree 并行做(IP 限制有明确算法参考,适合 Agent 隔离执行)。但最终选哪个应由用户的**运营 deadline** 决定,而不是技术偏好。下轮开工前 CTO 主动问一次
+[2026-04-29T21:41:36+09:00] sub-agent finished
+[2026-04-29T21:41:47+09:00] sub-agent finished
+[2026-04-29T21:45:26+09:00] sub-agent finished
