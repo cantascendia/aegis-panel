@@ -1,0 +1,11 @@
+# Business path SSOT — used by codex-bridge to decide whether to trigger §48 cross-review.
+#
+# Format: 每行一个路径片段(行首匹配 grep -E '^片段')。空行 + # 注释忽略。
+#
+# 项目自研业务路径(aegis-panel = Marzneshin 商业机场硬 fork):
+dashboard/src/
+hardening/
+ops/
+deploy/
+tests/
+app/
