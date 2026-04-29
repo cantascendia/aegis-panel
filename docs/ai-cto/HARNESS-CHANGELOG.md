@@ -7,6 +7,44 @@
 
 ---
 
+## 2026-04-29 — Re-audit post wave-2: 78 → 94 (+16)
+
+**Audit 报告**(`/cto-harness-audit` 第二跑):
+
+- 总分:**94 / 100**(原 78 → +16)
+- 三大缺口全闭环:
+  - ✅ `evals/` 5 P0 trajectory 落地(PR #109 `06db847`)→ 铁律 #12 可执行
+  - ✅ `HARNESS-CHANGELOG.md` 创建(PR #110 `5e718d8`)
+  - ✅ `CONSTITUTION.md` 创建(PR #110 `5e718d8`)— DRAFT 状态,等用户 + senior 双签
+- 八条原则评分变化:
+  - 原则 8 (Durable State + Validation Gates):⚠️ → ✅(+5 分)
+  - 原则 3 (Self-contained):⚠️ → ⚠️ → 后续 chore PR 同步 .claude/skills/ 缺 3 个后转 ✅
+- 三 Agent 模式: 18/20 (planner/generator 显式分层缺,CI eval-runner 调度缺)
+- 反模式规避: 9/10 → 10/10(Eval Gaming 防线启动)
+
+**残余 Top-3 ROI**:
+
+1. ⚠️ `.claude/skills/` 缺 3 个(agpl-compliance / reality-config-audit / sni-selector)→ in-flight chore PR
+2. ⚠️ `.github/workflows/eval-gate.yml` CI 自动调度缺 → 待 SPEC + 双签(forbidden 路径)
+3. ⚠️ CONSTITUTION DRAFT → SEALED 等用户决策
+
+**预计上述 3 项落地后:94 → 99+**。
+
+**本会话 PR 全清单**(2026-04-28 ~ 04-29 wave-2 + wave-3):
+
+- PR #99 R.4 Reality dashboard(差异化 #3 前端闭环)
+- PR #100 / #106 S-O batch refresh ×2
+- PR #101 SPEC-audit-log + SPEC-rbac skeletons
+- PR #105 chore: handbook path fix(ai-guidebook → ai-playbook)
+- PR #107 chore: cto-* commands sync
+- PR #108 chore: bulk playbook sync(agents + skills + rules + output-styles + statusline)
+- PR #109 chore: evals/ init
+- PR #110 docs: CONSTITUTION + HARNESS-CHANGELOG
+
+**新增 issue**: #102 R.4 follow-up tests / #103 audit-log TBDs / #104 RBAC TBDs(各自带决策清单)
+
+---
+
 ## 2026-04-28 — Init: harness audit 78/100,三大缺口启动补齐
 
 **Audit 报告**(`/cto-harness-audit` 跑通):

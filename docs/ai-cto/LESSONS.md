@@ -8,6 +8,34 @@
 
 ---
 
+## L-027 | Round 3 mid late-7 wave-3 | Sub-agent 临时 worktree 并行模式经 7 波验证稳定,可转硬规则
+
+**现象**: 本会话(2026-04-28 ~ 04-29)单 session 内通过 16 次 sub-agent 调度,分 7 波并行(每波 2-5 个 sub-agent),完成 9 PR merge + 3 issue + harness 健康分 78→94。其中 4 波(#3 / #4 / #6 / #8)用临时 worktree(`../aegis-tmp-{slug}`)隔离 git-heavy 操作,主 worktree 0 撞车,sub-agent 之间 0 交叉污染。
+
+**根因**: SESSIONS.md 铁规则 #7 worktree 隔离原本为多 Claude session 设计,但**单 session 内的 sub-agent 也适用**。把 git commit/push/branch-switch 隔离到独立 worktree,主 session 0 的 working tree 不被任何 sub-agent 污染,sub-agent 之间也不撞车(各自的 working tree)。
+
+经 7 波验证(20+ 个临时 worktree create/cleanup):
+- 0 次 branch switch race
+- 0 次 stash 污染
+- 0 次 PR commit 挂错分支
+- L-018 全套事故零复发
+
+**防线**(从 L-026 候选升级为硬规则):
+
+1. 主会话需要并行多 sub-agent 跑 git-heavy 工作时,**先**:
+   `git worktree add ../aegis-tmp-<task> -b <branch>`
+2. Sub-agent prompt 必须**硬编码 cd 到该 worktree**,严禁回主 repo
+3. Sub-agent 完成后,主会话:
+   - merge PR(主 repo 操作)
+   - `git worktree remove ../aegis-tmp-<task>`
+   - `git branch -D <branch>` (远端已 --delete-branch)
+4. 临时 worktree 命名 `aegis-tmp-<slug>`,与 fixed session worktree `aegis-{B,D,F,O,R,X}` 区分(避免误删 fixed session)
+5. 单波并行 sub-agent ≤ 5 个(超过 5 个 token 消耗暴涨,且 main session context 难以同时 review 所有报告)
+
+**沉淀**: ✅ 升级为硬规则,加到 `.agents/rules/git-conventions.md` 或新建 `.agents/rules/sub-agent-worktree.md`(下次 .agents/rules 改动 PR 时落)。SESSIONS.md 铁规则 #7 段已补一段:"sub-agent 内部并行 git-heavy 工作沿用 worktree 隔离原则,临时 worktree 命名带 `aegis-tmp-` 前缀"(本 batch 已落)。
+
+---
+
 ## L-026 | Round 3 mid late-7 wave post-merge | Sub-agent 并行 + 临时 worktree 让 1 session 触发 6 PR + 3 issue 自动收口
 
 **现象**: late-7 wave-2 post-merge batch (本 PR) 中,session 0 在单个会话内通过 5 个 sub-agent 串/并行(2 review + 2 SPEC + 1 调研)+ 后续临时 worktree 隔离的 docs sub-agent + 3 个 gh-only sub-agent,完成: PR #99/#100/#101 (3 个) merge + issue #102/#103/#104 (3 个) 创建 + 后续 batch refresh PR + handbook 路径修复 PR,**用户介入 ≤ 3 次**。

@@ -6,7 +6,7 @@
 > 手册参考:CTO handbook §5(模型路由)、§7(Spec-Driven)、
 > 铁律 #1/#8/#10(决策服务愿景 / 先建分支 / 国际化+环境分离)。
 
-_Updated: 2026-04-28 late-7 wave-2 post-merge(S-O batch 刷新:#99 R.4 + #101 SPEC 双骨架 ship;S-F R.4 双交付完结 + S-F-2 实质合并到 S-F;S-R completed 差异化 #3 全链路闭环;pre-kickoff 行 S-AL/S-RB/S-X-2)_
+_Updated: 2026-04-29 late-7 wave-3 post-harness-audit(S-O batch 刷新:harness 78→94;CONSTITUTION DRAFT + HARNESS-CHANGELOG + evals/ 5 P0 落地;PR #105/#107/#108/#109/#110 ship;S-X reactivated for R.4 tests in-flight via 临时 worktree;S-AL/S-RB pre-kickoff 加 CONSTITUTION SEALED 先决;新增 S-CI pre-kickoff)_
 
 ---
 
@@ -15,19 +15,19 @@ _Updated: 2026-04-28 late-7 wave-2 post-merge(S-O batch 刷新:#99 R.4 + #101 SP
 | 编号 | 名字 | 工具 | 模型 | 地盘(独占) | 当前 PR | 状态 |
 |---|---|---|---|---|---|---|
 | **S-B** | 商业化后端 | Claude Code × `aegis-B` | Opus(money) | `ops/billing/**`, `hardening/panel/middleware.py`(billing rows), Alembic, 相关 tests | A.2.1 #46 ✅;A.2.2 #65 ✅;A.5 #77 ✅;A.3 TRC20 #79 ✅ | ✅ **completed**(后端 5/5 全工)|
-| **S-F** | 商业化前端 + Reality 审计前端 | Claude Code | Sonnet | `dashboard/src/modules/billing/admin-checkout/**`, `dashboard/src/modules/reality/**`(R.4 frontend),相关 i18n / 路由 / sidebar(append-only)| #41/#49/#86/#87/#89 全 ✅ merged(A.4 admin checkout 完结);**#99 ✅ merged(R.4 reality dashboard)** | ✅ **completed**(A.4 admin checkout + R.4 reality dashboard 双交付,差异化 #3 前端闭环;**S-F-2 命名实质合并到 S-F** — 同 session 同时承担 admin checkout + reality dashboard,实操证明拆分非必要)|
+| **S-F** | 商业化前端 + Reality 审计前端 | Claude Code | Sonnet | `dashboard/src/modules/billing/admin-checkout/**`, `dashboard/src/modules/reality/**`(R.4 frontend),相关 i18n / 路由 / sidebar(append-only)| #41/#49/#86/#87/#89 全 ✅ merged(A.4 admin checkout 完结);**#99 ✅ merged(R.4 reality dashboard)**;wave-3 R.4 follow-up tests in-flight(临时 worktree test PR,**不占用 aegis-X**)| ✅ **completed**(A.4 admin checkout + R.4 reality dashboard 双交付,差异化 #3 前端闭环;**S-F-2 命名实质合并到 S-F** — 同 session 同时承担 admin checkout + reality dashboard;wave-3 follow-up tests 用临时 worktree 走,charter 是 S-X 的)|
 | **S-D** | 部署一体化 | Claude Code × `aegis-D` | Opus(SPEC)→Sonnet | `deploy/**`, `docs/ai-cto/SPEC-deploy.md` | #58 OPS skeleton + #64 D.0 SPEC + #88 agpl-selfcheck + #94 D.4 CF + #95 D.1 install.sh + #96 D.5 OPS + smoke CI + #97 D.2 marznode + #98 D.3 Ansible 全 ✅ merged | ✅ **completed**(差异化 #4 一体化部署 5/5 全 ship)|
 | **S-R** | Reality 审计器 | Claude Code × `aegis-R` | Opus(SPEC)→Sonnet | `hardening/reality/**`, `docs/ai-cto/SPEC-reality-audit.md` | R.1 #74 + R.2 #75 + R.3 #76 + R.5 OPS-runbook #82 + **R.4 frontend #99(借 S-F 实施)** | ✅ **completed**(差异化 #3 全链路闭环 5/5,R.1-R.3 后端 + R.5 runbook + R.4 frontend) |
-| **S-X** | 前端测试基建 | Claude Code × `aegis-X` | Sonnet | `dashboard/src/**/*.test.tsx`, `dashboard/src/test-utils/**`, `dashboard/vitest.config.*` | #57/#59/#63 ✅ merged | **暂停**(基础齐了,X.3+ 增量低优先级)|
-| **S-O** | 文档 / 流程 | Claude Code × `aegis-O`(part-time)| Sonnet | `docs/ai-cto/**`(非 SPEC-*), `.agents/rules/**` | #48/#52/#56/#60/#61/#67/#78/#80/#84/#85/#91/#100 ✅ + **本批次 wave-2 post-merge batch** | **触发中**(late-7 wave-2 post-merge batch)|
+| **S-X** | 前端测试基建 | Claude Code × `aegis-X` | Sonnet | `dashboard/src/**/*.test.tsx`, `dashboard/src/test-utils/**`, `dashboard/vitest.config.*` | #57/#59/#63 ✅ merged;**R.4 follow-up tests in-flight**(issue #102,临时 worktree test PR,不动 `aegis-X` 主 worktree)| **in-flight**(从"暂停"激活;wave-3 R.4 4 组件单测走临时 worktree 隔离模式,验证 L-027 sub-agent 临时 worktree pattern)|
+| **S-O** | 文档 / 流程 | Claude Code × `aegis-O`(part-time)| Sonnet | `docs/ai-cto/**`(非 SPEC-*), `.agents/rules/**` | #48/#52/#56/#60/#61/#67/#78/#80/#84/#85/#91/#100/#106/#110 ✅ + **本批次 wave-3 post-harness-audit batch** | **触发中**(late-7 wave-3 post-harness-audit batch)|
 
 ### Pre-kickoff(待用户决策驱动后启动)
 
 | 编号 | 名字 | 触发条件 | 备注 |
 |---|---|---|---|
-| **S-AL** | audit-log 审计日志 session | issue #103 4 TBDs 拍板后启动 | SPEC ✅ ship (PR #101);SPEC `docs/ai-cto/SPEC-audit-log.md` 骨架就位,具体 model/列/写入策略 4 个 TBD 等用户决策 |
+| **S-AL** | audit-log 审计日志 session | issue #103 4 TBDs 拍板 + **CONSTITUTION SEALED** 双先决条件后启动 | SPEC ✅ ship (PR #101);SPEC `docs/ai-cto/SPEC-audit-log.md` 骨架就位,具体 model/列/写入策略 4 个 TBD 等用户决策 |
 | **S-RB** | RBAC 角色权限 session | issue #104 3 TBDs 拍板 + S-AL 完工 双先决条件 | SPEC ✅ ship (PR #101);SPEC `docs/ai-cto/SPEC-rbac.md` 骨架就位;Role/Permission 表 3 TBD;依赖 S-AL 的 audit_log 表 schema |
-| **S-X-2** | R.4 follow-up tests | issue #102 已建,charter 等用户/CTO 派遣 | 4 个 dashboard component test for reality module(R.4 PR #99 落地后 follow-up 单测覆盖)|
+| **S-CI** | CI eval-gate workflow | SPEC + 双签(forbidden 路径 `.github/workflows/**`,§32 强制双签)双先决 | wave-3 新增;`.github/workflows/eval-gate.yml` 自动 trigger evals/ 5 P0 trajectory + regression set,落地铁律 #12 CI 自动调度。issue 待建 |
 
 ## 归档(已完成)
 
@@ -156,6 +156,14 @@ _Updated: 2026-04-28 late-7 wave-2 post-merge(S-O batch 刷新:#99 R.4 + #101 SP
    主 repo 目录(`C:/projects/Marzban`)**留给 session 0**(审阅 + merge 裁判),不在这里写代码。
 
    或者用独立的 `git clone` 到不同目录 —— 更重但隔离最彻底。**禁止在同一个工作目录并发运行 2 个及以上 Claude session**。
+
+   **🆕 sub-agent 内部并行 git-heavy 工作沿用 worktree 隔离原则**(2026-04-29 wave-3 经 7 波 / 16 sub-agent 调度 / 20+ 临时 worktree 验证,L-027 升级为硬规则):
+   - 主会话需要并行多 sub-agent 跑 git-heavy 工作时,先 `git worktree add ../aegis-tmp-<task> -b <branch>`
+   - Sub-agent prompt 必须**硬编码 cd 到该 worktree**,严禁回主 repo
+   - Sub-agent 完成后,主会话:merge PR(主 repo 操作)→ `git worktree remove ../aegis-tmp-<task>` → `git branch -D <branch>` (远端已 --delete-branch)
+   - **临时 worktree 命名带 `aegis-tmp-` 前缀**,与 fixed session worktree `aegis-{B,D,F,O,R,X}` 区分(避免误删 fixed session)
+   - 单波并行 sub-agent ≤ 5 个(超过 5 个 token 消耗暴涨,且 main session context 难以同时 review 所有报告)
+   - 教训来源见 LESSONS.md **L-027**(本会话 13 个临时 worktree 全 cleanup,0 撞车)
 
 ---
 
