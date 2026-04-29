@@ -24,12 +24,26 @@ fi
 
 cat > "$HOOK" <<'EOF'
 #!/usr/bin/env bash
-# §48 codex-bridge pre-commit trigger
-# 异步后台跑 — 不阻塞 commit
+# §48 codex-bridge pre-commit trigger + skills-sync drift check
+set -e
+
+# 1. Skills drift check (blocking — exit 1 阻断 commit)
+SYNC_CHECK="scripts/check-skills-sync.sh"
+if [ -x "$SYNC_CHECK" ]; then
+  if ! bash "$SYNC_CHECK"; then
+    echo ""
+    echo "pre-commit blocked: skills drift detected (see above)."
+    echo "Override with: git commit --no-verify  (only if you know what you're doing)"
+    exit 1
+  fi
+fi
+
+# 2. §48 codex-bridge — 异步后台跑，不阻塞 commit
 RUN_SH=".agents/skills/codex-bridge/run.sh"
 if [ -x "$RUN_SH" ]; then
   ( bash "$RUN_SH" HEAD &> /dev/null & disown 2>/dev/null ) || true
 fi
+
 exit 0
 EOF
 chmod +x "$HOOK"

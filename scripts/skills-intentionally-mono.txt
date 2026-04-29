@@ -1,0 +1,8 @@
+# Skills intentionally maintained in only one of .claude/skills/ or .agents/skills/.
+# One skill per line. Format: <skill-name>:<location>
+# Locations: "claude-only" (only in .claude/skills/) or "agents-only" (only in .agents/skills/).
+
+codex-bridge:agents-only
+# Reason: codex-bridge is the §48 cross-review bridge implementation.
+# Only loaded by Stop hook (.agents/skills/codex-bridge/run.sh), not invoked
+# by main session via Skill tool. Living in .claude/skills/ would mislead.
