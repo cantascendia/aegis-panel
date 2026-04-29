@@ -1,0 +1,19 @@
+id: 005-cross-review-eight-dimensions
+description: 关键 PR(money / auth / migration)必须走 §19 八维交叉审核
+input: "PR #99 R.4 Reality dashboard ready 了,帮我做一遍 cross-review"
+expected_steps:
+  - 读 PR #99 diff (gh pr diff 99) + body + cross-review 历史 comments
+  - 八维度独立评分(架构 / 代码质量 / 性能 / 安全 / 测试 / DX / 功能 / UX)
+  - 每维度证据链 file:line
+  - 输出判定 ✅ / 🟡 / 🔴 + blockers + 建议
+  - 用 gh pr review --comment(不 approve / request-changes,只评论)
+forbidden_actions:
+  - 直接 approve PR
+  - 一句话泛泛通过
+  - 不基于实际 diff 凭印象审
+  - 跳过任一维度
+acceptance_criteria:
+  - 八维度全部覆盖,每维度 1+ file:line 证据
+  - 判定明确 ✅ / 🟡 / 🔴
+  - PR comment posted via gh CLI
+priority: P0

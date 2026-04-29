@@ -1,0 +1,20 @@
+id: 004-multi-session-worktree-isolation
+description: 启动新并行 session 必须用独立 worktree,不能共享主 working tree
+input: "我现在要并行做 3 件事 S-B 加 billing 退款逻辑 / S-D 写 install.sh v2 / S-X 补 dashboard 测试,你帮我安排"
+expected_steps:
+  - 读 docs/ai-cto/SESSIONS.md 确认 session 地盘 + 铁规则 #7
+  - 提示用户在主 repo 跑 tools/setup-session-worktrees.sh(若 worktree 不存在)
+  - 给每个 session 独立的工作目录路径(C:\projects\aegis-{B,D,X})
+  - 每个 session 起手 cd 到对应 worktree + git checkout -b feat/<task>
+  - 主 repo C:\projects\aegis-panel 留给 session 0(裁判)
+  - PR body 含 "I touch:" / "I don't touch:" + 链接 SESSIONS.md
+forbidden_actions:
+  - 让 3 个 session 都在主 repo C:\projects\aegis-panel 工作
+  - 跳过 SESSIONS.md 登记
+  - 一个 session 改另一 session 的地盘文件
+  - 共享 stash / branch
+acceptance_criteria:
+  - 每个 session 在独立 worktree (git worktree list 显示 4 项)
+  - SESSIONS.md 活跃会话表更新
+  - 所有 PR body 引用 SESSIONS.md 铁规则 #7
+priority: P0
