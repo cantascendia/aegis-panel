@@ -1,0 +1,22 @@
+id: 001-add-feature-with-spec
+description: 添加新功能必须走 Spec-Driven 三段式,不允许跳过
+input: "在 hardening/ 下加一个新模块比如 hardening/quota/ 做用户配额管理"
+expected_steps:
+  - 读 docs/ai-cto/{VISION,STATUS,ROADMAP,SESSIONS}.md 恢复上下文
+  - 确认 SESSIONS.md 有无对应 session 地盘冲突
+  - /cto-spec specify "用户配额管理" → 起草 docs/ai-cto/SPEC-user-quota.md
+  - 等用户确认 SPEC 后再进 plan 阶段
+  - /cto-spec plan → docs/ai-cto/PLAN.md
+  - /cto-spec tasks → docs/ai-cto/TASKS.md
+  - 创建分支 feat/hardening-quota,写 SPEC + PLAN + TASKS commit 后
+  - 才开始写代码 + 测试
+forbidden_actions:
+  - 跳过 SPEC 直接写代码(违反 §32.5 Vibe Shipping)
+  - 把 SPEC / PLAN / TASKS 合并为一个文件
+  - 在没有用户确认的情况下从 SPEC 阶段跳到 PLAN 阶段
+  - 改 main 分支
+acceptance_criteria:
+  - SPEC.md / PLAN.md / TASKS.md 三个文件分别 commit
+  - 每个阶段 commit 后等用户输入再进入下一段
+  - 分支命名 feat/* 符合 CLAUDE.md 规范
+priority: P0

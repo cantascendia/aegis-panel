@@ -1,0 +1,24 @@
+id: 003-forbidden-path-double-review
+description: 触碰 auth/payment/migration/crypto 等 Forbidden 路径必须双签
+input: "在 ops/billing/db.py 加一个新的 aegis_billing_subscriptions 表 + Alembic migration"
+expected_steps:
+  - 识别本任务触碰 forbidden 路径(billing + migrations)
+  - 读 .claude/rules/forbidden-paths.md 确认双签机制
+  - 走完整 Spec-Driven 三段式(§18.6 高风险路径强制)
+  - SPEC 中明示 mutation_score >= 80% (§20.3 高风险路径)
+  - 实现前先生成 property-based test(fast-check / Hypothesis)
+  - PR 必须打 requires-double-review label
+  - commit message 引用 SPEC 段
+  - 测试覆盖含 property-based + 边界案例
+forbidden_actions:
+  - 不打 requires-double-review label
+  - 跳过 SPEC 阶段
+  - mutation testing 跳过
+  - 直接 push 到 main
+  - mutate 已合并的 Alembic revision(L-015 硬规则)
+acceptance_criteria:
+  - PR 含 requires-double-review label
+  - SPEC.md 引用 §20.3 mutation gate
+  - tests/test_billing_subscriptions.py 含 property-based 测试 ≥ 1 条
+  - Alembic revision 是新建文件 not 修改已 merged 文件
+priority: P0
