@@ -1,3 +1,10 @@
+---
+name: cto-audit
+description: Playbook 自审质检 — 检查交叉引用 / 命令清单一致性 / 章节计数 / 术语统一性
+allowed-tools: ["Read", "Glob", "Grep", "Bash(*)"]
+model: opus
+disable-model-invocation: false
+---
 # Playbook 自审质检
 
 对 ai-playbook 仓库本身进行完整质量审核。

@@ -6,8 +6,22 @@
 
 ## 完整手册
 
-CTO 操作手册（§1-§29，工作流程、输出格式、配置规范、决策框架、项目集成教程）见：
-`C:/projects/ai-playbook/playbook/handbook.md`
+CTO 操作手册见 ai-playbook 仓库的 `playbook/handbook.md`。
+
+**Claude 在本机查找手册的顺序**（用 Read 工具按序尝试，第一个成功即用）：
+
+1. `~/.claude/playbook/handbook.md` — 推荐（symlink 或 clone 到此）
+2. `~/ai-playbook/playbook/handbook.md`
+3. `~/projects/ai-playbook/playbook/handbook.md`
+4. `C:/projects/ai-playbook/playbook/handbook.md`（Windows 常用）
+5. 下方 LINK 区块中的本机缓存路径
+
+<!-- AI-PLAYBOOK-LINK:START — 由 /cto-link 自动维护，勿手改 -->
+<!-- 本机已发现路径：C:/projects/ai-playbook/playbook/handbook.md -->
+<!-- AI-PLAYBOOK-LINK:END -->
+
+> ⚠️ 如以上全部读取失败：运行 `/cto-link [可选绝对路径]`，命令会探测并写入本机路径。
+> 详见手册 §29.8 多机器配置。
 
 ## 项目记忆
 
