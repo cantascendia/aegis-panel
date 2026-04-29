@@ -124,6 +124,31 @@ describe("AuditSummaryCard", () => {
         ).toBeInTheDocument();
     });
 
+    it("shows em-dash for worst-score when total=0 (issue #119, not 100)", () => {
+        // Regression for issue #119 (codex cross-review on PR #99).
+        // The backend uses worst_score=100 as its empty-state sentinel.
+        // Rendering a literal "100" next to "0 targets" reads as a
+        // perfect audit result — exactly the wrong signal for an
+        // operator who has not yet configured any Reality inbounds.
+        // The card must show an em-dash placeholder instead.
+        renderCard({
+            summary: makeSummary({
+                total: 0,
+                green: 0,
+                yellow: 0,
+                red: 0,
+                worst_score: 100, // backend empty sentinel
+            }),
+        });
+        // Em-dash placeholder visible.
+        expect(screen.getByText("—")).toBeInTheDocument();
+        // No grade tooltip in the empty case.
+        expect(screen.queryByTitle(/grade=/)).not.toBeInTheDocument();
+        // Critically: the literal sentinel "100" must not surface as
+        // the worst-score value.
+        expect(screen.queryByText("100")).not.toBeInTheDocument();
+    });
+
     it("shows green when worst_score is 100 (perfect)", () => {
         renderCard({
             summary: makeSummary({ total: 5, green: 5, worst_score: 100 }),

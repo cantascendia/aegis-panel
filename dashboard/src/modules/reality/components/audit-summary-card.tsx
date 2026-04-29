@@ -119,7 +119,18 @@ export const AuditSummaryCard: FC<AuditSummaryCardProps> = ({
                     />
                     <SummaryStat
                         label={worstText}
-                        value={summary.worst_score}
+                        // total === 0 means the audit has no targets.
+                        // The backend uses worst_score=100 as its
+                        // empty-state sentinel, but rendering a literal
+                        // "100" next to "0 targets" reads as a perfect
+                        // result (security theater — see issue #119).
+                        // Show an em-dash instead so operators
+                        // immediately see "no data", not "all green".
+                        value={
+                            summary.total === 0
+                                ? "—"
+                                : summary.worst_score
+                        }
                         accent={
                             summary.total === 0
                                 ? "text-muted-foreground"
@@ -139,7 +150,9 @@ export const AuditSummaryCard: FC<AuditSummaryCardProps> = ({
 
 interface SummaryStatProps {
     label: string;
-    value: number;
+    // Accepts a string fallback for empty-state placeholder ("—")
+    // alongside the normal numeric counts.
+    value: number | string;
     accent: string;
     title?: string;
 }
