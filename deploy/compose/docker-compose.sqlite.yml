@@ -26,12 +26,15 @@ services:
       - -c
       - |
         alembic upgrade head && exec python main.py
+    # /api/system/info doesn't exist on Marzneshin upstream — first real
+    # deploy (2026-04-30) found this path 404s. /openapi.json is the
+    # FastAPI auto-generated route, present on every upstream version.
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${PANEL_PORT:-8443}/api/system/info || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${PANEL_PORT:-8443}/openapi.json -o /dev/null || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -51,12 +54,22 @@ services:
     environment:
       SERVICE_ADDRESS: "127.0.0.1"
       SERVICE_PORT: "${MARZNODE_GRPC_PORT:-62051}"
+      # INSECURE=True is documented in marznode but does NOT skip
+      # the panel-issued client cert check. mTLS is mandatory; the
+      # certificate file must be present at boot. install.sh fetches
+      # it via panel /api/nodes/settings and writes to the host path
+      # mounted at /etc/marzneshin below.
       INSECURE: "True"
+      SSL_CLIENT_CERT_FILE: "/etc/marzneshin/ssl_client_cert.pem"
       XRAY_EXECUTABLE_PATH: "/usr/local/bin/xray"
       XRAY_ASSETS_PATH: "/usr/local/lib/xray"
       XRAY_CONFIG_PATH: "/var/lib/marznode/xray_config.json"
     volumes:
       - /opt/aegis/data/marznode:/var/lib/marznode
+      # marznode generates its own server keypair into /etc/marzneshin
+      # on first boot AND reads SSL_CLIENT_CERT_FILE from there. The
+      # host directory is created by install.sh step 6.
+      - /opt/aegis/data/marznode-ssl:/etc/marzneshin
     depends_on:
       panel:
         condition: service_healthy

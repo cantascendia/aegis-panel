@@ -97,7 +97,7 @@ render_env_template() {
     "${XRAY_SUBSCRIPTION_PATH:-}"
     "${ADMIN_USERNAME:-admin}"
     "${ADMIN_PASSWORD:-}"
-    "${DATABASE_URL:-sqlite:////opt/aegis/data/panel/db.sqlite3}"
+    "${DATABASE_URL:-sqlite:////var/lib/marzneshin/db.sqlite3}"
     "${CF_TUNNEL_ENABLED:-false}"
     "${CF_TUNNEL_NAME:-}"
   )

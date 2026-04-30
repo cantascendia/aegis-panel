@@ -114,12 +114,17 @@ services:
         condition: service_healthy
       alembic:
         condition: service_completed_successfully
+    # /api/system/info doesn't exist on Marzneshin upstream (404).
+    # Use /openapi.json — FastAPI auto-generated, present everywhere.
+    # Must match deploy/install/lib/health.sh:wait_for_panel_health URL
+    # and deploy/compose/docker-compose.sqlite.yml healthcheck (codex
+    # P1 on commit e5b8dc2: postgres path was missed in earlier fix).
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${PANEL_PORT:-8443}/api/system/info || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${PANEL_PORT:-8443}/openapi.json -o /dev/null || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 60s
     deploy:
       resources:
         limits:
