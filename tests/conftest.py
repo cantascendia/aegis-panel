@@ -118,10 +118,17 @@ def db_session() -> Generator[Session, None, None]:
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.pool import StaticPool
 
-    # Import the aggregator FIRST so every fork-owned model class
-    # registers against ``Base.metadata`` before ``create_all`` reads
-    # the registry. ``noqa: F401`` — side-effect import.
-    import app.db.extra_models  # noqa: F401
+    import app.db.extra_models  # noqa: F401  fork-owned tables
+
+    # Import upstream models FIRST (registers ``users`` / ``admins`` /
+    # ``nodes`` etc. against ``Base.metadata``); fork-owned models in
+    # ``billing``/``iplimit`` carry foreign keys to ``users.id`` and
+    # will raise ``NoReferencedTableError`` from ``create_all`` if
+    # the upstream table isn't registered yet (codex review P2 on
+    # commit 51b9dff). Import the aggregator AFTER so every fork
+    # model class registers too. Both are side-effect-only — F401
+    # silences ruff's unused-import.
+    import app.db.models  # noqa: F401  upstream tables
     from app.db.base import Base
 
     engine = create_engine(

@@ -98,9 +98,7 @@ def audit_retention_sweep(session: Session) -> int:
         return 0
     days = retention_days()
     cutoff = _now_utc_naive() - timedelta(days=days)
-    result = session.execute(
-        delete(AuditEvent).where(AuditEvent.ts < cutoff)
-    )
+    result = session.execute(delete(AuditEvent).where(AuditEvent.ts < cutoff))
     session.commit()
     deleted = result.rowcount or 0
     if deleted:
@@ -139,7 +137,7 @@ async def run_audit_retention_sweep() -> None:
 # ---------------------------------------------------------------------
 
 
-def install_audit_scheduler(app: "FastAPI") -> None:
+def install_audit_scheduler(app: FastAPI) -> None:
     """Wire the audit retention sweep into the FastAPI app's lifespan.
 
     One job: ``aegis-audit-retention-sweep`` — daily at 03:00 UTC.
@@ -179,7 +177,7 @@ def install_audit_scheduler(app: "FastAPI") -> None:
     )
 
     @asynccontextmanager
-    async def lifespan_with_audit(app_: "FastAPI"):
+    async def lifespan_with_audit(app_: FastAPI):
         async with original_lifespan(app_):
             scheduler.start()
             logger.info(

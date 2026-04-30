@@ -41,7 +41,7 @@ def reset_env(monkeypatch: pytest.MonkeyPatch):
     crypto._reload_for_tests()
 
 
-def _make_event(session: "Session", ts_offset_days: int) -> int:
+def _make_event(session: Session, ts_offset_days: int) -> int:
     """Insert a minimal AuditEvent row at now - ts_offset_days days.
     Returns the inserted id."""
     from ops.audit.db import (
@@ -81,7 +81,7 @@ def _make_event(session: "Session", ts_offset_days: int) -> int:
 
 
 def test_sweep_deletes_rows_older_than_retention(
-    db_session: "Session",
+    db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
@@ -105,7 +105,7 @@ def test_sweep_deletes_rows_older_than_retention(
 
 
 def test_sweep_keeps_all_rows_when_retention_far_exceeds_age(
-    db_session: "Session",
+    db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("AUDIT_RETENTION_DAYS", "365")
@@ -125,7 +125,7 @@ def test_sweep_keeps_all_rows_when_retention_far_exceeds_age(
 
 
 def test_sweep_idempotent(
-    db_session: "Session",
+    db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Re-running the sweep deletes nothing more — DELETE WHERE is
@@ -151,7 +151,7 @@ def test_sweep_idempotent(
 
 
 def test_sweep_short_circuits_when_audit_disabled(
-    db_session: "Session",
+    db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """RETENTION_DAYS=0 → no SQL issued; rows remain even though
@@ -169,11 +169,13 @@ def test_sweep_short_circuits_when_audit_disabled(
 
     from ops.audit.db import AuditEvent
 
-    assert db_session.query(AuditEvent).filter_by(id=pre_existing_id).count() == 1
+    assert (
+        db_session.query(AuditEvent).filter_by(id=pre_existing_id).count() == 1
+    )
 
 
 def test_sweep_short_circuits_when_retention_negative(
-    db_session: "Session",
+    db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Negative retention clamps to 0 (config layer), so sweep behaves
@@ -193,7 +195,7 @@ def test_sweep_short_circuits_when_retention_negative(
 
 
 def test_sweep_on_empty_table(
-    db_session: "Session",
+    db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
@@ -210,7 +212,7 @@ def test_sweep_on_empty_table(
 
 
 def test_sweep_cutoff_is_strictly_less_than(
-    db_session: "Session",
+    db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Rows at ``ts == cutoff`` (exactly 30d old, retention=30) are
@@ -247,21 +249,41 @@ def test_sweep_cutoff_is_strictly_less_than(
     boundary_ts = frozen_now - timedelta(days=30)  # exactly at cutoff
     over_ts = frozen_now - timedelta(days=30, seconds=1)  # 1s past cutoff
     boundary = AuditEvent(
-        actor_id=1, actor_type="sudo_admin", actor_username="sudo",
-        action="t", method="POST", path="/t",
-        target_type=None, target_id=None,
-        before_state_encrypted=None, after_state_encrypted=None,
-        result="success", status_code=200, error_message=None,
-        ip="127.0.0.1", user_agent=None, request_id=None,
+        actor_id=1,
+        actor_type="sudo_admin",
+        actor_username="sudo",
+        action="t",
+        method="POST",
+        path="/t",
+        target_type=None,
+        target_id=None,
+        before_state_encrypted=None,
+        after_state_encrypted=None,
+        result="success",
+        status_code=200,
+        error_message=None,
+        ip="127.0.0.1",
+        user_agent=None,
+        request_id=None,
         ts=boundary_ts,
     )
     over = AuditEvent(
-        actor_id=1, actor_type="sudo_admin", actor_username="sudo",
-        action="t", method="POST", path="/t",
-        target_type=None, target_id=None,
-        before_state_encrypted=None, after_state_encrypted=None,
-        result="success", status_code=200, error_message=None,
-        ip="127.0.0.1", user_agent=None, request_id=None,
+        actor_id=1,
+        actor_type="sudo_admin",
+        actor_username="sudo",
+        action="t",
+        method="POST",
+        path="/t",
+        target_type=None,
+        target_id=None,
+        before_state_encrypted=None,
+        after_state_encrypted=None,
+        result="success",
+        status_code=200,
+        error_message=None,
+        ip="127.0.0.1",
+        user_agent=None,
+        request_id=None,
         ts=over_ts,
     )
     db_session.add_all([boundary, over])
