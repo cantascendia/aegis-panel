@@ -31,6 +31,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Initialize shared summary buffer
+        shell: bash
+        run: |
+          # Shared file across steps (GITHUB_STEP_SUMMARY is per-step).
+          # Each subsequent bash step appends here; final step reads it.
+          echo "EVAL_GATE_SUMMARY=${RUNNER_TEMP}/eval-gate-summary.md" >> "$GITHUB_ENV"
+          : > "${RUNNER_TEMP}/eval-gate-summary.md"
+
       - name: Detect evals/ touch in PR diff
         id: check_evals
         shell: bash
@@ -38,24 +46,22 @@ jobs:
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           HEAD_SHA="${{ github.event.pull_request.head.sha }}"
           TOUCHED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -E '^evals/' || true)
-          if [ -z "$TOUCHED" ]; then
-            echo "evals_touched=false" >> "$GITHUB_OUTPUT"
-            {
-              echo "## eval-gate (advisory)"
-              echo ""
+          {
+            echo "## eval-gate (advisory)"
+            echo ""
+            if [ -z "$TOUCHED" ]; then
               echo "⚠️ This PR modifies harness configs but does **not** touch \`evals/\` — 铁律 #12 candidate."
               echo ""
               echo "_Advisory only — merge is not blocked. After 2026-05-14 this becomes enforced (per SPEC)._"
-              echo ""
-            } >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "✅ PR touches \`evals/\` — gate satisfied."
+            fi
+            echo ""
+          } | tee -a "$EVAL_GATE_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$TOUCHED" ]; then
+            echo "evals_touched=false" >> "$GITHUB_OUTPUT"
           else
             echo "evals_touched=true" >> "$GITHUB_OUTPUT"
-            {
-              echo "## eval-gate (advisory)"
-              echo ""
-              echo "✅ PR touches \`evals/\` — gate satisfied."
-              echo ""
-            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Run parser on golden-trajectories
@@ -70,7 +76,7 @@ jobs:
           {
             echo "$OUTPUT"
             echo ""
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$EVAL_GATE_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
           echo "exit_status=$STATUS" >> "$GITHUB_OUTPUT"
           # Advisory: do NOT propagate failure to job exit
           exit 0
@@ -89,22 +95,24 @@ jobs:
             echo "---"
             echo ""
             echo "_Posted by [eval-gate workflow](.github/workflows/eval-gate.yml) (advisory mode)_"
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$EVAL_GATE_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
           echo "exit_status=$STATUS" >> "$GITHUB_OUTPUT"
           exit 0
 
       - name: Post PR comment with summary
         if: github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v7
+        env:
+          EVAL_GATE_SUMMARY: ${{ env.EVAL_GATE_SUMMARY }}
         with:
           script: |
             const fs = require('fs');
-            const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+            const summaryPath = process.env.EVAL_GATE_SUMMARY;
             let body = '<!-- eval-gate -->\n';
             try {
               body += fs.readFileSync(summaryPath, 'utf8');
             } catch (e) {
-              body += '_(failed to read step summary: ' + e.message + ')_';
+              body += '_(failed to read shared summary buffer: ' + e.message + ')_';
             }
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
