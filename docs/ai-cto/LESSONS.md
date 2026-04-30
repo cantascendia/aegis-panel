@@ -8,6 +8,98 @@
 
 ---
 
+## L-032 | Round 3 mid late-8 first-real-deploy panel↔marznode | gRPC mTLS 链断,xray clients 永远空,user 全断
+
+**现象**: friend_b 试了 30min Reality 节点,流量统计停在 0.01GB,客户端报"连接超时,没有信号"。我自己手机也连不上(在日本 → 排除 GFW)。深查发现:
+
+1. ✅ xray :443 LISTEN
+2. ✅ ufw 防火墙允许 443
+3. ✅ 内外网 TCP connect 443 都 OK
+4. ❌ `xray_config.json` 里 `"clients": []` **永远是空的**
+5. ❌ panel 报 `node msg: "timeout"` (gRPC 调 marznode AlterInbound 超时)
+6. ❌ marznode 报 `ConnectionRefusedError ('127.0.0.1', 8080)` xray 反复 stopped/started
+
+**根因 5 层洋葱**:
+
+```
+表层:        客户端 "超时 / 没信号"
+第 1 层:     xray Reality 拒绝任何 UUID handshake (clients=[])
+第 2 层:     panel 创建 user 时 UUID 没推到 xray
+第 3 层:     panel.gRPC(marznode).AlterInbound 调用超时
+第 4 层:     panel ↔ marznode mTLS 双向认证不对称
+第 5 层:     install.sh 缺一步 — marznode 自动生成的 server cert
+            panel 不信任,gRPC TLS 握手成功但 streaming 失败
+```
+
+**真正的 install.sh 设计缺陷**:
+
+```
+install.sh step 7 (我之前 PR #140 加的) 只做了:
+  panel → /api/nodes/settings → 拿 panel 的 client cert
+  → 写到 marznode 的 SSL_CLIENT_CERT_FILE
+
+漏了反方向:
+  marznode → 启动时 self-sign 一个 server cert
+  → panel 需要 trust 这个 cert 才能调 gRPC
+  → 但 panel 不知道 marznode 的 server cert
+  → 即使 TCP 握手成功 mTLS handshake 失败 → AlterInbound 超时
+```
+
+**实战 Work-around**(B 阶段不修 mTLS,直接绕):
+
+每次创建/删除 user 后,**手动**把 user UUID inject 到 xray_config.json:
+
+```bash
+# 拿 user UUID (从订阅 URL base64 decode 提取)
+UUID=$(curl -s "http://127.0.0.1:8443/sub/$user/$key" \
+  -H "User-Agent: v2rayN" | base64 -d | grep -oP "vless://[a-f0-9-]+" | \
+  head -1 | cut -d/ -f3)
+
+# inject 到 xray_config.json (jq 操作)
+jq ".inbounds[0].settings.clients += [{\"id\":\"$UUID\",\"flow\":\"\",\"email\":\"$user\"}]" \
+   /opt/aegis/data/marznode/xray_config.json > /tmp/x.json && \
+   mv /tmp/x.json /opt/aegis/data/marznode/xray_config.json
+
+# 重启 marznode → xray 重读 config → clients 数组生效
+docker restart aegis-marznode
+```
+
+**关键陷阱**:
+
+1. **每次 PUT /api/nodes/{id}/xray_config**(panel API 改 SNI / inbound)→ panel 试图给 marznode push 新 config → 超时 → marznode 重启 → **clients 被清空** → user 全断
+2. **每次 marznode 重启** → 读 host 文件 `xray_config.json` → 如果文件 clients=[] → 空载启动 → user 全断
+3. **"node status: healthy"** 是 panel 看 TCP connect OK 给的,**不代表 gRPC 真通**。msg 字段才是真信号(`"timeout"` = bug)
+
+**永久修复路径**(C 阶段做):
+
+1. 修 `app/marznode/grpclib.py` 的 mTLS 双向证书逻辑:
+   - panel 启动时把自己 CA 发给 marznode (新 endpoint /api/nodes/{id}/ca)
+   - marznode 用 panel CA 签 server cert (不再 self-signed)
+   - panel 信任所有 panel-CA 签的 cert
+2. install.sh step 7.5 加 gRPC reachability 验证(不只是 TCP):
+   - panel 调 marznode FetchUsersStats RPC,wait 30s,fail = exit 5
+3. 给 upstream Marzneshin 提 issue: `INSECURE=True` 应该真禁 mTLS, 不是只是文档不要
+
+**B 阶段 work-around 自动化**:
+
+`tools/aegis-sync-clients.sh` (本 PR 新增) — 单命令同步 panel users → xray clients:
+
+```bash
+aegis-sync-clients   # 拉 panel 全部 users → inject 到 xray_config.json → 重启 marznode
+```
+
+每次 admin 在 panel 创建 user 后手动跑一次。或者 cron 每 5 分钟跑(client 列表幂等)。
+
+**沉淀**: ✅ 本 entry + `tools/aegis-sync-clients.sh` 脚本(本 PR ship)。
+
+`.agents/rules/marznode-grpc-broken-known-issue.md` 候选 — "Marzneshin upstream `dawsh/marznode` 镜像 mTLS 不对称已知 bug,B 阶段用 sync-clients work-around,C 阶段自构 panel 镜像修 grpclib"。
+
+**关联**: L-030 (install.sh 6 bugs), L-031 (SNI selection),  
+PR #140 (install fixes), PR #141 (L-031),  
+本 PR (L-032 + sync-clients).
+
+---
+
 ## L-031 | Round 3 mid late-8 first-real-deploy SNI selection | 改 Reality SNI 必先验"国内可达 + TLS 1.3 + H2 三件套",社区共识不能盲信
 
 **现象**:首次给 friend_b 配 Reality 节点,SNI 我**两次都选错**:
