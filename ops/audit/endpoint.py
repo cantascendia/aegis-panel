@@ -108,7 +108,9 @@ def list_audit_events(
     result: Annotated[str | None, Query()] = None,
     since: Annotated[datetime | None, Query()] = None,
     until: Annotated[datetime | None, Query()] = None,
-    limit: Annotated[int, Query(ge=1, le=_MAX_LIST_LIMIT)] = _DEFAULT_LIST_LIMIT,
+    limit: Annotated[
+        int, Query(ge=1, le=_MAX_LIST_LIMIT)
+    ] = _DEFAULT_LIST_LIMIT,
     cursor: Annotated[int | None, Query()] = None,
 ) -> AuditEventListResponse:
     """List audit events with filters + cursor pagination.
@@ -139,42 +141,12 @@ def list_audit_events(
     )
 
 
-@router.get("/events/{event_id}", response_model=AuditEventDetail)
-def get_audit_event(
-    event_id: int,
-    db: DBDep,
-    admin: SudoAdminDep,  # noqa: ARG001
-) -> AuditEventDetail:
-    """Single audit row with decrypted ``before_state`` / ``after_state``.
-
-    Sudo-only: cleartext state diffs (post-redact) only flow to
-    operators who hold the encryption key path. Decryption failure
-    propagates as 500 with ``AuditMisconfigured`` message — that's
-    the right default; an audit reader getting silently-empty diffs
-    would mask a key-rotation incident.
-    """
-    row = db.get(AuditEvent, event_id)
-    if row is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"audit event {event_id} not found",
-        )
-    summary = AuditEventSummary.model_validate(row)
-    try:
-        before = decrypt_audit_payload(row.before_state_encrypted)
-        after = decrypt_audit_payload(row.after_state_encrypted)
-    except AuditMisconfigured as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"audit decrypt failed: {exc}",
-        ) from exc
-    return AuditEventDetail(
-        **summary.model_dump(),
-        before_state=before,
-        after_state=after,
-    )
-
-
+# IMPORTANT: register the static ``/events/export.csv`` route BEFORE
+# the dynamic ``/events/{event_id}`` route. FastAPI matches in
+# registration order; if the dynamic route comes first, a request
+# for ``/events/export.csv`` matches ``{event_id}`` and gets a 422
+# int-parsing error instead of streaming the CSV (codex review P2 on
+# commit 6f0d04b — the dynamic route shadowed the static one).
 @router.get("/events/export.csv")
 def export_audit_events_csv(
     db: DBDep,
@@ -215,11 +187,21 @@ def export_audit_events_csv(
         writer = csv.writer(buf)
         writer.writerow(
             [
-                "id", "ts", "actor_username", "actor_type",
-                "action", "method", "path",
-                "target_type", "target_id",
-                "result", "status_code", "error_message",
-                "ip", "user_agent", "request_id",
+                "id",
+                "ts",
+                "actor_username",
+                "actor_type",
+                "action",
+                "method",
+                "path",
+                "target_type",
+                "target_id",
+                "result",
+                "status_code",
+                "error_message",
+                "ip",
+                "user_agent",
+                "request_id",
             ]
         )
         yield buf.getvalue()
@@ -254,4 +236,44 @@ def export_audit_events_csv(
     }
     return StreamingResponse(
         _generate(), media_type="text/csv", headers=headers
+    )
+
+
+@router.get("/events/{event_id}", response_model=AuditEventDetail)
+def get_audit_event(
+    event_id: int,
+    db: DBDep,
+    admin: SudoAdminDep,  # noqa: ARG001
+) -> AuditEventDetail:
+    """Single audit row with decrypted ``before_state`` / ``after_state``.
+
+    Sudo-only: cleartext state diffs (post-redact) only flow to
+    operators who hold the encryption key path. Decryption failure
+    propagates as 500 with ``AuditMisconfigured`` message — that's
+    the right default; an audit reader getting silently-empty diffs
+    would mask a key-rotation incident.
+
+    Registered AFTER ``/events/export.csv`` so the dynamic
+    ``{event_id}`` matcher doesn't consume the static path (codex
+    review P2 fix).
+    """
+    row = db.get(AuditEvent, event_id)
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"audit event {event_id} not found",
+        )
+    summary = AuditEventSummary.model_validate(row)
+    try:
+        before = decrypt_audit_payload(row.before_state_encrypted)
+        after = decrypt_audit_payload(row.after_state_encrypted)
+    except AuditMisconfigured as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"audit decrypt failed: {exc}",
+        ) from exc
+    return AuditEventDetail(
+        **summary.model_dump(),
+        before_state=before,
+        after_state=after,
     )

@@ -26,7 +26,7 @@ def _fresh_key() -> str:
 
 
 def _make_event(
-    session: "Session",
+    session: Session,
     *,
     actor_username: str = "alice",
     actor_type: str = "admin",
@@ -99,7 +99,7 @@ def _make_app(monkeypatch: pytest.MonkeyPatch, db_session):
 
 
 def test_list_returns_empty_when_no_rows(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     client = _make_app(monkeypatch, db_session)
     resp = client.get("/api/audit/events")
@@ -111,7 +111,7 @@ def test_list_returns_empty_when_no_rows(
 
 
 def test_list_returns_rows_newest_first(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _make_event(db_session, ts_offset_minutes=10)  # older
     _make_event(db_session, ts_offset_minutes=0)  # newer
@@ -126,7 +126,7 @@ def test_list_returns_rows_newest_first(
 
 
 def test_list_filter_by_actor_username(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _make_event(db_session, actor_username="alice")
     _make_event(db_session, actor_username="bob")
@@ -139,7 +139,7 @@ def test_list_filter_by_actor_username(
 
 
 def test_list_filter_by_action_substring(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _make_event(db_session, action="billing.plan.update")
     _make_event(db_session, action="iplimit.policy.delete")
@@ -152,7 +152,7 @@ def test_list_filter_by_action_substring(
 
 
 def test_list_filter_by_result(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _make_event(db_session, result="success", status_code=200)
     _make_event(db_session, result="denied", status_code=403)
@@ -166,10 +166,11 @@ def test_list_filter_by_result(
 
 
 def test_list_cursor_pagination(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Page through 5 rows with limit=2."""
-    ids = [_make_event(db_session) for _ in range(5)]
+    for _ in range(5):
+        _make_event(db_session)
     client = _make_app(monkeypatch, db_session)
 
     resp1 = client.get("/api/audit/events?limit=2")
@@ -177,19 +178,23 @@ def test_list_cursor_pagination(
     assert body1["total_returned"] == 2
     assert body1["next_cursor"] is not None
 
-    resp2 = client.get(f"/api/audit/events?limit=2&cursor={body1['next_cursor']}")
+    resp2 = client.get(
+        f"/api/audit/events?limit=2&cursor={body1['next_cursor']}"
+    )
     body2 = resp2.json()
     assert body2["total_returned"] == 2
     assert body2["items"][0]["id"] < body1["items"][-1]["id"]
 
-    resp3 = client.get(f"/api/audit/events?limit=2&cursor={body2['next_cursor']}")
+    resp3 = client.get(
+        f"/api/audit/events?limit=2&cursor={body2['next_cursor']}"
+    )
     body3 = resp3.json()
     assert body3["total_returned"] == 1
     assert body3["next_cursor"] is None  # end of data
 
 
 def test_list_limit_capped_at_max(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     client = _make_app(monkeypatch, db_session)
     # FastAPI Query(le=200) returns 422 on out-of-range.
@@ -203,7 +208,7 @@ def test_list_limit_capped_at_max(
 
 
 def test_detail_returns_404_for_unknown_id(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     client = _make_app(monkeypatch, db_session)
     resp = client.get("/api/audit/events/9999")
@@ -211,7 +216,7 @@ def test_detail_returns_404_for_unknown_id(
 
 
 def test_detail_decrypts_state_diff(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
     monkeypatch.setenv("AUDIT_SECRET_KEY", _fresh_key())
@@ -236,7 +241,7 @@ def test_detail_decrypts_state_diff(
 
 
 def test_detail_returns_none_state_when_no_ciphertext(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     eid = _make_event(db_session)
     client = _make_app(monkeypatch, db_session)
@@ -253,7 +258,7 @@ def test_detail_returns_none_state_when_no_ciphertext(
 
 
 def test_csv_export_returns_header_and_rows(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _make_event(db_session, actor_username="alice")
     _make_event(db_session, actor_username="bob")
@@ -271,7 +276,7 @@ def test_csv_export_returns_header_and_rows(
 
 
 def test_csv_export_excludes_state_diff_fields(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """State diffs are free-form JSON; CSV shape would be unstable."""
     _make_event(db_session)
@@ -283,7 +288,7 @@ def test_csv_export_excludes_state_diff_fields(
 
 
 def test_csv_export_filter_by_actor(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _make_event(db_session, actor_username="alice")
     _make_event(db_session, actor_username="bob")
@@ -295,3 +300,20 @@ def test_csv_export_filter_by_actor(
     assert len(lines) == 2  # header + 1 data row
     assert "alice" in lines[1]
     assert "bob" not in text
+
+
+def test_csv_route_not_shadowed_by_dynamic_detail_route(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: codex review P2 on commit 6f0d04b — if
+    ``/events/{event_id}`` registers BEFORE ``/events/export.csv``,
+    FastAPI matches the request against the dynamic route, tries
+    to parse ``"export.csv"`` as int, and returns 422 instead of
+    streaming the CSV. This test pins the registration order: a
+    request for export.csv must reach the streaming handler."""
+    _make_event(db_session)
+    client = _make_app(monkeypatch, db_session)
+    resp = client.get("/api/audit/events/export.csv")
+    # If the dynamic route shadowed this one, we'd see 422 here.
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/csv")
