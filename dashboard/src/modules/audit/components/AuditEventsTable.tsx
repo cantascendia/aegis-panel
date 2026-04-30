@@ -19,11 +19,13 @@ import type { AuditListParams, AuditResult } from "../types";
  * a detail dialog beyond the row metadata.
  */
 
-const RESULT_OPTIONS: { value: "" | AuditResult; label_key: string }[] = [
-    { value: "", label_key: "page.audit.filter.result.all" },
-    { value: "success", label_key: "page.audit.filter.result.success" },
-    { value: "denied", label_key: "page.audit.filter.result.denied" },
-    { value: "failure", label_key: "page.audit.filter.result.failure" },
+type ResultOption = { value: "" | AuditResult };
+
+const RESULT_OPTIONS: ResultOption[] = [
+    { value: "" },
+    { value: "success" },
+    { value: "denied" },
+    { value: "failure" },
 ];
 
 const formatTimestamp = (iso: string): string => {
@@ -127,11 +129,24 @@ export const AuditEventsTable: FC = () => {
                             setCursorStack([]);
                         }}
                     >
-                        {RESULT_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                                {t(opt.label_key)}
-                            </option>
-                        ))}
+                        {RESULT_OPTIONS.map((opt) => {
+                            // Inline t() per option so the drift checker
+                            // (grep-based, can't follow indirection) sees
+                            // every key as a literal string.
+                            const label =
+                                opt.value === ""
+                                    ? t("page.audit.filter.result.all")
+                                    : opt.value === "success"
+                                      ? t("page.audit.filter.result.success")
+                                      : opt.value === "denied"
+                                        ? t("page.audit.filter.result.denied")
+                                        : t("page.audit.filter.result.failure");
+                            return (
+                                <option key={opt.value} value={opt.value}>
+                                    {label}
+                                </option>
+                            );
+                        })}
                     </select>
                 </div>
                 <button
