@@ -268,7 +268,9 @@ class AuditMiddleware(BaseHTTPMiddleware):
         block" guarantee.
         """
         try:
-            actor_type, actor_username = _resolve_actor(request)
+            actor_type, actor_username = _resolve_actor(
+                request, status_code=status_code
+            )
             row = AuditEvent(
                 # ``actor_id`` stays None — JWT-only path; resolving the
                 # numeric id needs a DB lookup the audit-write critical
@@ -332,16 +334,32 @@ def _action_from_request(request: Request) -> str:
 def _resolve_ip(request: Request) -> str:
     """Client IP resolution with D-012 trusted-proxy gate.
 
-    Decision logic (mirrors ``ops.billing.checkout_endpoint``):
+    Decision logic (rightmost-untrusted walk, RFC 7239 §5.2 + OWASP):
 
     1. If ``request.client`` is None (broken ASGI server) → ``"unknown"``.
-    2. If transport peer is in ``AUDIT_TRUSTED_PROXIES`` AND
-       ``X-Forwarded-For`` is set → return XFF leftmost token (the
-       real client). This is the panel-behind-Nginx / panel-behind-CF
-       case.
-    3. Otherwise → return transport peer (the safe default;
-       attacker can spoof XFF only if our env trusts their peer,
-       which is the operator's choice).
+    2. If transport peer is NOT in ``AUDIT_TRUSTED_PROXIES`` → return
+       transport peer (XFF is whatever the unverified caller wrote;
+       trusting it would let an attacker on the public internet spoof
+       audit-row IPs).
+    3. Transport peer is trusted AND ``X-Forwarded-For`` is set → walk
+       the chain from the rightmost token, peeling off trusted proxies
+       one by one, and return the first untrusted entry encountered.
+       That entry is the real client — anything to the LEFT of it is
+       attacker-controllable (Nginx's default
+       ``$proxy_add_x_forwarded_for`` APPENDS the immediate peer to
+       whatever the client sent, so a request with header
+       ``X-Forwarded-For: 1.2.3.4`` arrives at FastAPI as
+       ``1.2.3.4, <real-client>`` — the leftmost ``1.2.3.4`` is the
+       spoof, NOT the real source).
+    4. Trusted peer with empty XFF, or every chain entry is itself a
+       trusted proxy (single-hop loopback case) → return transport
+       peer as the conservative best answer.
+
+    Codex P2 follow-up on PR #133: the previous leftmost-token
+    implementation was vulnerable to spoofing under append-mode
+    proxies (Nginx's documented default). Rightmost-untrusted
+    parsing is the OWASP-recommended algorithm and matches what
+    the FastAPI ``ProxyHeadersMiddleware`` and starlette-ext do.
 
     Per-feature env (D-012) — does NOT reuse ``BILLING_TRUSTED_PROXIES``.
     Operators may set them to the same value, but cross-feature
@@ -351,13 +369,20 @@ def _resolve_ip(request: Request) -> str:
     if request.client is None:
         return "unknown"
     peer = request.client.host
+    if not _peer_is_trusted_proxy(peer):
+        # Public-facing peer; never honour client-supplied XFF.
+        return peer[:45]
     xff = request.headers.get("x-forwarded-for")
-    if xff and _peer_is_trusted_proxy(peer):
-        # Leftmost XFF token is the original client per RFC 7239.
-        # Strip whitespace, cap to ipv6-max-len.
-        first = xff.split(",", 1)[0].strip()
-        if first:
-            return first[:45]
+    if not xff:
+        return peer[:45]
+    # Walk from the rightmost token. Skip trusted proxies (they were
+    # in the path and added themselves); the first untrusted token
+    # is the real client. If every token is trusted (unusual but
+    # possible in fully-internal hop chains), fall back to peer.
+    tokens = [tok.strip() for tok in xff.split(",") if tok.strip()]
+    for token in reversed(tokens):
+        if not _peer_is_trusted_proxy(token):
+            return token[:45]
     return peer[:45]
 
 
@@ -421,15 +446,32 @@ def _reload_trusted_proxies_for_tests() -> None:
 # ---------------------------------------------------------------------
 
 
-def _resolve_actor(request: Request) -> tuple[str, str | None]:
+def _resolve_actor(
+    request: Request, *, status_code: int
+) -> tuple[str, str | None]:
     """Decode the bearer token and return ``(actor_type, actor_username)``.
 
     - No ``Authorization`` header / not Bearer → ``(ANONYMOUS, None)``
     - Malformed / expired / invalid-signature → ``(ANONYMOUS, None)``
       (``get_admin_payload`` swallows ``InvalidTokenError`` and
       returns ``None``).
-    - Valid admin token → ``("admin", username)``
-    - Valid sudo token → ``("sudo_admin", username)``
+    - Cryptographically valid token but the response was 401 → the
+      auth dependency rejected it (admin deleted, password reset
+      after token issuance, account disabled, etc.). Codex P2 on
+      PR #133: attributing such requests to the token subject
+      makes a revoked-token replay look like a "currently valid
+      actor's action". Treat it as anonymous.
+    - Valid admin token (request not 401) → ``("admin", username)``
+    - Valid sudo token (request not 401) → ``("sudo_admin", username)``
+
+    Why use the response status as the gate instead of re-running
+    the DB checks here: re-validating in middleware would double the
+    DB cost of every audited request (and add a third place admin
+    state can drift). The 401 from ``app.dependencies.get_current_admin``
+    is the same boolean the auth path produces — middleware just
+    consumes it. 403 (permission/sudo denied) keeps attribution
+    because the admin IS who the token says, just not allowed to
+    perform that action — that's a forensic-relevant event.
 
     Pure function: no DB, no IO, no global state — fast enough to
     run on every audit-eligible request without a perf budget hit.
@@ -442,6 +484,10 @@ def _resolve_actor(request: Request) -> tuple[str, str | None]:
         return ACTOR_TYPE_ANONYMOUS, None
     payload = get_admin_payload(parts[1])
     if not payload:
+        return ACTOR_TYPE_ANONYMOUS, None
+    if status_code == 401:
+        # Token decoded but auth dependency rejected it (revoked /
+        # disabled / deleted / pwd-reset). Don't attribute.
         return ACTOR_TYPE_ANONYMOUS, None
     actor_type = (
         ACTOR_TYPE_SUDO if payload.get("is_sudo") else ACTOR_TYPE_ADMIN
