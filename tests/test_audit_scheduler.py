@@ -288,14 +288,21 @@ def test_sweep_cutoff_is_strictly_less_than(
     )
     db_session.add_all([boundary, over])
     db_session.commit()
+    # Snapshot the ids BEFORE the delete — the ORM expires the
+    # in-memory ``over`` instance after the bulk DELETE inside
+    # ``audit_retention_sweep`` and accessing ``over.id`` afterwards
+    # raises ObjectDeletedError under SQLAlchemy 2.0's default
+    # expire_on_commit semantics.
+    boundary_id = boundary.id
+    over_id = over.id
 
     deleted = audit_scheduler.audit_retention_sweep(db_session)
     # Strict-less-than: exactly-at-cutoff row stays; 1-second-past
     # cutoff row deletes.
     assert deleted == 1
     remaining = {row.id for row in db_session.query(AuditEvent).all()}
-    assert boundary.id in remaining, (
+    assert boundary_id in remaining, (
         "Strict-less-than: row at exactly the cutoff must be kept; "
         "if this fails, the sweep changed to <= cutoff."
     )
-    assert over.id not in remaining
+    assert over_id not in remaining
