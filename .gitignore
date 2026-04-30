@@ -225,3 +225,4 @@ ops/_runtime/
 !.claude/agent-logs/.gitkeep
 docs/ai-cto/.codex-quota-cooldown
 docs/ai-cto/.codex-bridge.lock
+.claude/scheduled_tasks.lock
