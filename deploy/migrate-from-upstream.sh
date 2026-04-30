@@ -167,26 +167,7 @@ phase_mark() {
 # ---------------------------------------------------------------------------
 # Phase 1 — preflight
 # ---------------------------------------------------------------------------
-phase_1_preflight() {
-  log "=== Phase 1: preflight ==="
-  if phase_done 1 && [[ ${FORCE} -eq 0 ]]; then
-    log "phase 1 already done, skip"
-    return 0
-  fi
-
-  command -v docker >/dev/null 2>&1 || fail "docker not on PATH" 1
-  command -v jq >/dev/null 2>&1 || fail "jq not on PATH" 1
-
-  [[ -d "${UPSTREAM_DIR}" ]] || fail "upstream dir not found: ${UPSTREAM_DIR}" 1
-  [[ -f "${UPSTREAM_DIR}/.env" ]] || fail ".env not found in ${UPSTREAM_DIR}" 1
-  [[ -f "${UPSTREAM_DIR}/docker-compose.yml" || -f "${UPSTREAM_DIR}/docker-compose.yaml" ]] \
-    || fail "docker-compose not found in ${UPSTREAM_DIR}" 1
-
-  # JWT secret must exist (otherwise users get logged out)
-  if ! grep -qE '^JWT_SECRET=.+' "${UPSTREAM_DIR}/.env"; then
-    log "WARN: JWT_SECRET not found in upstream .env; users may need to re-login"
-  fi
-
+_detect_db() {
   # DB type detection.
   # Order matters: SQLALCHEMY_DATABASE_URL is the key documented in this fork's
   # app/config/env.py + .env.example; SQLALCHEMY_DATABASE_URI is the older
@@ -203,6 +184,53 @@ phase_1_preflight() {
   esac
   DB_URL="${db_url}"
   log "detected DB kind: ${DB_KIND} (url: ${db_url:-<unset, will default sqlite>})"
+
+  # Persist so re-runs / --resume in a fresh shell don't lose this state.
+  if [[ ${DRY_RUN} -eq 0 ]]; then
+    mkdir -p "${BACKUP_DIR}"
+    {
+      echo "DB_KIND=${DB_KIND}"
+      echo "DB_URL=${DB_URL}"
+      echo "UPSTREAM_DIR=${UPSTREAM_DIR}"
+    } > "${BACKUP_DIR}/state.env"
+  fi
+}
+
+_load_db_state() {
+  # Restore DB_KIND / DB_URL from prior phase-1 detection so phases 2-4
+  # don't crash under `set -u` after --resume / sentinel-skip.
+  if [[ -f "${BACKUP_DIR}/state.env" ]]; then
+    # shellcheck disable=SC1090
+    . "${BACKUP_DIR}/state.env"
+    log "restored DB_KIND=${DB_KIND} from ${BACKUP_DIR}/state.env"
+  else
+    log "no state.env found; re-detecting DB"
+    _detect_db
+  fi
+}
+
+phase_1_preflight() {
+  log "=== Phase 1: preflight ==="
+  if phase_done 1 && [[ ${FORCE} -eq 0 ]]; then
+    log "phase 1 already done, skip (will load state)"
+    _load_db_state
+    return 0
+  fi
+
+  command -v docker >/dev/null 2>&1 || fail "docker not on PATH" 1
+  command -v jq >/dev/null 2>&1 || fail "jq not on PATH" 1
+
+  [[ -d "${UPSTREAM_DIR}" ]] || fail "upstream dir not found: ${UPSTREAM_DIR}" 1
+  [[ -f "${UPSTREAM_DIR}/.env" ]] || fail ".env not found in ${UPSTREAM_DIR}" 1
+  [[ -f "${UPSTREAM_DIR}/docker-compose.yml" || -f "${UPSTREAM_DIR}/docker-compose.yaml" ]] \
+    || fail "docker-compose not found in ${UPSTREAM_DIR}" 1
+
+  # JWT secret must exist (otherwise users get logged out)
+  if ! grep -qE '^JWT_SECRET=.+' "${UPSTREAM_DIR}/.env"; then
+    log "WARN: JWT_SECRET not found in upstream .env; users may need to re-login"
+  fi
+
+  _detect_db
 
   phase_mark 1
   log "phase 1 ok"
@@ -248,6 +276,11 @@ phase_2_backup() {
         run "sqlite3 '${sqlite_path}' \".backup '${BACKUP_DIR}/db.sqlite3.bak'\""
       else
         run "cp '${sqlite_path}' '${BACKUP_DIR}/db.sqlite3.bak'"
+      fi
+      # Persist the discovered path so phase 3 places the file under the
+      # exact same basename the new container expects.
+      if [[ ${DRY_RUN} -eq 0 ]]; then
+        echo "SQLITE_SRC=${sqlite_path}" >> "${BACKUP_DIR}/state.env"
       fi
       ;;
     postgres)
@@ -362,9 +395,13 @@ phase_3_swap() {
     local target_dir="/var/lib/marzneshin"
     run "mkdir -p '${target_dir}'"
     if [[ ${DRY_RUN} -eq 0 ]]; then
-      # Preserve the original DB file name when possible.
-      local src_name
-      src_name="$(basename "$(find "${UPSTREAM_DIR}" -maxdepth 3 -name 'db.sqlite3' 2>/dev/null | head -1 || echo db.sqlite3)")"
+      # Use the original DB filename captured during phase 2; default to
+      # db.sqlite3 (matches sqlite:///db.sqlite3 in .env.example).
+      # ${SQLITE_SRC:-} comes from state.env (phase 2 persisted the discovered path).
+      local src_name="db.sqlite3"
+      if [[ -n "${SQLITE_SRC:-}" ]]; then
+        src_name="$(basename "${SQLITE_SRC}")"
+      fi
       cp "${BACKUP_DIR}/db.sqlite3.bak" "${target_dir}/${src_name}"
       log "SQLite DB placed at ${target_dir}/${src_name} (matches compose volume)"
     fi
