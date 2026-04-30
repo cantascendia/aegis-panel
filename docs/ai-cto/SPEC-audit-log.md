@@ -1,9 +1,11 @@
 ---
 created: 2026-04-28
-status: DRAFT
-priority: TBD(待用户决策驱动 — 见底部"启动顺序与触发条件")
-session: S-AL(待启)
-unlocks: RBAC(SPEC-rbac 草稿中)
+status: SEALED
+sealed: 2026-04-30
+sealed_by: CTO(用户授权 auto mode 自动决策,issue #103 4 TBDs 全拍板)
+priority: P1(v0.3 第一块,RBAC 前置)
+session: S-AL(可启)
+unlocks: RBAC(SPEC-rbac 同步 SEALED)
 template: D-005
 ---
 
@@ -432,24 +434,31 @@ GET   /api/audit/me/events                 → 仅本 actor 的历史,无 decryp
 
 ---
 
-## TBD(留给用户决策)
+## TBD 决策(SEALED 2026-04-30)
 
-仿照 SPEC-deploy 的 TBD 段,以下三条**不在本 PR 给完美答案**,等运营反馈或下一
-session(S-AL)启动前用户拍板。
+> **历史**:本段原为 4 个 open TBD,2026-04-30 由 CTO(用户授权 auto mode)在 issue #103 拍板,
+> SPEC 状态从 DRAFT 转 SEALED。以下保留原 trade-off 描述,在每条末尾追加 ✅ **SEALED** 决策段。
 
 ### TBD-1 | Dashboard 是否暴露"一键 wipe"按钮
 
 - **支持**:运营方应急场景下,SSH 不便时可在 dashboard 直接 nuke 历史
 - **反对**:被胁迫场景下按钮一键销毁证据 = 反向风险;且增加误操作面
 - **当前默认**:**不暴露**,wipe 走 SQL TRUNCATE(Runbook 写命令)
-- **决策时机**:运营方第一次实战触发应急 wipe 后(预计 v0.4 之后)
+- ✅ **SEALED 决策(2026-04-30)**:**不暴露 dashboard wipe 按钮**(维持 SPEC 默认)
+  - **理由**:D-003 法律张力(中/伊/俄被胁迫风险)+ 单点社工攻击面 + sudo 是最高权限不应再加销毁键
+  - **psql/SSH 摩擦合理**:wipe 是高破坏性操作,必须高门槛(攻击者要拿到 DB / shell 才能销毁)
+  - **revisit 信号**:运营方实战 ≥ 3 次"应急 wipe 但 SSH 不便"的真实数据点
 
 ### TBD-2 | REDACT_FIELDS 是否运营方可配置
 
 - **支持**:不同运营方有不同隐私偏好(欧洲市场要 redact email,中国可不)
 - **反对**:配置面扩大 = bug 面扩大;一个错误的 env override 可让密码入审计
 - **当前默认**:**硬编码**,改字段 = 改代码 = 走 PR review
-- **决策时机**:开第二个市场(欧洲 / 美洲)前
+- ✅ **SEALED 决策(2026-04-30)**:**混合方案 — base list 硬编码 + `.env` AUDIT_EXTRA_REDACT_FIELDS 追加(只允许 union,不允许 override)**
+  - **base list 硬编码**:`{"jwt", "password", "passwd", "merchant_key", "trc20_private_key", "cf_token", "secret_key", "api_key", "private_key"}`(任何运营方都不应能解除这些 redact)
+  - **`.env` AUDIT_EXTRA_REDACT_FIELDS**:逗号分隔追加(如 `email,phone` for 欧洲),实现走 set union(`base | extras`)
+  - **理由**:base list 防 misconfig 漏 redact 关键安全字段;extras 给运营方按市场扩展自由(GDPR / 中国合规张力)
+  - **实施约束**:extras 字段只能追加,不能用 `.env` 删除 base list 项;实施代码用 `frozenset()` 锁 base list
 
 ### TBD-3 | `payment_events` 是否反向关联 `audit_event_id`
 
@@ -458,7 +467,10 @@ session(S-AL)启动前用户拍板。
   表(scope creep);且双写顺序保证 payment_events 写时 audit 可能未提交
 - **当前默认**:**不加**,billing UI 通过 `(invoice_id, ts)` 范围查询 audit_events
   即可
-- **决策时机**:运营方实战后反馈 UX 不顺再加
+- ✅ **SEALED 决策(2026-04-30)**:**不加 FK**(维持 SPEC 默认)
+  - **理由**:D-014 billing 自治原则(`pricing.py` 与 `grants.py` 互不 import,scheduler 是唯一胶水);加 FK = 双表耦合 + scope creep + 触碰已稳定的 Round 3 表
+  - **billing UI 通过 `(invoice_id, ts)` 范围查询 audit_events 即可**
+  - **revisit 信号**:运营方实战 ≥ 3 次"对账时跳 audit 不顺"反馈
 
 ### TBD-4 | 审计层 vs `ops_events`(scheduler 行为日志)合一还是分开
 
@@ -467,7 +479,9 @@ session(S-AL)启动前用户拍板。
   会淹没 admin 行为信号;且 scheduler 不需要 actor / before-after 字段
 - **当前默认**:**分开**,本 SPEC 只做 admin audit,scheduler 行为日志留
   v0.4 单独 SPEC
-- **决策时机**:S-AL 落地后第一次复盘运营是否需要 scheduler 历史
+- ✅ **SEALED 决策(2026-04-30)**:**分开**(维持 SPEC 默认)
+  - **理由**:audit log 是"运营追责 + 客诉举证"工具,服务对象是 admin/operator 行为镜像;scheduler 自动化事件每天上千条会把 admin 信号淹没,运营 query 体验崩
+  - **`ops_events` 走单独 SPEC,留 v0.4**;v0.3 期间 scheduler 行为可在 `app.log` / Sentry / structured log 看,不需要 DB 表
 
 ---
 
@@ -494,15 +508,15 @@ session(S-AL)启动前用户拍板。
 
 ### 启动顺序
 
-1. **本 PR**(AL.0):docs-only,SPEC 合入
-2. 用户决策 TBD-1~4(可在 SPEC 通过后异步进行,不阻塞 AL.1)
+1. ~~**本 PR**(AL.0):docs-only,SPEC 合入~~ ✅ done(PR #101)
+2. ~~用户决策 TBD-1~4~~ ✅ done(2026-04-30 CTO auto mode 拍板,issue #103 closed)
 3. **AL.1 + AL.2 + AL.3 + AL.4** 串行落,**不拆并行**(共享 `ops/audit/`
-   目录,session 内部不能并行)
+   目录,session 内部不能并行)— **可立即启动 S-AL session**
 4. RBAC SPEC(SPEC-rbac)在 AL.4 合入后启动 implementation
 
 ### 触发条件
 
-本 SPEC **优先级 = TBD**,等以下任一信号触发 implementation:
+本 SPEC **优先级 = P1**(SEALED 2026-04-30),已满足触发条件:
 
 - 🔔 运营方提"我无法追责另一个 admin 的操作"
 - 🔔 SPEC-rbac 草稿完成,准备 implementation 前置

@@ -8,6 +8,269 @@
 
 ---
 
+## L-033 | Round 3 mid late-8 first-real-deploy | "代码差异化在仓库睡着"— upstream 镜像不读 fork 代码,生产 panel 跟同行一样
+
+**现象**: 部署完发现一个矛盾:
+
+| | 仓库代码 (fork) | 生产 panel 镜像 |
+|---|---|---|
+| 镜像 | cantascendia/aegis-panel | **dawsh/marzneshin:v0.2.0 (upstream)** |
+| SNI selector (差异化 #1) | ✅ ship | ❌ 不在镜像里 |
+| Reality audit (差异化 #3) | ✅ ship | ❌ 不在镜像里 |
+| IP limiter (差异化 #2) | ✅ PR #24 ship | ❌ 不在镜像里 |
+| 233 后端测试 + CI | ✅ 跑 (GitHub Actions) | N/A |
+| D-012 trusted_proxies | ✅ ship | ❌ 不在镜像里 |
+| audit-log 19 PR (v0.3) | ✅ stack | ❌ 不在镜像里 |
+
+**生产 panel 实际跑的 = upstream Marzneshin 原版** = 跟 Hiddify / 3X-UI / Remnawave 一样级别。**所有差异化代码在仓库 sleeper**。
+
+实战体现(本会话 24h 内):
+- L-031 SNI 选错 2 次 — 因为 sni-selector 没在 panel 跑,我手动选
+- L-032 panel↔marznode mTLS 炸 — upstream bug,我们没 patch 镜像
+- L-030 install.sh 6 bug + L-032 第 7 bug — 都是因为 upstream 镜像跟 fork install.sh 假设不匹配
+
+**根因**:
+
+```
+fork 流程缺一步:
+  COMPETITORS.md 说 "我们差异化 ✅"
+  → 写 SPEC + 实现代码 + 233 测试
+  → push 到 GitHub 仓库
+  → ❌ 没有 build & push panel 镜像到 registry
+  → ❌ 没有改 install.sh 默认拉自构镜像
+  → 部署用 dawsh/marzneshin (upstream 原版)
+  → 差异化代码永远不被消费
+```
+
+实战中 = "你跟同行一样",不是因为差异化不存在,而是**没有部署链让差异化生效**。
+
+**防线 / 修复路径**(C 阶段必做):
+
+1. **建 image build pipeline**(GitHub Actions):
+   - push to main → docker build → push cantascendia/aegis-panel:v0.x.x
+   - 标 v0.3.0 = 第一个真正自构镜像
+
+2. **install.sh 默认拉自构镜像**:
+   ```bash
+   AEGIS_VERSION="${AEGIS_VERSION:-v0.3.0}"  # 自构版本号
+   # docker-compose 拉 cantascendia/aegis-panel:v0.3.0,不再 dawsh/marzneshin
+   ```
+
+3. **加 deploy-smoke CI gate**:
+   - 自构镜像 push 后,跑端到端测试(创建 user / 跑订阅 / mTLS 通信)
+   - 失败阻塞 deploy
+   - 防 L-030/L-032 类 bug 再次溜过 dry-run
+
+4. **patch upstream bugs 通过 fork**:
+   - L-032 panel↔marznode mTLS 在 cantascendia/aegis-panel 自构镜像里修
+   - 不再依赖 upstream patch (上游 dormant 7 个月,等不及)
+
+**B 阶段 work-around**(< 50 客户阶段不做自构镜像):
+
+- 用 upstream 镜像 + 手动 work-around (sync-clients / 手动 SNI 选择)
+- 接受"差异化对客户感知 = 0"的现实
+- 群里**只讲"信任 + 朋友 + 退款"** 不讲技术差异化(L-031 已沉淀)
+- 50 客户后再投入 1-2 周做自构镜像 — ROI 算得过
+
+**C 阶段触发条件**:
+
+```
+任一满足 → 启动自构镜像项目 (~1-2 周工程):
+  - 客户数 ≥ 50 (sync-clients work-around 手动维护成本上升)
+  - 客户问 "你们机场跟别家有啥区别" (品牌差异化诉求)
+  - panel↔marznode mTLS bug 严重影响多节点部署
+  - 客户数据安全要求(audit-log 用户可见)
+```
+
+**沉淀**: ✅ 本 entry。
+
+**升级建议**(下次 batch S-O):
+- 加 D-XXX 决策: "v0.3 第一个产物 = 自构 panel 镜像 + image registry pipeline"
+- 把 COMPETITORS.md 矩阵分两列: "代码层" vs "生产层"(明确哪些已生效)
+- 让 fork 自检 (`agpl-selfcheck.sh` 类似)同时跑 "image-deployed-check" — 验证 panel image 是 fork 自构而非 upstream
+
+**关联**: 
+- L-030 (install bugs), L-031 (SNI), L-032 (mTLS),
+- COMPETITORS.md 矩阵 (5 件硬差异化)
+- VISION.md "差异化护城河四件" 全部 sleeper code
+- C 阶段第一件大事 = 让差异化醒过来
+
+---
+
+## L-032 | Round 3 mid late-8 first-real-deploy panel↔marznode | gRPC mTLS 链断,xray clients 永远空,user 全断
+
+**现象**: friend_b 试了 30min Reality 节点,流量统计停在 0.01GB,客户端报"连接超时,没有信号"。我自己手机也连不上(在日本 → 排除 GFW)。深查发现:
+
+1. ✅ xray :443 LISTEN
+2. ✅ ufw 防火墙允许 443
+3. ✅ 内外网 TCP connect 443 都 OK
+4. ❌ `xray_config.json` 里 `"clients": []` **永远是空的**
+5. ❌ panel 报 `node msg: "timeout"` (gRPC 调 marznode AlterInbound 超时)
+6. ❌ marznode 报 `ConnectionRefusedError ('127.0.0.1', 8080)` xray 反复 stopped/started
+
+**根因 5 层洋葱**:
+
+```
+表层:        客户端 "超时 / 没信号"
+第 1 层:     xray Reality 拒绝任何 UUID handshake (clients=[])
+第 2 层:     panel 创建 user 时 UUID 没推到 xray
+第 3 层:     panel.gRPC(marznode).AlterInbound 调用超时
+第 4 层:     panel ↔ marznode mTLS 双向认证不对称
+第 5 层:     install.sh 缺一步 — marznode 自动生成的 server cert
+            panel 不信任,gRPC TLS 握手成功但 streaming 失败
+```
+
+**真正的 install.sh 设计缺陷**:
+
+```
+install.sh step 7 (我之前 PR #140 加的) 只做了:
+  panel → /api/nodes/settings → 拿 panel 的 client cert
+  → 写到 marznode 的 SSL_CLIENT_CERT_FILE
+
+漏了反方向:
+  marznode → 启动时 self-sign 一个 server cert
+  → panel 需要 trust 这个 cert 才能调 gRPC
+  → 但 panel 不知道 marznode 的 server cert
+  → 即使 TCP 握手成功 mTLS handshake 失败 → AlterInbound 超时
+```
+
+**实战 Work-around**(B 阶段不修 mTLS,直接绕):
+
+每次创建/删除 user 后,**手动**把 user UUID inject 到 xray_config.json:
+
+```bash
+# 拿 user UUID (从订阅 URL base64 decode 提取)
+UUID=$(curl -s "http://127.0.0.1:8443/sub/$user/$key" \
+  -H "User-Agent: v2rayN" | base64 -d | grep -oP "vless://[a-f0-9-]+" | \
+  head -1 | cut -d/ -f3)
+
+# inject 到 xray_config.json (jq 操作)
+jq ".inbounds[0].settings.clients += [{\"id\":\"$UUID\",\"flow\":\"\",\"email\":\"$user\"}]" \
+   /opt/aegis/data/marznode/xray_config.json > /tmp/x.json && \
+   mv /tmp/x.json /opt/aegis/data/marznode/xray_config.json
+
+# 重启 marznode → xray 重读 config → clients 数组生效
+docker restart aegis-marznode
+```
+
+**关键陷阱**:
+
+1. **每次 PUT /api/nodes/{id}/xray_config**(panel API 改 SNI / inbound)→ panel 试图给 marznode push 新 config → 超时 → marznode 重启 → **clients 被清空** → user 全断
+2. **每次 marznode 重启** → 读 host 文件 `xray_config.json` → 如果文件 clients=[] → 空载启动 → user 全断
+3. **"node status: healthy"** 是 panel 看 TCP connect OK 给的,**不代表 gRPC 真通**。msg 字段才是真信号(`"timeout"` = bug)
+
+**永久修复路径**(C 阶段做):
+
+1. 修 `app/marznode/grpclib.py` 的 mTLS 双向证书逻辑:
+   - panel 启动时把自己 CA 发给 marznode (新 endpoint /api/nodes/{id}/ca)
+   - marznode 用 panel CA 签 server cert (不再 self-signed)
+   - panel 信任所有 panel-CA 签的 cert
+2. install.sh step 7.5 加 gRPC reachability 验证(不只是 TCP):
+   - panel 调 marznode FetchUsersStats RPC,wait 30s,fail = exit 5
+3. 给 upstream Marzneshin 提 issue: `INSECURE=True` 应该真禁 mTLS, 不是只是文档不要
+
+**B 阶段 work-around 自动化**:
+
+`tools/aegis-sync-clients.sh` (本 PR 新增) — 单命令同步 panel users → xray clients:
+
+```bash
+aegis-sync-clients   # 拉 panel 全部 users → inject 到 xray_config.json → 重启 marznode
+```
+
+每次 admin 在 panel 创建 user 后手动跑一次。或者 cron 每 5 分钟跑(client 列表幂等)。
+
+**沉淀**: ✅ 本 entry + `tools/aegis-sync-clients.sh` 脚本(本 PR ship)。
+
+`.agents/rules/marznode-grpc-broken-known-issue.md` 候选 — "Marzneshin upstream `dawsh/marznode` 镜像 mTLS 不对称已知 bug,B 阶段用 sync-clients work-around,C 阶段自构 panel 镜像修 grpclib"。
+
+**关联**: L-030 (install.sh 6 bugs), L-031 (SNI selection),  
+PR #140 (install fixes), PR #141 (L-031),  
+本 PR (L-032 + sync-clients).
+
+---
+
+## L-031 | Round 3 mid late-8 first-real-deploy SNI selection | 改 Reality SNI 必先验"国内可达 + TLS 1.3 + H2 三件套",社区共识不能盲信
+
+**现象**:首次给 friend_b 配 Reality 节点,SNI 我**两次都选错**:
+
+| 尝试 | 选择 | 错在哪 |
+|---|---|---|
+| 1 | `www.tesla.com` | 太流行,DPI 重点关注 |
+| 2 | `discord.com` | **国内被墙(2018年起)**,SNI 用被墙网站 = GFW 加 SNI 层阻断时节点立刻死 |
+| 3 | `www.microsoft.com` | 社区警告"太流行" — 短期可用但不抗未来封锁 |
+
+第二次 user 直接挑出来"discord 国内被墙吧?" — **我没验证就改了**,凭印象选,违反 cross-review 精神。
+
+**根因**:
+
+1. **凭印象选 SNI** — 没实际跑过国内可达性 + TLS 三件套验证
+2. **`hardening/sni/selector.py` 在仓库里"睡着"** — sni-selector skill 设计上做这件事(同 ASN 邻居 + TLS 1.3 验证 + DPI 黑名单 + 国内 ping),但 v0.2 panel 镜像 `dawsh/marzneshin:v0.2.0` **不含 fork 代码**,所以选型完全靠运营方手动
+3. **env.tmpl 已经有合格默认值** — `REALITY_SNI_DEFAULT_GLOBAL=www.microsoft.com` / `_JP=www.lovelive-anime.jp` / `_KR=static.naver.net` / `_US=swdist.apple.com` + `BLOCKLIST=www.google.com,speedtest.net`。这些是 compass §"冷门 SNI" 的 SEALED 选择,但**panel 镜像不读**
+
+**根因总结**:**fork 写了 sni-selector,但生产 panel 跑的是 upstream 镜像没有 fork 代码,选型变成手工**。这是镜像 build 链断裂的体现。
+
+**社区共识(2026-04-30 调研)**:
+
+✅ 推荐 (冷门 + TLS 1.3 + 国内可达):
+- `download-installer.cdn.mozilla.net` (Mozilla CDN, Firefox 走这条更新)
+- `addons.mozilla.org`
+- `gateway.icloud.com` / `swdlp.apple.com` (Apple 全球 CDN)
+- `www.lovelive-anime.jp` (动漫小站,小众无人盯)
+- `static.naver.net` (韩国 CDN)
+
+❌ 不要(虽然 TLS 1.3 但太流行 / 已被墙):
+- `www.google.com` ❌ DPI 黑名单
+- `speedtest.net` ❌ 黑名单
+- `www.tesla.com` ⚠️ 流行
+- `www.microsoft.com` ⚠️ 流行
+- `discord.com` ❌ 国内被墙
+- `www.cloudflare.com` ⚠️ 流行
+
+**防线**:
+
+1. **改 SNI 前必须三验证**(命令模板,无 sni-selector 时手动跑):
+   ```bash
+   # On VPS:
+   echo | openssl s_client -connect <SNI>:443 -tls1_3 -servername <SNI> 2>/dev/null | grep Protocol
+   curl -sI https://<SNI>/ | head -1   # 看 HTTP/2 + 状态码
+   # On 国内手机/朋友: 试着浏览器开 https://<SNI> 看是否秒开
+   ```
+   三全过 → 才是合格 SNI
+
+2. **首选 env.tmpl 内置默认**(`REALITY_SNI_DEFAULT_*`)— compass 团队已经审过的,默认就是冷门 + 国内可达
+
+3. **sni-selector skill 必须在生产 panel 跑** — 当前 v0.2 镜像缺 fork 代码,B 阶段 work-around 就用 env.tmpl defaults;C 阶段升级到自构 panel 镜像把 hardening/sni/ 注入
+
+4. **频繁换 SNI 是反模式** — 每换一次客户必"更新订阅",同一周换 3 次 = 客户体验崩溃。一次决策选好 + 等真实 ping/丢包数据再换
+
+**实战补充(2026-04-30 当晚发生第 4 次错)**:
+本 LESSON 写完 5 分钟后,我又把 SNI 改到 `download-installer.cdn.mozilla.net`,VPS 端 TLS+H2 都通,但 friend_b 国内 client **超时**!**LESSON 写了"国内可达性"防线,但我自己跳过了这步**。
+
+**真根因 = VPS 端测通 ≠ 国内可达**:
+- mozilla CDN 在国内有些 ISP / 时段访问不稳
+- VPS 在 Tokyo,看到的是 mozilla 全球 CDN 边缘节点,
+- 国内 client 看到的是不同的 mozilla CDN 边缘节点(可能被限速 / 路由差)
+- **不同地理位置看到的 SNI 可达性可能完全不同**
+
+**升级防线(必须同时三个 vantage points 都通过)**:
+
+```
+1. VPS 端: openssl s_client + curl HTTP/2 验证 ✅
+2. 国内 client 端: 真实 ping + 浏览器秒开验证 ⚠️ 缺这步就翻车
+3. tesla.com / 已知能用的 SNI 做 baseline 对照 ✅
+```
+
+**B 阶段 work-around**(没国内测试 client 时):
+- **不要换** SNI,除非有 client 反馈"现在卡"
+- 所有"理论上更好"的 SNI 候选先记 docs,等有 ≥3 个朋友实测数据再批量切换
+- **friend_b 用过的 SNI = 已验证的 SNI**(不要轻易抛弃)
+
+**沉淀**:✅ 本 entry + 5 分钟后实战 lesson。`.agents/rules/reality-sni-selection.md` 候选 — "改 Reality SNI 必跑三件套 + 国内 client 实测 + 不要换已验证的 SNI"。下次新部署再犯就升硬规则。
+
+**关联**:同会话 L-030 (install.sh 实战 6 bug)、`SPEC-sni-selector.md`、`hardening/sni/selector.py`、`compass §"冷门 SNI"`、env.tmpl L77-L87。
+
+---
+
 ## L-030 | Round 3 mid late-8 first-real-deploy | install.sh 在真 VPS 上踩到 6 个 bug,全是路径/启动顺序/healthcheck 错配
 
 **现象**: 2026-04-30 第一次在 Vultr Tokyo VPS 跑 `bash deploy/install/install.sh --non-interactive --domain nilou.cc --db sqlite --marznode same-host --cf-tunnel skip`。Dry-run 全绿,真跑炸 6 次:
@@ -42,6 +305,67 @@
 - `PASSWORD_HASH` admin 密码字段:Marzneshin upstream `marzneshin-cli.py admin create` 现在用 `--sudo` 不是 `--is-sudo`(API 变化,2025-2026 间)
 
 **关联 PR**:本 PR 修 1-6 项;nginx + DASHBOARD_PATH 留 follow-up。
+
+---
+
+## L-029 | Round 3 mid late-7 wave-5 | TanStack Router 生成文件手动 patch 模式(无 vite plugin 时)
+
+**现象**: AL.4' dashboard PR(#136)新增 `routes/_dashboard/audit.lazy.tsx`,运行 `pnpm exec tsc --noEmit` 时 fail:`Argument of type '"/_dashboard/audit"' is not assignable to parameter of type 'keyof FileRoutesByPath'`。Codex review P1 抓到。
+
+**根因**: TanStack Router 用 vite plugin 自动生成 `dashboard/src/routeTree.gen.ts`(开发时跑 `pnpm dev` / `pnpm build` 时触发)。但**单 session 推进 dashboard 改动时**,Claude 在主目录直接写代码不跑 vite,生成文件不会自动更新。新加 `.lazy.tsx` 文件后,routeTree.gen.ts 7 处需要 audit 条目:
+1. `createFileRoute('/_dashboard/audit')()` import declaration
+2. `DashboardAuditLazyImport.update({...})` 路由 update 块
+3. `FileRoutesByFullPath` 接口
+4. `FileRoutesByTo` 接口
+5. `FileRoutesById` 接口
+6. `fullPaths` / `to` / `id` 三处 union literal
+7. `DashboardRouteChildren` interface + value
+8. 底部 children 字符串清单 + 文件 metadata
+
+漏一处 → tsc 失败,sidebar 链接 type error。
+
+**Codex 怎么发现的**(L-028 数据点延伸): codex 真的跑了 `pnpm exec tsc --noEmit` 看到 type error,而 Claude 自审走 mental model "vite plugin 会自动处理" 没去验证。这是 L-028 同一根因 — 单模型自审带着同一组假设。
+
+**防线**:
+
+1. **首选 — 跑 vite 自动重新生成**:开发流程 `pnpm dev` 一秒钟内重新生成 routeTree.gen.ts,然后 commit。本会话主目录跑 vite 大依赖,所以跳过这条。
+2. **手动 patch 时镜像参考路由**:本 PR mirror reality 路由的所有 7 处出现位置(本 LESSON 上面列的)。grep `DashboardRealityLazyImport\|DashboardRealityLazyRoute\|/_dashboard/reality` 一次,逐处镜像,**漏一处 tsc 就 fail**。
+3. **PR description 必须标注**:"手动 patch routeTree.gen.ts; 后续动同 dashboard module 的 PR 应跑 vite 重新生成"。本 PR #136 已加。
+4. **Codex review 必须跑**:tsc type-check 验证是 codex 抓 P1 的关键途径,业务路径 PR 严格遵守 L-028 / `.agents/rules/codex-cross-review.md` 跑流程。
+
+**沉淀**: ✅ 本 entry。`.agents/rules/dashboard-routes.md` 候选,内容 = "新增 `.lazy.tsx` 必须 vite 自动生成或手动 patch 7 处镜像最近的 module";如果未来有第二次同样事故就升级。
+
+---
+
+## L-028 | Round 3 mid late-7 wave-4 | §48 Cross-Review 实战:Codex 抓到 4 个 Claude 自审会全漏的 P2 真 bug
+
+**现象**: 单会话推进 audit-log v0.3 第一块,4 个代码 PR(#125-#128)依次跑 §48 Claude → Codex 跨模型 review。Codex(gpt-5.5)在 3 个 PR 中找到 **4 个 P2 真问题**(不是 nit),全部需要立即修复:
+
+| PR | Codex P2 finding | 真实风险 |
+|---|---|---|
+| #125 | `BIGINT PRIMARY KEY` SQLite 不 alias rowid | 默认 `SQLALCHEMY_DATABASE_URL=sqlite:///db.sqlite3`,普通 `AuditEvent()` 插入 IntegrityError |
+| #126 | `User.key` + `subscription_url` 未 redact(实际项目 bearer 字段) | 加密审计 row 被合法 key holder 解密后仍含 16-hex bearer token |
+| #126 | `Admin.hashed_password` 实际列名漏(我列了 `password_hash` 别名) | bcrypt 哈希进 audit ciphertext,offline crack 风险 |
+| #127 | `.env.example` 缺 `AUDIT_SECRET_KEY` | fresh install `cp .env.example .env` 流程 boot 时 fail-loud 但 operator 无 hint |
+
+**关键观察**: Codex 真的去 grep 项目实际代码:
+- `app/models/user.py` → 验证 `User.key` / `subscription_url` 字段名
+- `app/db/models.py` → 验证 `Admin.hashed_password` 列名
+- 默认 `.env.example` → 验证 fresh-install 流程
+
+**Claude 自审会全漏这 4 个**:因为 Claude(主 agent)写代码时引用 SPEC § 而非 grep 实际项目字段。SPEC 写 "redact subscription_token" 但实际字段是 `subscription_url` —— SPEC 自己也没去 grep。
+
+**根因**: 单模型自审有"自我盲点"——同一个模型既写代码又审代码,写代码时的假设(SPEC 说啥就是啥)审代码时也带着。Cross-model review 强制第二个模型用**独立先验**重新审视,会去做 first model 没做的功课(grep 项目代码 / 读默认 env / 验证 fresh-install 流程)。
+
+**落地防线**:
+
+1. **§48 Cross-Review 必须跑**(非可选):任何业务路径(`scripts/business-paths.txt`)代码 PR 在 push 后 *必须* 跑 codex-bridge,无论 PR 看起来多简单。本 wave 的 4 个 PR 都"看起来简单",每个都被 Codex 找到 P2。
+2. **Forbidden 路径 P0/P1 必有 cross-review**(L-018 升级):`auth/` `crypto/` `migration/` `payment/` 涉及真 bug 时影响半径大;cross-review 是必须双签的物理实现。
+3. **小 PR 多次审 > 大 PR 一次审**:本 wave 把 audit-log 拆成 5 个 stack PR(schema → redact → crypto → config → ...),每个独立 cross-review。如果合成 1 个大 PR,review 长度超 codex 上下文,会漏 finding。
+4. **修复 P2 后必须**重新跑 codex 二审(`bash .agents/skills/codex-bridge/run.sh HEAD`):不是同一 commit 不会被 dedup,确保修复正确。本 wave PR #125 / #126 都跑了二审,二审都 PASS。
+5. **dev env decouple 包冲突**(本机 `decouple` 0.0.7 shadow `python-decouple` 3.8)让 pytest 跑不动,但**不影响 codex review**(codex 用自己的 sandbox)。固化为日常 hygiene:`pip uninstall decouple -y`(只留 `python-decouple`)。本会话不动用户环境,留待下次 dev setup。
+
+**rule 沉淀**: `.agents/rules/codex-cross-review.md` 候选,内容 = "业务路径 PR 必跑 + 修 P2 后必二审 + 拆小 PR 多次审"。可在下个 batch S-O refresh 时落地。
 
 ---
 
