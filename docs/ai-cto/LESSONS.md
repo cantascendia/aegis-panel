@@ -8,6 +8,88 @@
 
 ---
 
+## L-031 | Round 3 mid late-8 first-real-deploy SNI selection | 改 Reality SNI 必先验"国内可达 + TLS 1.3 + H2 三件套",社区共识不能盲信
+
+**现象**:首次给 friend_b 配 Reality 节点,SNI 我**两次都选错**:
+
+| 尝试 | 选择 | 错在哪 |
+|---|---|---|
+| 1 | `www.tesla.com` | 太流行,DPI 重点关注 |
+| 2 | `discord.com` | **国内被墙(2018年起)**,SNI 用被墙网站 = GFW 加 SNI 层阻断时节点立刻死 |
+| 3 | `www.microsoft.com` | 社区警告"太流行" — 短期可用但不抗未来封锁 |
+
+第二次 user 直接挑出来"discord 国内被墙吧?" — **我没验证就改了**,凭印象选,违反 cross-review 精神。
+
+**根因**:
+
+1. **凭印象选 SNI** — 没实际跑过国内可达性 + TLS 三件套验证
+2. **`hardening/sni/selector.py` 在仓库里"睡着"** — sni-selector skill 设计上做这件事(同 ASN 邻居 + TLS 1.3 验证 + DPI 黑名单 + 国内 ping),但 v0.2 panel 镜像 `dawsh/marzneshin:v0.2.0` **不含 fork 代码**,所以选型完全靠运营方手动
+3. **env.tmpl 已经有合格默认值** — `REALITY_SNI_DEFAULT_GLOBAL=www.microsoft.com` / `_JP=www.lovelive-anime.jp` / `_KR=static.naver.net` / `_US=swdist.apple.com` + `BLOCKLIST=www.google.com,speedtest.net`。这些是 compass §"冷门 SNI" 的 SEALED 选择,但**panel 镜像不读**
+
+**根因总结**:**fork 写了 sni-selector,但生产 panel 跑的是 upstream 镜像没有 fork 代码,选型变成手工**。这是镜像 build 链断裂的体现。
+
+**社区共识(2026-04-30 调研)**:
+
+✅ 推荐 (冷门 + TLS 1.3 + 国内可达):
+- `download-installer.cdn.mozilla.net` (Mozilla CDN, Firefox 走这条更新)
+- `addons.mozilla.org`
+- `gateway.icloud.com` / `swdlp.apple.com` (Apple 全球 CDN)
+- `www.lovelive-anime.jp` (动漫小站,小众无人盯)
+- `static.naver.net` (韩国 CDN)
+
+❌ 不要(虽然 TLS 1.3 但太流行 / 已被墙):
+- `www.google.com` ❌ DPI 黑名单
+- `speedtest.net` ❌ 黑名单
+- `www.tesla.com` ⚠️ 流行
+- `www.microsoft.com` ⚠️ 流行
+- `discord.com` ❌ 国内被墙
+- `www.cloudflare.com` ⚠️ 流行
+
+**防线**:
+
+1. **改 SNI 前必须三验证**(命令模板,无 sni-selector 时手动跑):
+   ```bash
+   # On VPS:
+   echo | openssl s_client -connect <SNI>:443 -tls1_3 -servername <SNI> 2>/dev/null | grep Protocol
+   curl -sI https://<SNI>/ | head -1   # 看 HTTP/2 + 状态码
+   # On 国内手机/朋友: 试着浏览器开 https://<SNI> 看是否秒开
+   ```
+   三全过 → 才是合格 SNI
+
+2. **首选 env.tmpl 内置默认**(`REALITY_SNI_DEFAULT_*`)— compass 团队已经审过的,默认就是冷门 + 国内可达
+
+3. **sni-selector skill 必须在生产 panel 跑** — 当前 v0.2 镜像缺 fork 代码,B 阶段 work-around 就用 env.tmpl defaults;C 阶段升级到自构 panel 镜像把 hardening/sni/ 注入
+
+4. **频繁换 SNI 是反模式** — 每换一次客户必"更新订阅",同一周换 3 次 = 客户体验崩溃。一次决策选好 + 等真实 ping/丢包数据再换
+
+**实战补充(2026-04-30 当晚发生第 4 次错)**:
+本 LESSON 写完 5 分钟后,我又把 SNI 改到 `download-installer.cdn.mozilla.net`,VPS 端 TLS+H2 都通,但 friend_b 国内 client **超时**!**LESSON 写了"国内可达性"防线,但我自己跳过了这步**。
+
+**真根因 = VPS 端测通 ≠ 国内可达**:
+- mozilla CDN 在国内有些 ISP / 时段访问不稳
+- VPS 在 Tokyo,看到的是 mozilla 全球 CDN 边缘节点,
+- 国内 client 看到的是不同的 mozilla CDN 边缘节点(可能被限速 / 路由差)
+- **不同地理位置看到的 SNI 可达性可能完全不同**
+
+**升级防线(必须同时三个 vantage points 都通过)**:
+
+```
+1. VPS 端: openssl s_client + curl HTTP/2 验证 ✅
+2. 国内 client 端: 真实 ping + 浏览器秒开验证 ⚠️ 缺这步就翻车
+3. tesla.com / 已知能用的 SNI 做 baseline 对照 ✅
+```
+
+**B 阶段 work-around**(没国内测试 client 时):
+- **不要换** SNI,除非有 client 反馈"现在卡"
+- 所有"理论上更好"的 SNI 候选先记 docs,等有 ≥3 个朋友实测数据再批量切换
+- **friend_b 用过的 SNI = 已验证的 SNI**(不要轻易抛弃)
+
+**沉淀**:✅ 本 entry + 5 分钟后实战 lesson。`.agents/rules/reality-sni-selection.md` 候选 — "改 Reality SNI 必跑三件套 + 国内 client 实测 + 不要换已验证的 SNI"。下次新部署再犯就升硬规则。
+
+**关联**:同会话 L-030 (install.sh 实战 6 bug)、`SPEC-sni-selector.md`、`hardening/sni/selector.py`、`compass §"冷门 SNI"`、env.tmpl L77-L87。
+
+---
+
 ## L-028 | Round 3 mid late-7 wave-4 | §48 Cross-Review 实战:Codex 抓到 4 个 Claude 自审会全漏的 P2 真 bug
 
 **现象**: 单会话推进 audit-log v0.3 第一块,4 个代码 PR(#125-#128)依次跑 §48 Claude → Codex 跨模型 review。Codex(gpt-5.5)在 3 个 PR 中找到 **4 个 P2 真问题**(不是 nit),全部需要立即修复:
