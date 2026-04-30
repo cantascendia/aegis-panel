@@ -62,6 +62,13 @@ def _isolated_env() -> Iterator[None]:
     # Point the app at an ephemeral in-memory SQLite unless a test overrides.
     os.environ.setdefault("SQLALCHEMY_DATABASE_URL", "sqlite:///:memory:")
 
+    # Pin a JWT signing secret so ``app.utils.auth.create_admin_token`` /
+    # ``app.config.db.get_secret_key`` skip the legacy DB-backed fallback
+    # (which would query the ``jwt`` table — works in unit tests only if
+    # the row was seeded, and the lru_cache leaks across tests). Tests
+    # that need a different secret can monkeypatch.
+    os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret-not-for-prod")
+
     # Billing encryption + public URL. Production panels supply these
     # via .env; tests mirror that contract so the channel create/patch
     # and webhook paths exercise real Fernet + URL construction.
