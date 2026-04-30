@@ -8,6 +8,38 @@
 
 ---
 
+## L-028 | Round 3 mid late-7 wave-4 | §48 Cross-Review 实战:Codex 抓到 4 个 Claude 自审会全漏的 P2 真 bug
+
+**现象**: 单会话推进 audit-log v0.3 第一块,4 个代码 PR(#125-#128)依次跑 §48 Claude → Codex 跨模型 review。Codex(gpt-5.5)在 3 个 PR 中找到 **4 个 P2 真问题**(不是 nit),全部需要立即修复:
+
+| PR | Codex P2 finding | 真实风险 |
+|---|---|---|
+| #125 | `BIGINT PRIMARY KEY` SQLite 不 alias rowid | 默认 `SQLALCHEMY_DATABASE_URL=sqlite:///db.sqlite3`,普通 `AuditEvent()` 插入 IntegrityError |
+| #126 | `User.key` + `subscription_url` 未 redact(实际项目 bearer 字段) | 加密审计 row 被合法 key holder 解密后仍含 16-hex bearer token |
+| #126 | `Admin.hashed_password` 实际列名漏(我列了 `password_hash` 别名) | bcrypt 哈希进 audit ciphertext,offline crack 风险 |
+| #127 | `.env.example` 缺 `AUDIT_SECRET_KEY` | fresh install `cp .env.example .env` 流程 boot 时 fail-loud 但 operator 无 hint |
+
+**关键观察**: Codex 真的去 grep 项目实际代码:
+- `app/models/user.py` → 验证 `User.key` / `subscription_url` 字段名
+- `app/db/models.py` → 验证 `Admin.hashed_password` 列名
+- 默认 `.env.example` → 验证 fresh-install 流程
+
+**Claude 自审会全漏这 4 个**:因为 Claude(主 agent)写代码时引用 SPEC § 而非 grep 实际项目字段。SPEC 写 "redact subscription_token" 但实际字段是 `subscription_url` —— SPEC 自己也没去 grep。
+
+**根因**: 单模型自审有"自我盲点"——同一个模型既写代码又审代码,写代码时的假设(SPEC 说啥就是啥)审代码时也带着。Cross-model review 强制第二个模型用**独立先验**重新审视,会去做 first model 没做的功课(grep 项目代码 / 读默认 env / 验证 fresh-install 流程)。
+
+**落地防线**:
+
+1. **§48 Cross-Review 必须跑**(非可选):任何业务路径(`scripts/business-paths.txt`)代码 PR 在 push 后 *必须* 跑 codex-bridge,无论 PR 看起来多简单。本 wave 的 4 个 PR 都"看起来简单",每个都被 Codex 找到 P2。
+2. **Forbidden 路径 P0/P1 必有 cross-review**(L-018 升级):`auth/` `crypto/` `migration/` `payment/` 涉及真 bug 时影响半径大;cross-review 是必须双签的物理实现。
+3. **小 PR 多次审 > 大 PR 一次审**:本 wave 把 audit-log 拆成 5 个 stack PR(schema → redact → crypto → config → ...),每个独立 cross-review。如果合成 1 个大 PR,review 长度超 codex 上下文,会漏 finding。
+4. **修复 P2 后必须**重新跑 codex 二审(`bash .agents/skills/codex-bridge/run.sh HEAD`):不是同一 commit 不会被 dedup,确保修复正确。本 wave PR #125 / #126 都跑了二审,二审都 PASS。
+5. **dev env decouple 包冲突**(本机 `decouple` 0.0.7 shadow `python-decouple` 3.8)让 pytest 跑不动,但**不影响 codex review**(codex 用自己的 sandbox)。固化为日常 hygiene:`pip uninstall decouple -y`(只留 `python-decouple`)。本会话不动用户环境,留待下次 dev setup。
+
+**rule 沉淀**: `.agents/rules/codex-cross-review.md` 候选,内容 = "业务路径 PR 必跑 + 修 P2 后必二审 + 拆小 PR 多次审"。可在下个 batch S-O refresh 时落地。
+
+---
+
 ## L-027 | Round 3 mid late-7 wave-3 | Sub-agent 临时 worktree 并行模式经 7 波验证稳定,可转硬规则
 
 **现象**: 本会话(2026-04-28 ~ 04-29)单 session 内通过 16 次 sub-agent 调度,分 7 波并行(每波 2-5 个 sub-agent),完成 9 PR merge + 3 issue + harness 健康分 78→94。其中 4 波(#3 / #4 / #6 / #8)用临时 worktree(`../aegis-tmp-{slug}`)隔离 git-heavy 操作,主 worktree 0 撞车,sub-agent 之间 0 交叉污染。
