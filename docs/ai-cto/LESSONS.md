@@ -271,6 +271,35 @@ PR #140 (install fixes), PR #141 (L-031),
 
 ---
 
+## L-029 | Round 3 mid late-7 wave-5 | TanStack Router 生成文件手动 patch 模式(无 vite plugin 时)
+
+**现象**: AL.4' dashboard PR(#136)新增 `routes/_dashboard/audit.lazy.tsx`,运行 `pnpm exec tsc --noEmit` 时 fail:`Argument of type '"/_dashboard/audit"' is not assignable to parameter of type 'keyof FileRoutesByPath'`。Codex review P1 抓到。
+
+**根因**: TanStack Router 用 vite plugin 自动生成 `dashboard/src/routeTree.gen.ts`(开发时跑 `pnpm dev` / `pnpm build` 时触发)。但**单 session 推进 dashboard 改动时**,Claude 在主目录直接写代码不跑 vite,生成文件不会自动更新。新加 `.lazy.tsx` 文件后,routeTree.gen.ts 7 处需要 audit 条目:
+1. `createFileRoute('/_dashboard/audit')()` import declaration
+2. `DashboardAuditLazyImport.update({...})` 路由 update 块
+3. `FileRoutesByFullPath` 接口
+4. `FileRoutesByTo` 接口
+5. `FileRoutesById` 接口
+6. `fullPaths` / `to` / `id` 三处 union literal
+7. `DashboardRouteChildren` interface + value
+8. 底部 children 字符串清单 + 文件 metadata
+
+漏一处 → tsc 失败,sidebar 链接 type error。
+
+**Codex 怎么发现的**(L-028 数据点延伸): codex 真的跑了 `pnpm exec tsc --noEmit` 看到 type error,而 Claude 自审走 mental model "vite plugin 会自动处理" 没去验证。这是 L-028 同一根因 — 单模型自审带着同一组假设。
+
+**防线**:
+
+1. **首选 — 跑 vite 自动重新生成**:开发流程 `pnpm dev` 一秒钟内重新生成 routeTree.gen.ts,然后 commit。本会话主目录跑 vite 大依赖,所以跳过这条。
+2. **手动 patch 时镜像参考路由**:本 PR mirror reality 路由的所有 7 处出现位置(本 LESSON 上面列的)。grep `DashboardRealityLazyImport\|DashboardRealityLazyRoute\|/_dashboard/reality` 一次,逐处镜像,**漏一处 tsc 就 fail**。
+3. **PR description 必须标注**:"手动 patch routeTree.gen.ts; 后续动同 dashboard module 的 PR 应跑 vite 重新生成"。本 PR #136 已加。
+4. **Codex review 必须跑**:tsc type-check 验证是 codex 抓 P1 的关键途径,业务路径 PR 严格遵守 L-028 / `.agents/rules/codex-cross-review.md` 跑流程。
+
+**沉淀**: ✅ 本 entry。`.agents/rules/dashboard-routes.md` 候选,内容 = "新增 `.lazy.tsx` 必须 vite 自动生成或手动 patch 7 处镜像最近的 module";如果未来有第二次同样事故就升级。
+
+---
+
 ## L-028 | Round 3 mid late-7 wave-4 | §48 Cross-Review 实战:Codex 抓到 4 个 Claude 自审会全漏的 P2 真 bug
 
 **现象**: 单会话推进 audit-log v0.3 第一块,4 个代码 PR(#125-#128)依次跑 §48 Claude → Codex 跨模型 review。Codex(gpt-5.5)在 3 个 PR 中找到 **4 个 P2 真问题**(不是 nit),全部需要立即修复:
