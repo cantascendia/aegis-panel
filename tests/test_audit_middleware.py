@@ -542,6 +542,137 @@ def test_ip_gate_trusted_proxy_uses_xff(
     assert row.ip in ("testclient", "203.0.113.1")
 
 
+def test_xff_ignored_when_peer_untrusted(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Codex P2 follow-up on PR #133: when transport peer is NOT in
+    AUDIT_TRUSTED_PROXIES, never honour ``X-Forwarded-For``. Public
+    attacker can't spoof their way into the audit row.
+    """
+    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
+    monkeypatch.setenv("AUDIT_SECRET_KEY", "x" * 44 + "=")
+    # Trust ONLY 10.0.0.0/8 — TestClient peer is "testclient" / not
+    # in that range, so XFF must be ignored.
+    monkeypatch.setenv("AUDIT_TRUSTED_PROXIES", "10.0.0.0/8")
+    from ops.audit import middleware as audit_mw
+
+    audit_mw._reload_trusted_proxies_for_tests()
+    client = _make_app(monkeypatch, db_session)
+    client.post(
+        "/api/billing/admin/plans",
+        headers={"X-Forwarded-For": "1.2.3.4"},
+    )
+
+    from ops.audit.db import AuditEvent
+
+    row = db_session.query(AuditEvent).one()
+    assert row.ip != "1.2.3.4"
+
+
+def test_xff_honored_when_peer_trusted(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Codex P2 follow-up on PR #133: when transport peer IS in
+    AUDIT_TRUSTED_PROXIES, walk the XFF chain right-to-left, peel
+    off trusted proxies, and return the first untrusted entry as
+    the real client IP. Pin both halves of the algorithm:
+
+    1. Append-mode chain "<spoof>, <real>" with a trusted peer →
+       rightmost-untrusted (the real client) wins, NOT the leftmost
+       spoof. This is the load-bearing assertion the codex P2
+       review was about.
+    2. The real client (not the spoofed leftmost) lands in the row.
+    """
+    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
+    monkeypatch.setenv("AUDIT_SECRET_KEY", "x" * 44 + "=")
+    from ops.audit import middleware as audit_mw
+
+    # Drive _resolve_ip directly with a synthesised request — this is
+    # the cleanest way to control the transport peer (TestClient pins
+    # peer to "testclient" which fails ip_address parsing).
+    monkeypatch.setenv("AUDIT_TRUSTED_PROXIES", "127.0.0.1/32")
+    audit_mw._reload_trusted_proxies_for_tests()
+
+    class _StubReq:
+        def __init__(self, peer_host: str, xff: str | None) -> None:
+            class _Client:
+                host = peer_host
+
+            self.client = _Client()
+            self.headers = {"x-forwarded-for": xff} if xff else {}
+
+    # Append-mode (Nginx default): client sent "1.2.3.4" as XFF;
+    # Nginx appended the real peer "203.0.113.1" before forwarding.
+    # Real client = rightmost-untrusted = "203.0.113.1".
+    req = _StubReq("127.0.0.1", "1.2.3.4, 203.0.113.1")
+    assert audit_mw._resolve_ip(req) == "203.0.113.1"  # type: ignore[arg-type]
+
+    # Single-token XFF from a trusted peer = honour it.
+    req2 = _StubReq("127.0.0.1", "203.0.113.5")
+    assert audit_mw._resolve_ip(req2) == "203.0.113.5"  # type: ignore[arg-type]
+
+    # Untrusted peer with spoofed XFF = ignore XFF entirely.
+    req3 = _StubReq("8.8.8.8", "1.2.3.4")
+    assert audit_mw._resolve_ip(req3) == "8.8.8.8"  # type: ignore[arg-type]
+
+
+def test_revoked_token_falls_back_to_anonymous(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Codex P2 follow-up on PR #133: when a JWT decodes successfully
+    but the request was rejected as 401 by the auth dependency
+    (admin deleted / password reset after issuance / disabled), the
+    audit row must NOT attribute the action to the token subject —
+    a revoked-token replay otherwise looks like a "currently valid
+    actor's action" in the forensic trail.
+    """
+    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
+    monkeypatch.setenv("AUDIT_SECRET_KEY", "x" * 44 + "=")
+    from contextlib import contextmanager
+
+    from fastapi import FastAPI, HTTPException
+    from fastapi.testclient import TestClient
+
+    from ops.audit import middleware as audit_mw
+
+    app = FastAPI()
+    app.add_middleware(audit_mw.AuditMiddleware)
+
+    @app.post("/api/billing/admin/plans")
+    async def _create_plan() -> dict:
+        # Simulate the auth dependency rejecting a revoked-but-
+        # cryptographically-valid token.
+        raise HTTPException(
+            status_code=401, detail="Could not validate credentials"
+        )
+
+    @contextmanager
+    def _fake_getdb():
+        yield db_session
+
+    monkeypatch.setattr(audit_mw, "GetDB", _fake_getdb)
+    client = TestClient(app, raise_server_exceptions=False)
+
+    # Mint a syntactically-valid token so _resolve_actor reaches the
+    # status_code check (rather than bailing earlier on InvalidToken).
+    token = _mint_admin_token("ghost", is_sudo=False)
+    resp = client.post(
+        "/api/billing/admin/plans",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 401
+
+    from ops.audit.db import AuditEvent
+
+    row = db_session.query(AuditEvent).one()
+    # The crux: token decoded fine, but the auth path rejected the
+    # request → middleware must NOT name "ghost" in the audit row.
+    assert row.actor_type == "anonymous"
+    assert row.actor_username is None
+    assert row.status_code == 401
+    assert row.result == "denied"
+
+
 def test_ip_gate_invalid_peer_ip_does_not_crash(
     db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
