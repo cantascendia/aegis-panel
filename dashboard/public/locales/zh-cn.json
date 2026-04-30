@@ -496,6 +496,42 @@
         "unauthorized": "查看扩展健康报告需要超级管理员权限。"
       }
     },
+    "audit": {
+      "title": "审计日志",
+      "loading": "正在加载审计事件...",
+      "error": "加载失败: {{message}}",
+      "empty": "当前筛选条件下无审计事件。",
+      "filter": {
+        "actor": "操作者",
+        "action": "动作",
+        "reset": "重置",
+        "result": {
+          "label": "结果",
+          "all": "全部",
+          "success": "成功",
+          "denied": "拒绝",
+          "failure": "失败"
+        }
+      },
+      "action": {
+        "refresh": "刷新"
+      },
+      "actor": {
+        "anonymous": "（匿名）"
+      },
+      "column": {
+        "ts": "时间",
+        "actor": "操作者",
+        "action": "动作",
+        "result": "结果",
+        "status": "HTTP",
+        "ip": "IP"
+      },
+      "pagination": {
+        "prev": "上一页",
+        "next": "下一页"
+      }
+    },
     "reality": {
       "title": "Reality 审计",
       "subtitle": "按 2026 加固清单（冷门 SNI、同 ASN、非标准端口、shortId 合规、短 connIdle）为面板的 Reality 配置打分。",

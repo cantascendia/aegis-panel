@@ -617,6 +617,42 @@
         "unauthorized": "You must be a sudo admin to view the extended health report."
       }
     },
+    "audit": {
+      "title": "Audit log",
+      "loading": "Loading audit events...",
+      "error": "Failed to load: {{message}}",
+      "empty": "No audit events match the current filters.",
+      "filter": {
+        "actor": "Actor",
+        "action": "Action",
+        "reset": "Reset",
+        "result": {
+          "label": "Result",
+          "all": "All",
+          "success": "Success",
+          "denied": "Denied",
+          "failure": "Failure"
+        }
+      },
+      "action": {
+        "refresh": "Refresh"
+      },
+      "actor": {
+        "anonymous": "(anonymous)"
+      },
+      "column": {
+        "ts": "When",
+        "actor": "Actor",
+        "action": "Action",
+        "result": "Result",
+        "status": "HTTP",
+        "ip": "IP"
+      },
+      "pagination": {
+        "prev": "Previous",
+        "next": "Next"
+      }
+    },
     "reality": {
       "title": "Reality audit",
       "subtitle": "Score your panel's Reality config against the 2026 hardening checklist (cold SNI, same ASN, non-standard port, shortId compliance, short connIdle).",

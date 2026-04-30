@@ -4,6 +4,7 @@ import {
     Box,
     CreditCard,
     FileText,
+    History,
     Home,
     Landmark,
     ShieldAlert,
@@ -104,6 +105,12 @@ export const sidebarItems: SidebarObject = {
             title: 'Reality audit',
             to: '/reality',
             icon: <ShieldAlert />,
+            isParent: false,
+        },
+        {
+            title: 'Audit log',
+            to: '/audit',
+            icon: <History />,
             isParent: false,
         },
         {
