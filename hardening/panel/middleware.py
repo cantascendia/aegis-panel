@@ -22,6 +22,7 @@ from hardening.panel.rate_limit import limiter
 from hardening.reality.endpoint import router as reality_router
 from hardening.sni.endpoint import router as sni_router
 from ops.audit.config import validate_startup as validate_audit_startup
+from ops.audit.middleware import AuditMiddleware
 from ops.audit.scheduler import install_audit_scheduler
 from ops.billing.checkout_endpoint import (
     checkout_router as billing_checkout_router,
@@ -61,6 +62,11 @@ def apply_panel_hardening(app: FastAPI) -> None:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.add_middleware(SlowAPIMiddleware)
+    # AuditMiddleware (AL.2c.2 MVP — anonymous baseline). Mount AFTER
+    # SlowAPI so rate-limit rejections are captured in the audit row
+    # (status=429 → result=failure). See SPEC §How.2 ordering:
+    # rate-limit → trusted-proxy → audit → router.
+    app.add_middleware(AuditMiddleware)
 
     # Self-owned routers. Order matters only if prefixes overlap with
     # upstream — they don't (upstream ``app/routes/node.py`` mounts
