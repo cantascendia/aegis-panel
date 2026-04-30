@@ -34,12 +34,13 @@ if [ -n "$FORBIDDEN" ] && [ "${FORCE:-0}" != "1" ]; then
   exit 0
 fi
 
-# 2. 业务路径过滤：只 review 业务代码（非纯文档/配置）。SSOT 来自 scripts/business-paths.txt
+# 2. 业务路径过滤：只 review 业务代码（非纯文档/配置）— SSOT 来自 scripts/business-paths.txt
+# v3.6.1 教训：原 hardcoded `^(src|app|lib|apps|packages)/` 是 generic 假设，
+#              对 dashboard/src/ / hardening/ / actions/ 等自研结构 silent skip。
 BIZ_SSOT="scripts/business-paths.txt"
 if [ -f "$BIZ_SSOT" ]; then
   BIZ_PATTERN=$(grep -v '^#' "$BIZ_SSOT" | grep -v '^$' | sed 's|^|^|' | tr '\n' '|' | sed 's/|$//')
 else
-  # fallback：SSOT 不存在时用 hardcoded（兼容 generic 项目）
   BIZ_PATTERN='^(src|app|lib|apps|packages)/'
 fi
 BUSINESS=$(git diff --name-only "${TARGET}~1" "${TARGET}" 2>/dev/null | \

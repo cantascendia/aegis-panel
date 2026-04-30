@@ -10,12 +10,6 @@ user-invocable: true
 
 把 Claude Code 任务产物送给 Codex（gpt-5.5）做跨模型八维评审。
 
-## 项目特定配置
-
-业务路径过滤走 SSOT：`scripts/business-paths.txt`（与 `scripts/forbidden-paths.txt` 同模式）。`run.sh` 读取该文件按行首锚定（`^片段`）拼接 grep -E 正则；SSOT 缺失时回落到 upstream playbook 的 generic pattern `^(src|app|lib|apps|packages)/`。
-
-aegis-panel 业务路径：`dashboard/src/`、`hardening/`、`ops/`、`deploy/`、`tests/`、`app/`（Marzneshin upstream 同步区，本 fork 改动也算业务）。新增自研目录时只改 SSOT，不动 `run.sh`。
-
 ## 触发链路
 
 ```
@@ -146,6 +140,27 @@ mkdir -p docs/ai-cto
 - Codex 不可用三段都失败 → 写 PENDING 标记到 REVIEW-QUEUE.md，等 GH Actions 跑
 - max_iterations 超限 → 强制结束 + 写 INCIDENT
 - prompt > 32 KiB（Codex 限制）→ 分块（diff 按文件分），分别 review
+
+## 路径过滤的两个 SSOT（v3.6.1）
+
+**1. Forbidden 路径**（safety guard，跳过 codex 上传）：
+- 文件：`scripts/forbidden-paths.txt`（项目根）
+- 默认含：`auth/ payment/ secrets/ migration crypto/ infra/ ...` 共 12 项
+- 触及任一 → run.sh 直接 exit 0（不调 codex/claude）
+
+**2. Business 路径**（trigger guard，**新增于 v3.6.1**）：
+- 文件：`scripts/business-paths.txt`（项目根）
+- 默认含：`src/ app/ lib/ apps/ packages/`（generic 项目）
+- **每个项目应按实际业务路径 customize**，例如：
+  - `aegis-panel` 加 `dashboard/src/` `hardening/` `ops/`
+  - `dian` 加 `actions/` `admin/`（PHP 风格）
+  - `witch-gacha` 用 `apps/` `packages/`（pnpm monorepo，默认即可）
+  - 嵌套前端工程加 `<dir>/src/`
+
+**为什么需要 business-paths SSOT**（v3.6 教训）：
+> v3.6 把业务路径 hardcode 在 run.sh 里，假设 generic `^(src|app|lib|apps|packages)/`。
+> aegis-panel 跑了一个会话有 11+ 个业务 commit，但全在 `dashboard/src/`，结果 silent skip — REVIEW-QUEUE.md 一直空。
+> v3.6.1 提取为 SSOT，每个项目自己 customize。
 
 ## 降级策略（v3.6）
 
