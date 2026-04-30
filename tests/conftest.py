@@ -118,25 +118,25 @@ def db_session() -> Generator[Session, None, None]:
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.pool import StaticPool
 
-    import app.db.extra_models  # noqa: F401  fork-owned tables
-
-    # Import upstream models FIRST (registers ``users`` / ``admins`` /
-    # ``nodes`` etc. against ``Base.metadata``); fork-owned models in
-    # ``billing``/``iplimit`` carry foreign keys to ``users.id`` and
-    # will raise ``NoReferencedTableError`` from ``create_all`` if
-    # the upstream table isn't registered yet (codex review P2 on
-    # commit 51b9dff). Import the aggregator AFTER so every fork
-    # model class registers too. Both are side-effect-only — F401
-    # silences ruff's unused-import.
-    import app.db.models  # noqa: F401  upstream tables
+    # Import the audit ORM module so AuditEvent is registered on
+    # Base.metadata. We deliberately do NOT import the upstream model
+    # aggregator here: a few upstream columns (e.g.
+    # ``admins.subscription_url_prefix`` with ``default=""``) emit DDL
+    # that SQLite rejects as ``DEFAULT  NOT NULL`` (empty literal,
+    # syntax error). Fixing that belongs in upstream and is out of
+    # scope for AL.4. Tests using db_session today only need the
+    # audit table; future fork modules should append their tables to
+    # the explicit list rather than going back to a full
+    # ``create_all`` of the whole metadata.
     from app.db.base import Base
+    from ops.audit.db import AuditEvent
 
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    Base.metadata.create_all(engine)
+    Base.metadata.create_all(engine, tables=[AuditEvent.__table__])
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     session = SessionLocal()
     try:
