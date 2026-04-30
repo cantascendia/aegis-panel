@@ -62,7 +62,29 @@
 
 4. **频繁换 SNI 是反模式** — 每换一次客户必"更新订阅",同一周换 3 次 = 客户体验崩溃。一次决策选好 + 等真实 ping/丢包数据再换
 
-**沉淀**:✅ 本 entry。`.agents/rules/reality-sni-selection.md` 候选 — "改 Reality SNI 必跑三件套验证 + 优先 env.tmpl defaults"。下次新部署再犯就升硬规则。
+**实战补充(2026-04-30 当晚发生第 4 次错)**:
+本 LESSON 写完 5 分钟后,我又把 SNI 改到 `download-installer.cdn.mozilla.net`,VPS 端 TLS+H2 都通,但 friend_b 国内 client **超时**!**LESSON 写了"国内可达性"防线,但我自己跳过了这步**。
+
+**真根因 = VPS 端测通 ≠ 国内可达**:
+- mozilla CDN 在国内有些 ISP / 时段访问不稳
+- VPS 在 Tokyo,看到的是 mozilla 全球 CDN 边缘节点,
+- 国内 client 看到的是不同的 mozilla CDN 边缘节点(可能被限速 / 路由差)
+- **不同地理位置看到的 SNI 可达性可能完全不同**
+
+**升级防线(必须同时三个 vantage points 都通过)**:
+
+```
+1. VPS 端: openssl s_client + curl HTTP/2 验证 ✅
+2. 国内 client 端: 真实 ping + 浏览器秒开验证 ⚠️ 缺这步就翻车
+3. tesla.com / 已知能用的 SNI 做 baseline 对照 ✅
+```
+
+**B 阶段 work-around**(没国内测试 client 时):
+- **不要换** SNI,除非有 client 反馈"现在卡"
+- 所有"理论上更好"的 SNI 候选先记 docs,等有 ≥3 个朋友实测数据再批量切换
+- **friend_b 用过的 SNI = 已验证的 SNI**(不要轻易抛弃)
+
+**沉淀**:✅ 本 entry + 5 分钟后实战 lesson。`.agents/rules/reality-sni-selection.md` 候选 — "改 Reality SNI 必跑三件套 + 国内 client 实测 + 不要换已验证的 SNI"。下次新部署再犯就升硬规则。
 
 **关联**:同会话 L-030 (install.sh 实战 6 bug)、`SPEC-sni-selector.md`、`hardening/sni/selector.py`、`compass §"冷门 SNI"`、env.tmpl L77-L87。
 
