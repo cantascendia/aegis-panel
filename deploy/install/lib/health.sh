@@ -20,7 +20,13 @@ wait_for_panel_health() {
   local timeout="${2:-120}"
   local interval=2
   local elapsed=0
-  local url="http://127.0.0.1:${port}/api/system/info"
+  # /api/system/info doesn't exist on Marzneshin upstream — first real
+  # deploy 2026-04-30 found this 404s. /openapi.json is FastAPI auto,
+  # present on every upstream version (codex review P1 on commit fb33c57:
+  # the compose healthcheck was switched but this poller missed the
+  # update). Both must agree or step 7 times out while Docker thinks
+  # the panel is healthy.
+  local url="http://127.0.0.1:${port}/openapi.json"
 
   echo "[health] waiting for ${url} (timeout=${timeout}s)" >&2
 

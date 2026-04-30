@@ -310,7 +310,13 @@ step_3_collect_inputs() {
   if [[ "${DB_KIND}" == "postgres" ]]; then
     DATABASE_URL="postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${POSTGRES_PORT}/${POSTGRES_DB}"
   else
-    DATABASE_URL="sqlite:///${AEGIS_PREFIX}/data/panel/db.sqlite3"
+    # Container path: panel container mounts ${AEGIS_PREFIX}/data/panel
+    # to /var/lib/marzneshin (see compose volumes). The DATABASE_URL the
+    # panel reads must reflect the IN-CONTAINER path, not the host path
+    # (codex review P1 on commit fb33c57 — host-path URL was the original
+    # bug, the render.sh fallback fix was insufficient because this line
+    # always overrides the fallback).
+    DATABASE_URL="sqlite:////var/lib/marzneshin/db.sqlite3"
     POSTGRES_PASSWORD=""
     REDIS_PASSWORD=""
   fi
@@ -414,12 +420,13 @@ step_6_compose_up() {
   local compose_file
   compose_file="$(compose_file_for_kind)"
   log "step 6: docker compose up -d (${compose_file})"
-  prepare_marznode_dirs
   if (( DRY_RUN )); then
-    log "dry-run: would run: docker compose -f ${compose_file} --env-file ${AEGIS_PREFIX}/.env up -d"
+    log "dry-run: would prepare ${AEGIS_PREFIX}/data/marznode + ${AEGIS_PREFIX}/data/marznode-ssl (skipped)"
+    log "dry-run: would run: docker compose -f ${compose_file} --env-file ${AEGIS_PREFIX}/.env up -d panel"
     mark_step_done 6
     return 0
   fi
+  prepare_marznode_dirs  # codex P2 fix: gate behind DRY_RUN guard
   # Bring up panel only first; marznode depends on panel-health AND
   # needs the panel-issued client cert (fetched in step 7 once panel
   # is reachable). Bringing up everything at once causes marznode to
