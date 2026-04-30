@@ -1,0 +1,26 @@
+{
+  "_comment": "Initial xray-core config for marznode. Panel pushes Reality/VLESS inbounds via gRPC after node registers; this file just satisfies marznode's startup validator (which rejects empty inbounds). The placeholder dokodemo-door binds 127.0.0.1:12345 with no real listener — harmless.",
+  "log": {"loglevel": "warning"},
+  "inbounds": [
+    {
+      "tag": "placeholder",
+      "port": 12345,
+      "listen": "127.0.0.1",
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "127.0.0.1",
+        "port": 80,
+        "network": "tcp"
+      }
+    }
+  ],
+  "outbounds": [
+    {"protocol": "freedom", "tag": "direct"},
+    {"protocol": "blackhole", "tag": "block"}
+  ],
+  "routing": {
+    "rules": [
+      {"type": "field", "outboundTag": "block", "ip": ["geoip:private"]}
+    ]
+  }
+}

@@ -386,23 +386,77 @@ compose_file_for_kind() {
   fi
 }
 
+prepare_marznode_dirs() {
+  # Real-deploy lessons (2026-04-30, see LESSONS L-030):
+  #   1) marznode container expects /etc/marzneshin to exist for its
+  #      own server keypair generation. Compose mounts the host dir
+  #      ${AEGIS_PREFIX}/data/marznode-ssl into it.
+  #   2) marznode reads SSL_CLIENT_CERT_FILE on boot; the panel publishes
+  #      its client cert via GET /api/nodes/settings AFTER panel is up.
+  #      The marznode container will fail to start until the cert is
+  #      fetched and dropped here. Step 7 (post-panel-health) chains
+  #      fetch_marznode_client_cert below.
+  #   3) marznode validates xray_config.json at boot and rejects empty
+  #      inbounds (`config doesn't have inbounds`). We seed a placeholder
+  #      dokodemo-door inbound; panel pushes the real Reality config via
+  #      gRPC after the node registers.
+  install -d -m 0755 "${AEGIS_PREFIX}/data/marznode"
+  install -d -m 0755 "${AEGIS_PREFIX}/data/marznode-ssl"
+  if [[ ! -f "${AEGIS_PREFIX}/data/marznode/xray_config.json" ]]; then
+    cp "${TEMPLATES_DIR}/xray_config.json" \
+       "${AEGIS_PREFIX}/data/marznode/xray_config.json"
+    chmod 0644 "${AEGIS_PREFIX}/data/marznode/xray_config.json"
+  fi
+}
+
 step_6_compose_up() {
   if step_done 6; then log "step 6 (compose up): already done, skipping"; return 0; fi
   local compose_file
   compose_file="$(compose_file_for_kind)"
   log "step 6: docker compose up -d (${compose_file})"
+  prepare_marznode_dirs
   if (( DRY_RUN )); then
     log "dry-run: would run: docker compose -f ${compose_file} --env-file ${AEGIS_PREFIX}/.env up -d"
     mark_step_done 6
     return 0
   fi
-  docker compose -f "${compose_file}" --env-file "${AEGIS_PREFIX}/.env" up -d
+  # Bring up panel only first; marznode depends on panel-health AND
+  # needs the panel-issued client cert (fetched in step 7 once panel
+  # is reachable). Bringing up everything at once causes marznode to
+  # crash-loop on missing cert.
+  docker compose -f "${compose_file}" --env-file "${AEGIS_PREFIX}/.env" up -d panel
   mark_step_done 6
 }
 
 # ---------------------------------------------------------------------------
 # Step 7 — wait for panel health.
 # ---------------------------------------------------------------------------
+fetch_marznode_client_cert() {
+  # Pull the panel's client cert (returned by /api/nodes/settings) and
+  # write it where compose mounts it as SSL_CLIENT_CERT_FILE in the
+  # marznode container. Panel must already be healthy. See L-030.
+  local out="${AEGIS_PREFIX}/data/marznode-ssl/ssl_client_cert.pem"
+  if [[ -s "${out}" ]]; then
+    log "marznode client cert already present (${out})"
+    return 0
+  fi
+  log "fetching marznode client cert from panel"
+  # Panel /api/nodes/settings is unauthenticated for this single field
+  # on Marzneshin; if upstream tightens this in a future release, switch
+  # to admin-token auth here.
+  local resp
+  resp="$(curl -fsS "http://127.0.0.1:${PANEL_PORT}/api/nodes/settings" 2>/dev/null || true)"
+  local cert
+  cert="$(printf '%s' "${resp}" | jq -r '.certificate // empty' 2>/dev/null || true)"
+  if [[ -z "${cert}" ]]; then
+    warn "could not fetch panel client cert (response: $(printf '%s' "${resp}" | head -c 80)). marznode will fail to start until cert is provided manually."
+    return 1
+  fi
+  printf '%s\n' "${cert}" > "${out}"
+  chmod 0644 "${out}"
+  log "wrote marznode client cert (${out})"
+}
+
 step_7_wait_health() {
   if step_done 7; then log "step 7 (health): already done, skipping"; return 0; fi
   log "step 7: wait for panel health"
@@ -416,6 +470,12 @@ step_7_wait_health() {
   if ! wait_for_panel_health "${PANEL_PORT}" 120; then
     dump_compose_tail "${compose_file}" panel 50
     fatal 3 "panel did not become healthy"
+  fi
+  # Now panel is up. Fetch marznode bootstrap cert and bring up marznode.
+  if [[ "${MARZNODE_MODE}" == "same-host" ]]; then
+    fetch_marznode_client_cert || warn "marznode will not start without client cert"
+    log "starting marznode + remaining services"
+    docker compose -f "${compose_file}" --env-file "${AEGIS_PREFIX}/.env" up -d
   fi
   mark_step_done 7
 }

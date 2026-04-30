@@ -8,6 +8,43 @@
 
 ---
 
+## L-030 | Round 3 mid late-8 first-real-deploy | install.sh 在真 VPS 上踩到 6 个 bug,全是路径/启动顺序/healthcheck 错配
+
+**现象**: 2026-04-30 第一次在 Vultr Tokyo VPS 跑 `bash deploy/install/install.sh --non-interactive --domain nilou.cc --db sqlite --marznode same-host --cf-tunnel skip`。Dry-run 全绿,真跑炸 6 次:
+
+| # | bug | 表现 | 根因 |
+|---|---|---|---|
+| 1 | `SQLALCHEMY_DATABASE_URL` 用 host 路径 | sqlite3 unable to open database file | render.sh 默认值 `/opt/aegis/data/panel/db.sqlite3` 是宿主路径,容器内 mount 到 `/var/lib/marzneshin`,数据库 URL 应该用容器路径 |
+| 2 | `UVICORN_UDS=` 空字符串 | uvicorn `IndexError: string index out of range` 启动崩溃 | env.tmpl 把 UVICORN_UDS 渲染成空,uvicorn 试 `path[0]` 上空字符串炸。必须 unset 不能空 |
+| 3 | nginx 服务引用 `/opt/aegis/nginx/nginx.conf` 但 install.sh 不渲染该文件 | nginx 容器 mount fail "not a directory" | install.sh 没生成 nginx.conf,但 compose 强制 mount,B 阶段都用 CF Tunnel 不需要 nginx |
+| 4 | marznode `INSECURE: "True"` 不真禁 mTLS | "No certificate provided for the client; exiting" | marznode 上游代码读 `SSL_CLIENT_CERT_FILE` env,缺这个文件就退出。INSECURE 文档误导 |
+| 5 | marznode 缺初始 `xray_config.json` | "config doesn't have inbounds" ValueError | marznode 启动验证 xray config 不允许 inbounds=[],install.sh 没准备初始模板 |
+| 6 | panel healthcheck path 错 | `curl http://127.0.0.1:8443/api/system/info` → 404 | Marzneshin 上游没这个 endpoint;用 `/openapi.json`(FastAPI 自动)代替 |
+
+**根因**:install.sh 之前只用 `--dry-run` 验证模板渲染 + Alembic stepped CI 测 schema,**从来没在真 VPS 跑过完整 9 步**。Dry-run 跳过 docker compose up + healthcheck → 跳过所有运行时启动顺序问题。
+
+**防线**(本 PR 修复):
+
+1. `render.sh`:`DATABASE_URL` 默认值改容器路径 `sqlite:////var/lib/marzneshin/db.sqlite3`
+2. `env.tmpl`:`UVICORN_UDS=` → 注释 `# UVICORN_UDS=`(unset 而非空)
+3. `docker-compose.sqlite.yml`:
+   - panel healthcheck `/api/system/info` → `/openapi.json`,`start_period` 30s → 60s
+   - marznode 加 `SSL_CLIENT_CERT_FILE` env + 加 host volume `marznode-ssl:/etc/marzneshin`
+4. `templates/xray_config.json`(新):marznode 初始 xray config 含 placeholder dokodemo-door
+5. `install.sh` step 6:加 `prepare_marznode_dirs()` 创建 marznode + marznode-ssl 目录 + 拷贝 xray_config.json;**只先启 panel** 不启 marznode
+6. `install.sh` step 7:panel healthy 后 `fetch_marznode_client_cert()` 拉 panel 的 client cert,然后再 `up -d` 启 marznode
+
+**沉淀**:✅ 本 entry。`.agents/rules/install-script-real-deploy-gate.md` 候选 — "install.sh 改动必须在 fresh VPS 跑完整 9 步,不只 dry-run"。本次改动若再次出 bug 就升级为硬规则。
+
+**额外收获**(同一天发现):
+- nginx 服务缺 nginx.conf 模板 — 现阶段 B 都用 CF Tunnel,nginx 暂不修(留下次)
+- DASHBOARD_PATH env 在 marzneshin 新版本被忽略,dashboard 永远在 `/dashboard/` — 不是 install.sh bug,是 upstream 行为变化
+- `PASSWORD_HASH` admin 密码字段:Marzneshin upstream `marzneshin-cli.py admin create` 现在用 `--sudo` 不是 `--is-sudo`(API 变化,2025-2026 间)
+
+**关联 PR**:本 PR 修 1-6 项;nginx + DASHBOARD_PATH 留 follow-up。
+
+---
+
 ## L-027 | Round 3 mid late-7 wave-3 | Sub-agent 临时 worktree 并行模式经 7 波验证稳定,可转硬规则
 
 **现象**: 本会话(2026-04-28 ~ 04-29)单 session 内通过 16 次 sub-agent 调度,分 7 波并行(每波 2-5 个 sub-agent),完成 9 PR merge + 3 issue + harness 健康分 78→94。其中 4 波(#3 / #4 / #6 / #8)用临时 worktree(`../aegis-tmp-{slug}`)隔离 git-heavy 操作,主 worktree 0 撞车,sub-agent 之间 0 交叉污染。
