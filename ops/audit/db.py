@@ -46,6 +46,9 @@ from sqlalchemy import (
     LargeBinary,
     String,
 )
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.base import Base
 
 # SQLite quirk: only ``INTEGER PRIMARY KEY`` aliases rowid for
 # autoincrement. ``BIGINT PRIMARY KEY`` is treated as a generic numeric
@@ -55,9 +58,6 @@ from sqlalchemy import (
 # SQLite. (codex review 2026-04-30 P2; matches SQLAlchemy 2.0 docs
 # §"Type-specific dialect-level variants".)
 _AUDIT_PK_TYPE = BigInteger().with_variant(Integer(), "sqlite")
-from sqlalchemy.orm import Mapped, mapped_column
-
-from app.db.base import Base
 
 
 def _now_utc_naive() -> datetime:
@@ -111,7 +111,9 @@ class AuditEvent(Base):
     actor_type: Mapped[str] = mapped_column(String(16))
     # Snapshot at write time so renames / deletions don't corrupt the
     # historical record.
-    actor_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    actor_username: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
 
     # — Action —
     # ``action`` is the route name (``request.scope["route"].name``)
@@ -141,7 +143,9 @@ class AuditEvent(Base):
     # — Result —
     result: Mapped[str] = mapped_column(String(16))
     status_code: Mapped[int] = mapped_column(Integer)
-    error_message: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(
+        String(512), nullable=True
+    )
 
     # — Context —
     # ``ip`` is the gated client IP (post-D-012 trusted-proxy filter).
@@ -152,7 +156,9 @@ class AuditEvent(Base):
     request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # Naive UTC, matches billing convention.
-    ts: Mapped[datetime] = mapped_column(DateTime, default=_now_utc_naive, index=True)
+    ts: Mapped[datetime] = mapped_column(
+        DateTime, default=_now_utc_naive, index=True
+    )
 
     __table_args__ = (
         # Actor lookup: "show me everything sudo did this week".
