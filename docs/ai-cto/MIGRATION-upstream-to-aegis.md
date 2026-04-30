@@ -151,14 +151,18 @@ ls -la ${BACKUP_DIR}/db.sqlite3.bak  # 应当 > 1 KiB
 **Postgres**:
 
 ```bash
-# Docker 内 dump (推荐,不需要装 pg_dump 在主机)
-DB_NAME=$(grep DATABASE_URL /opt/marzneshin/.env | sed -E 's|.*/([^?]+).*|\1|')
+# 自动化脚本要求 dump 已存在 ${BACKUP_DIR}/postgres.sql.gz 才进 phase 3
+# (脚本不会替你跑 pg_dump,因为 DB 容器名 / 凭据各家不同)
+DB_NAME=$(grep -E '^SQLALCHEMY_DATABASE_URL=' /opt/marzneshin/.env | sed -E 's|.*/([^?]+).*|\1|')
 docker exec -t mz-db pg_dump -U marzneshin "${DB_NAME}" \
   | gzip > ${BACKUP_DIR}/postgres.sql.gz
 ls -la ${BACKUP_DIR}/postgres.sql.gz
 
 # 验证 dump 可读
 zcat ${BACKUP_DIR}/postgres.sql.gz | head -20
+
+# 若 dump 已经存在(例如云厂商快照),用 --skip-backup-check 跳过本地 dump
+# 检查,但**保留** auto-rollback(--no-auto-rollback 是独立的 DEBUG flag)
 ```
 
 **MySQL/MariaDB**:
@@ -237,16 +241,19 @@ sudo git checkout main  # 或最新 tag,例如 v0.2.0
 # Step 4: 复制现有 .env(JWT secret / DB URL 一字不改,保证 token / 订阅 link 全活)
 sudo cp ${BACKUP_DIR}/marzneshin.env /opt/aegis/src/.env
 
-# Step 5: SQLite 场景 — 把 DB 文件就地复用(或挂卷)
-# 选 5a 或 5b:
-# 5a) 挂同路径 (推荐,零拷贝)
-sudo mkdir -p /opt/aegis/data
-sudo cp /opt/marzneshin/data/db.sqlite3 /opt/aegis/data/db.sqlite3
-# 修改 docker-compose 让 volume 指向 /opt/aegis/data
-# 或修改 .env 中 SQLALCHEMY_DATABASE_URI=sqlite:////opt/aegis/data/db.sqlite3
+# Step 5: SQLite 场景 — 把 DB 文件放进新 compose 挂载的 host 路径
+# 本 fork docker-compose.yml 把 /var/lib/marzneshin 挂进容器,
+# .env 默认 SQLALCHEMY_DATABASE_URL=sqlite:///db.sqlite3 (相对 WORKDIR,
+# 解析后落在 /var/lib/marzneshin)。所以**不能**自己造一个 /opt/aegis/data
+# 然后期望容器读到 — 必须放进 /var/lib/marzneshin。
+sudo mkdir -p /var/lib/marzneshin
+sudo cp ${BACKUP_DIR}/db.sqlite3.bak /var/lib/marzneshin/db.sqlite3
+# 若 .env 里 SQLALCHEMY_DATABASE_URL 之前指 /opt/...,改成相对路径或绝对路径:
+#   SQLALCHEMY_DATABASE_URL=sqlite:///db.sqlite3
+# 或 SQLALCHEMY_DATABASE_URL=sqlite:////var/lib/marzneshin/db.sqlite3
 
-# 5b) Postgres 场景 — 不动 DB,只换 panel 容器
-# .env 里 DATABASE_URL 不变,新 panel 启动直连同一个 Postgres
+# Postgres 场景 — 不动 DB,只换 panel 容器,.env 里 SQLALCHEMY_DATABASE_URL 不变,
+# 新 panel 启动直连同一个 Postgres。无需 step 5。
 
 # Step 6: alembic upgrade head (会跑 4-6 个新迁移,加 9 张 aegis_* 表 + 索引,upstream 表纹丝不动)
 cd /opt/aegis/src

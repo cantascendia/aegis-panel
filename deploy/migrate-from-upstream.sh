@@ -56,11 +56,13 @@ HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-60}"
 CONFIRM=0
 DRY_RUN=0
 FORCE=0
-NO_ROLLBACK=0
-STAMP="$(date +%Y%m%d-%H%M%S)"
+SKIP_BACKUP_CHECK=0   # for external DB: caller asserts dump was taken manually
+NO_AUTO_ROLLBACK=0    # only disable auto-rollback for DEBUG; orthogonal to backup
+STAMP=""              # set lazily below — stays stable across re-runs of same migration
 BACKUP_ROOT="${BACKUP_ROOT:-/opt/aegis-migration-backup}"
-BACKUP_DIR="${BACKUP_ROOT}/${STAMP}"
+BACKUP_DIR=""         # resolved after STAMP
 LOG_FILE="${BACKUP_ROOT}/migration.log"
+RESUME=0              # if 1, reuse most recent BACKUP_DIR instead of new STAMP
 
 usage() {
   cat <<'EOF'
@@ -80,7 +82,10 @@ Optional:
   --confirm              Required to actually run (without it: dry-run only)
   --dry-run              Print intended actions, change nothing
   --force                Re-run completed phases (bypass sentinels)
-  --no-rollback          Disable auto-rollback on health-check failure (DEBUG ONLY)
+  --resume               Reuse most-recent backup dir under BACKUP_ROOT (resume after interrupt)
+  --skip-backup-check    For Postgres/MySQL: assert you have already taken pg_dump/mysqldump
+                         out-of-band; phase 2 will skip the DB step but auto-rollback stays on
+  --no-auto-rollback     Disable auto-rollback on alembic / health-check failure (DEBUG ONLY)
   --help                 This help
 
 Exit codes:
@@ -114,11 +119,14 @@ while [[ $# -gt 0 ]]; do
     --domain)          DOMAIN="$2"; shift 2 ;;
     --health-url)      HEALTH_URL="$2"; shift 2 ;;
     --health-timeout)  HEALTH_TIMEOUT="$2"; shift 2 ;;
-    --backup-root)     BACKUP_ROOT="$2"; BACKUP_DIR="${BACKUP_ROOT}/${STAMP}"; shift 2 ;;
+    --backup-root)     BACKUP_ROOT="$2"; shift 2 ;;
     --confirm)         CONFIRM=1; shift ;;
     --dry-run)         DRY_RUN=1; shift ;;
     --force)           FORCE=1; shift ;;
-    --no-rollback)     NO_ROLLBACK=1; shift ;;
+    --resume)          RESUME=1; shift ;;
+    --skip-backup-check) SKIP_BACKUP_CHECK=1; shift ;;
+    --no-auto-rollback)  NO_AUTO_ROLLBACK=1; shift ;;
+    --no-rollback)     NO_AUTO_ROLLBACK=1; shift ;;  # back-compat alias
     --help|-h)         usage; exit 0 ;;
     *) fail "unknown arg: $1" 5 ;;
   esac
@@ -126,6 +134,16 @@ done
 
 mkdir -p "${BACKUP_ROOT}"
 touch "${LOG_FILE}"
+
+# Resolve BACKUP_DIR — either reuse most recent (resume) or create new stamp.
+if [[ ${RESUME} -eq 1 ]]; then
+  BACKUP_DIR="$(ls -1dt "${BACKUP_ROOT}"/2*/ 2>/dev/null | head -1 | sed 's|/$||' || true)"
+  [[ -n "${BACKUP_DIR}" ]] || fail "--resume specified but no prior backup dir under ${BACKUP_ROOT}" 1
+  STAMP="$(basename "${BACKUP_DIR}")"
+else
+  STAMP="$(date +%Y%m%d-%H%M%S)"
+  BACKUP_DIR="${BACKUP_ROOT}/${STAMP}"
+fi
 
 if [[ ${CONFIRM} -eq 0 && ${DRY_RUN} -eq 0 ]]; then
   log "Refusing to run without --confirm or --dry-run. Read MIGRATION-upstream-to-aegis.md first."
@@ -169,17 +187,22 @@ phase_1_preflight() {
     log "WARN: JWT_SECRET not found in upstream .env; users may need to re-login"
   fi
 
-  # DB type detection
+  # DB type detection.
+  # Order matters: SQLALCHEMY_DATABASE_URL is the key documented in this fork's
+  # app/config/env.py + .env.example; SQLALCHEMY_DATABASE_URI is the older
+  # upstream variant; DATABASE_URL is some 3rd-party setups.
   local db_url
-  db_url="$(grep -E '^(SQLALCHEMY_DATABASE_URI|DATABASE_URL)=' "${UPSTREAM_DIR}/.env" \
-            | head -1 | cut -d= -f2- | tr -d '"' || true)"
+  db_url="$(grep -E '^(SQLALCHEMY_DATABASE_URL|SQLALCHEMY_DATABASE_URI|DATABASE_URL)=' "${UPSTREAM_DIR}/.env" \
+            | head -1 | cut -d= -f2- | tr -d '"'"'" || true)"
   case "${db_url}" in
     sqlite*)        DB_KIND="sqlite" ;;
     postgresql*|postgres*) DB_KIND="postgres" ;;
     mysql*|mariadb*) DB_KIND="mysql" ;;
-    *) DB_KIND="sqlite" ;;  # marzneshin default
+    "")             DB_KIND="sqlite" ;;  # marzneshin default
+    *)              DB_KIND="sqlite" ;;
   esac
-  log "detected DB kind: ${DB_KIND}"
+  DB_URL="${db_url}"
+  log "detected DB kind: ${DB_KIND} (url: ${db_url:-<unset, will default sqlite>})"
 
   phase_mark 1
   log "phase 1 ok"
@@ -205,9 +228,22 @@ phase_2_backup() {
   # 2.3 DB
   case "${DB_KIND}" in
     sqlite)
-      local sqlite_path
-      sqlite_path="$(find "${UPSTREAM_DIR}" -maxdepth 3 -name 'db.sqlite3' 2>/dev/null | head -1 || true)"
-      [[ -n "${sqlite_path}" ]] || fail "sqlite db file not found under ${UPSTREAM_DIR}" 2
+      # Look in: upstream-dir / standard bind-mount /var/lib/marzneshin / docker volume.
+      local sqlite_path=""
+      for cand in \
+        "${UPSTREAM_DIR}/data/db.sqlite3" \
+        "${UPSTREAM_DIR}/db.sqlite3" \
+        "/var/lib/marzneshin/db.sqlite3" \
+        "/var/lib/marzneshin/data/db.sqlite3"
+      do
+        if [[ -f "${cand}" ]]; then sqlite_path="${cand}"; break; fi
+      done
+      if [[ -z "${sqlite_path}" ]]; then
+        # Last-resort: search wider, but bounded depth to avoid pulling in unrelated dirs.
+        sqlite_path="$(find "${UPSTREAM_DIR}" /var/lib/marzneshin -maxdepth 4 -name 'db.sqlite3' 2>/dev/null | head -1 || true)"
+      fi
+      [[ -n "${sqlite_path}" ]] || fail "sqlite db file not found in any standard location" 2
+      log "sqlite source: ${sqlite_path}"
       if command -v sqlite3 >/dev/null 2>&1; then
         run "sqlite3 '${sqlite_path}' \".backup '${BACKUP_DIR}/db.sqlite3.bak'\""
       else
@@ -215,15 +251,31 @@ phase_2_backup() {
       fi
       ;;
     postgres)
-      log "Postgres dump — operator must run pg_dump from inside their DB container."
-      log "Suggested: docker exec -t <db_container> pg_dump -U <user> <db> | gzip > ${BACKUP_DIR}/postgres.sql.gz"
-      log "Set NO_ROLLBACK=1 if you have already taken an external snapshot."
-      [[ ${NO_ROLLBACK} -eq 1 ]] || fail "Postgres backup must be taken manually first; re-run with --no-rollback once done" 2
+      # Look for an external snapshot the operator has placed under BACKUP_DIR.
+      if ls "${BACKUP_DIR}"/postgres.sql.gz "${BACKUP_DIR}"/postgres.dump 2>/dev/null | head -1 >/dev/null; then
+        log "Postgres dump found in ${BACKUP_DIR}"
+      elif [[ ${SKIP_BACKUP_CHECK} -eq 1 ]]; then
+        log "WARN: --skip-backup-check set; trusting operator's out-of-band Postgres snapshot"
+      else
+        log "Postgres dump required. Run something like:"
+        log "  docker exec -t <db_container> pg_dump -U <user> <db> | gzip > ${BACKUP_DIR}/postgres.sql.gz"
+        log "Then re-run with --resume (auto-rollback stays ON), or pass --skip-backup-check"
+        log "if you have a snapshot at the cloud-provider / volume level instead."
+        fail "Postgres backup not present; refusing to proceed" 2
+      fi
       ;;
     mysql)
-      log "MySQL/MariaDB dump — operator must run mysqldump from inside their DB container."
-      log "Suggested: docker exec -t <db_container> mysqldump --single-transaction -u <user> -p <db> | gzip > ${BACKUP_DIR}/mysql.sql.gz"
-      [[ ${NO_ROLLBACK} -eq 1 ]] || fail "MySQL backup must be taken manually first; re-run with --no-rollback once done" 2
+      if ls "${BACKUP_DIR}"/mysql.sql.gz "${BACKUP_DIR}"/mysql.dump 2>/dev/null | head -1 >/dev/null; then
+        log "MySQL dump found in ${BACKUP_DIR}"
+      elif [[ ${SKIP_BACKUP_CHECK} -eq 1 ]]; then
+        log "WARN: --skip-backup-check set; trusting operator's out-of-band MySQL snapshot"
+      else
+        log "MySQL/MariaDB dump required. Run something like:"
+        log "  docker exec -t <db_container> mysqldump --single-transaction -u <user> -p <db> | gzip > ${BACKUP_DIR}/mysql.sql.gz"
+        log "Then re-run with --resume, or pass --skip-backup-check if you have a"
+        log "volume-level snapshot."
+        fail "MySQL backup not present; refusing to proceed" 2
+      fi
       ;;
   esac
 
@@ -298,10 +350,31 @@ phase_3_swap() {
   # 3.4 .env reuse (preserves JWT secret, DB URL, etc.)
   run "cp '${BACKUP_DIR}/marzneshin.env' '${AEGIS_DIR}/.env'"
 
-  # 3.5 SQLite: copy DB into aegis data dir if path differs
+  # 3.5 SQLite: ensure the bind-mounted host path holds the existing DB.
+  # docker-compose.yml in this fork mounts /var/lib/marzneshin into the
+  # container, and SQLALCHEMY_DATABASE_URL defaults to sqlite:///db.sqlite3
+  # (relative to the WORKDIR). The container path is set up by the image so
+  # that path resolves under /var/lib/marzneshin. If the operator's upstream
+  # used a different host path (e.g. /opt/marzneshin/data/db.sqlite3), copy
+  # it into the canonical /var/lib/marzneshin location so the new compose
+  # actually picks it up.
   if [[ "${DB_KIND}" == "sqlite" ]]; then
-    run "mkdir -p '${AEGIS_DIR}/data'"
-    run "cp '${BACKUP_DIR}/db.sqlite3.bak' '${AEGIS_DIR}/data/db.sqlite3' 2>/dev/null || true"
+    local target_dir="/var/lib/marzneshin"
+    run "mkdir -p '${target_dir}'"
+    if [[ ${DRY_RUN} -eq 0 ]]; then
+      # Preserve the original DB file name when possible.
+      local src_name
+      src_name="$(basename "$(find "${UPSTREAM_DIR}" -maxdepth 3 -name 'db.sqlite3' 2>/dev/null | head -1 || echo db.sqlite3)")"
+      cp "${BACKUP_DIR}/db.sqlite3.bak" "${target_dir}/${src_name}"
+      log "SQLite DB placed at ${target_dir}/${src_name} (matches compose volume)"
+    fi
+    # Sanity: the reused .env should reference a sqlite path the container
+    # can actually see. Warn loudly if it points at /opt/... instead.
+    if grep -qE '^SQLALCHEMY_DATABASE_URL=.*sqlite:.*opt/' "${AEGIS_DIR}/.env" 2>/dev/null; then
+      log "WARN: .env SQLALCHEMY_DATABASE_URL points at /opt/... — container won't see it."
+      log "      Edit ${AEGIS_DIR}/.env to use sqlite:///db.sqlite3 (relative to WORKDIR)"
+      log "      or sqlite:////var/lib/marzneshin/db.sqlite3 (absolute, matches volume)."
+    fi
   fi
 
   # 3.6 alembic upgrade head (creates aegis_* tables)
@@ -309,7 +382,7 @@ phase_3_swap() {
   if [[ ${DRY_RUN} -eq 0 ]]; then
     if ! (cd "${AEGIS_DIR}" && docker compose run --rm marzneshin alembic upgrade head 2>&1 | tee -a "${LOG_FILE}"); then
       log "alembic upgrade FAILED — auto-rollback"
-      [[ ${NO_ROLLBACK} -eq 0 ]] && bash "${BACKUP_DIR}/ROLLBACK.sh" || true
+      [[ ${NO_AUTO_ROLLBACK} -eq 0 ]] && bash "${BACKUP_DIR}/ROLLBACK.sh" || true
       exit 3
     fi
   fi
@@ -343,7 +416,7 @@ phase_4_verify() {
     done
     if [[ ${ok} -eq 0 ]]; then
       log "health-check FAILED — auto-rollback"
-      [[ ${NO_ROLLBACK} -eq 0 ]] && bash "${BACKUP_DIR}/ROLLBACK.sh" || true
+      [[ ${NO_AUTO_ROLLBACK} -eq 0 ]] && bash "${BACKUP_DIR}/ROLLBACK.sh" || true
       exit 4
     fi
   fi
