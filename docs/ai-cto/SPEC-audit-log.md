@@ -553,10 +553,16 @@ RBAC)。
   dashboard/src/i18n/{en,zh-cn}.json 的 audit 段(新增 key)
 
 第一步:
-  读完 5 份文件后,先确认 SPEC 中的 4 个 TBD 用户已决策(若未决策,在
-  本 session 第一轮 stop 等用户拍板,不要擅自走默认值)。
+  4 个 TBD 已在 D-018 SEALED(2026-04-30,见 DECISIONS.md#D-018,issue #103):
+    - TBD-1 dashboard wipe 按钮 → **不暴露**
+    - TBD-2 REDACT_FIELDS 配置 → **混合方案**:base list 硬编码
+      + `.env` AUDIT_EXTRA_REDACT_FIELDS union(只允许追加,不允许 override),
+      实现层用 `frozenset(base) | set(env_extras)`
+    - TBD-3 payment_events 反向 FK → **不加**
+    - TBD-4 审计层 vs ops_events → **分开**(各自独立表)
+  读完 5 份文件后直接进入第二步,无需再等用户拍板。
 
-第二步(TBD 决策后):
+第二步:
   按 SPEC §AL.1 ~ AL.4 顺序串行 PR,每个 PR ≤ 500 LOC,引用 AC-AL.x.y
   编号验收。严格 Spec-Driven。
 
@@ -575,3 +581,6 @@ RBAC)。
 - **2026-04-28** — 初稿。S-AL session 待用户启动。docs-only,无代码改动。
   4 个 TBD 段留给用户决策。法律风险张力(D-003)贯穿 Why / How.3 / Risks
   三处。
+- **2026-04-30** — frontmatter `status: DRAFT → SEALED`,4 个 TBD 全部由 CTO
+  (auto mode)在 issue #103 拍板,记录于 D-018。Kickoff prompt 同步更新,
+  移除"等用户拍板"语,直接引用 D-018 决策结果。
