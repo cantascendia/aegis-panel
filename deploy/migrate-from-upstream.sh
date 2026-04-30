@@ -186,22 +186,42 @@ _detect_db() {
   log "detected DB kind: ${DB_KIND} (url: ${db_url:-<unset, will default sqlite>})"
 
   # Persist so re-runs / --resume in a fresh shell don't lose this state.
+  # We use a key=value format that is parsed (not sourced) — DB_URL can carry
+  # passwords with shell metacharacters (`$`, `;`, spaces) that would either
+  # break or RCE if `.` were used.
   if [[ ${DRY_RUN} -eq 0 ]]; then
+    # Tighten umask before creating dir/file — DB_URL may contain credentials.
+    local _saved_umask
+    _saved_umask="$(umask)"
+    umask 077
     mkdir -p "${BACKUP_DIR}"
+    chmod 700 "${BACKUP_DIR}"
+    : > "${BACKUP_DIR}/state.env"
+    chmod 600 "${BACKUP_DIR}/state.env"
     {
-      echo "DB_KIND=${DB_KIND}"
-      echo "DB_URL=${DB_URL}"
-      echo "UPSTREAM_DIR=${UPSTREAM_DIR}"
+      printf 'DB_KIND=%s\n' "${DB_KIND}"
+      printf 'DB_URL=%s\n' "${DB_URL}"
+      printf 'UPSTREAM_DIR=%s\n' "${UPSTREAM_DIR}"
     } > "${BACKUP_DIR}/state.env"
+    umask "${_saved_umask}"
   fi
 }
 
 _load_db_state() {
   # Restore DB_KIND / DB_URL from prior phase-1 detection so phases 2-4
   # don't crash under `set -u` after --resume / sentinel-skip.
+  # IMPORTANT: parse, do not source. DB_URL may contain `$` `;` `&` etc.
+  # in passwords; sourcing would either trigger expansion / RCE or fail
+  # under `set -u`.
   if [[ -f "${BACKUP_DIR}/state.env" ]]; then
-    # shellcheck disable=SC1090
-    . "${BACKUP_DIR}/state.env"
+    while IFS='=' read -r _key _val; do
+      case "${_key}" in
+        DB_KIND)       DB_KIND="${_val}" ;;
+        DB_URL)        DB_URL="${_val}" ;;
+        SQLITE_SRC)    SQLITE_SRC="${_val}" ;;
+        UPSTREAM_DIR)  : ;;  # don't override CLI-passed value
+      esac
+    done < "${BACKUP_DIR}/state.env"
     log "restored DB_KIND=${DB_KIND} from ${BACKUP_DIR}/state.env"
   else
     log "no state.env found; re-detecting DB"
