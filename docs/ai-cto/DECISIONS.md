@@ -5,6 +5,57 @@
 
 ---
 
+## D-019 | 2026-04-30 | SPEC-rbac SEALED — 4 角色 + `<scope>:<verb>:<target>` + 6 周 4-Phase 迁移期(issue #104)
+
+**决策**(3 个 TBD 一次性 SEAL):
+1. **TBD-1 默认角色数**:**4 角色 (sudo / ops / finance / support) + custom role 机制**。不补 auditor(= ops 只读子集,通过 custom role 创建)/ 不补 reseller(multi-tenant 独立产品方向,不在 v0.3 scope)
+2. **TBD-2 permission_key 风格**:**`<scope>:<verb>:<target>` 锁定**(如 `billing:read:invoice`)。不选 dot-separated(正则特殊字符)/ 不选 snake_case(无层次结构)
+3. **TBD-3 4-Phase 迁移期**:**6 周总长**(Phase 1 schema 1 周 / Phase 2 dual-gate 2 周 / Phase 3 UI 2 周 / Phase 4 deprecation 1 周)。不选 3 周(dual-gate 缩到 1 周不够)/ 不选 12 周(over-cautious)
+
+**Why**:OAuth/Casbin/Keycloak 主流标准已验证 4 角色 + scope-first naming 是合理默认;multi-tenant 二级代理是独立产品决策,不应捆绑 RBAC MVP;6 周节奏对齐"每周 20-30h 投入"产能。
+
+**How to apply**:
+- S-RB session 启动时按本决策实施,不再争论
+- 实施约束:Phase 3 UI 必须支持 custom role 创建(否则不能算"完成"4 角色 + custom 模式)
+- 启动时仍要做 endpoint 数量统计:若 endpoint > 80 → Phase 2 延长到 3 周(单一调整变量)
+
+**推翻条件**:
+- 运营方实战 ≥ 3 次"现有 4 角色不够用"数据点 → 评估补 auditor / reseller
+- PoC 发现 `<scope>:<verb>:<target>` grep 噪声 / 误拼率 ≥ 5% → 评估改风格
+- Phase 2 dual-gate 实战发现漏权限 ≥ 5 个 → Phase 2 临时延长到 3 周
+
+**关联**:issue #104 / SPEC-rbac.md / D-018(SPEC-audit-log SEALED 是先决条件)
+
+---
+
+## D-018 | 2026-04-30 | SPEC-audit-log SEALED — 4 TBD 拍板 + base list 硬编码 + extras 追加(issue #103)
+
+**决策**(4 个 TBD 一次性 SEAL):
+1. **TBD-1 dashboard wipe 按钮**:**不暴露**。D-003 法律张力 + 单点社工攻击面;wipe 走 psql / SSH 摩擦合理(高破坏性操作必须高门槛)
+2. **TBD-2 REDACT_FIELDS 可配**:**混合方案 — base list 硬编码 + `.env` AUDIT_EXTRA_REDACT_FIELDS 追加(union 不可 override)**。Base list = `{jwt, password, passwd, merchant_key, trc20_private_key, cf_token, secret_key, api_key, private_key}` 用 `frozenset()` 锁;extras 给运营方按市场扩展(如欧洲 GDPR 加 `email,phone`)
+3. **TBD-3 payment_events 反向 FK**:**不加**。D-014 billing 自治原则;billing UI 通过 `(invoice_id, ts)` 范围查询 audit_events 即可
+4. **TBD-4 audit vs ops_events 合一/分开**:**分开**。Audit log 服务 admin 行为镜像;scheduler 高频事件淹没 admin 信号;`ops_events` 走单独 SPEC 留 v0.4
+
+**Why**:
+- TBD-1 法律边界优先于运营便利性(D-003 留痕)
+- TBD-2 mixed approach 平衡安全(base list 强制)+ 灵活(market-specific extras)
+- TBD-3 D-014 自治原则:billing 内部 windowed audit 已够,scope creep 不值得
+- TBD-4 信噪比硬约束:admin audit 是低噪信号源,scheduler 高噪事件应隔离
+
+**How to apply**:
+- S-AL session 立即可启,SPEC §How.3.b 实施 base + extras union(`frozenset(base) | set(env_extras)`)
+- 实施代码必须保证 extras 不能删除 base list(任何 union 算法都不允许)
+- v0.4 单独 SPEC 处理 `ops_events` scheduler 行为日志表(不在 v0.3 scope)
+
+**推翻条件**:
+- TBD-1:运营方实战 ≥ 3 次"应急 wipe 但 SSH 不便"真实数据点
+- TBD-3:运营方实战 ≥ 3 次"对账时跳 audit 不顺"反馈
+- TBD-2 / TBD-4:暂无明确推翻信号(deepy 嵌套设计决策)
+
+**关联**:issue #103 / SPEC-audit-log.md / D-003(法律张力)/ D-014(billing 自治)/ D-019(SPEC-rbac SEAL 后续)
+
+---
+
 ## D-017 | 2026-04-28 | 差异化 #4(一体化部署)首件工具 = AGPL §13 自检脚本(`agpl-selfcheck.sh`),把 "合规验证" 从 doc-only 升到可执行
 
 **决策**:差异化 #4("一体化部署 / 运营加固")的第一件 ship 工具是 `deploy/agpl-selfcheck.sh`(PR #88,302 LOC bash),**不是** install.sh / Ansible / CF Tunnel 自动化。这条排序固定下来,后续工具按下方"工具序列"推进,不打乱。
