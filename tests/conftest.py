@@ -19,10 +19,19 @@ Non-goals for now:
 from __future__ import annotations
 
 import os
-from collections.abc import Generator, Iterator
-from typing import TYPE_CHECKING
 
-import pytest
+# CRITICAL: set JWT_SECRET_KEY at conftest module-import time, BEFORE
+# any test module imports `app.config.env` (which captures the env var
+# at import time into a module-level constant). Doing this in a
+# session-scoped autouse fixture is too late — the constant is already
+# bound to "" and ``get_secret_key`` falls back to the DB-backed
+# legacy path which queries the ``jwt`` table.
+os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret-not-for-prod")
+
+from collections.abc import Generator, Iterator  # noqa: E402
+from typing import TYPE_CHECKING  # noqa: E402
+
+import pytest  # noqa: E402
 
 # Type-only imports. `from __future__ import annotations` makes every
 # annotation a lazy string, so names imported here never need to exist
@@ -62,12 +71,9 @@ def _isolated_env() -> Iterator[None]:
     # Point the app at an ephemeral in-memory SQLite unless a test overrides.
     os.environ.setdefault("SQLALCHEMY_DATABASE_URL", "sqlite:///:memory:")
 
-    # Pin a JWT signing secret so ``app.utils.auth.create_admin_token`` /
-    # ``app.config.db.get_secret_key`` skip the legacy DB-backed fallback
-    # (which would query the ``jwt`` table — works in unit tests only if
-    # the row was seeded, and the lru_cache leaks across tests). Tests
-    # that need a different secret can monkeypatch.
-    os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret-not-for-prod")
+    # JWT_SECRET_KEY is pinned at conftest module-import time (see top
+    # of file) so ``app.config.env`` captures it. Tests that need a
+    # different value should monkeypatch and call ``get_secret_key.cache_clear()``.
 
     # Billing encryption + public URL. Production panels supply these
     # via .env; tests mirror that contract so the channel create/patch
