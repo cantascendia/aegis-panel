@@ -215,27 +215,65 @@ def test_sweep_cutoff_is_strictly_less_than(
 ) -> None:
     """Rows at ``ts == cutoff`` (exactly 30d old, retention=30) are
     KEPT, not deleted — the WHERE clause is ``ts < cutoff`` (strict).
-    A row newly aged into 'past retention' on this tick is always
-    >=1 second past, so the strict-less-than is the safe choice."""
-    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
-    monkeypatch.setenv("AUDIT_SECRET_KEY", _fresh_key())
-    from ops.audit.scheduler import audit_retention_sweep
 
-    # Row at exactly 30 days old vs row at 31 days old.
-    edge_id = _make_event(db_session, ts_offset_days=30)
-    over_id = _make_event(db_session, ts_offset_days=31)
+    Tests pin this with a frozen ``_now_utc_naive`` so the sweep's
+    cutoff calculation produces the exact same datetime as the row
+    we insert at "30 days old". Without freezing, microsecond drift
+    between the fixture's ``_now_utc_naive()`` call and the sweep's
+    own call makes the assertion non-deterministic (codex review
+    P3 flagged the previous tautological assertion).
+    """
+    from datetime import datetime, timedelta
 
-    deleted = audit_retention_sweep(db_session)
-    assert deleted == 1
-
+    from ops.audit import db as audit_db
+    from ops.audit import scheduler as audit_scheduler
     from ops.audit.db import AuditEvent
 
+    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
+    monkeypatch.setenv("AUDIT_SECRET_KEY", _fresh_key())
+
+    # Freeze "now" so cutoff = now - 30d is byte-exact equal to the
+    # boundary row's ts. Patch BOTH where _now_utc_naive is defined
+    # (audit.db) AND where it's used (audit.scheduler imported it
+    # by name) — Python resolves the imported binding, not the
+    # module attribute, at call time.
+    frozen_now = datetime(2026, 5, 1, 12, 0, 0)
+    monkeypatch.setattr(audit_db, "_now_utc_naive", lambda: frozen_now)
+    monkeypatch.setattr(audit_scheduler, "_now_utc_naive", lambda: frozen_now)
+
+    # Insert directly with the deterministic ts so the boundary is
+    # exact (the helper above calls _now_utc_naive at fixture time
+    # which is now also frozen, but inline is clearer).
+    boundary_ts = frozen_now - timedelta(days=30)  # exactly at cutoff
+    over_ts = frozen_now - timedelta(days=30, seconds=1)  # 1s past cutoff
+    boundary = AuditEvent(
+        actor_id=1, actor_type="sudo_admin", actor_username="sudo",
+        action="t", method="POST", path="/t",
+        target_type=None, target_id=None,
+        before_state_encrypted=None, after_state_encrypted=None,
+        result="success", status_code=200, error_message=None,
+        ip="127.0.0.1", user_agent=None, request_id=None,
+        ts=boundary_ts,
+    )
+    over = AuditEvent(
+        actor_id=1, actor_type="sudo_admin", actor_username="sudo",
+        action="t", method="POST", path="/t",
+        target_type=None, target_id=None,
+        before_state_encrypted=None, after_state_encrypted=None,
+        result="success", status_code=200, error_message=None,
+        ip="127.0.0.1", user_agent=None, request_id=None,
+        ts=over_ts,
+    )
+    db_session.add_all([boundary, over])
+    db_session.commit()
+
+    deleted = audit_scheduler.audit_retention_sweep(db_session)
+    # Strict-less-than: exactly-at-cutoff row stays; 1-second-past
+    # cutoff row deletes.
+    assert deleted == 1
     remaining = {row.id for row in db_session.query(AuditEvent).all()}
-    # The over-30 row is gone; the at-30 row may or may not be —
-    # depends on microsecond precision between ``_now_utc_naive``
-    # calls in the fixture and the sweep. Assert only the
-    # unambiguous case.
-    assert over_id not in remaining
-    # The edge case is recorded for documentation only — production
-    # behaviour with a 30-day-stale row is to delete it next tick.
-    assert edge_id in remaining or edge_id not in remaining
+    assert boundary.id in remaining, (
+        "Strict-less-than: row at exactly the cutoff must be kept; "
+        "if this fails, the sweep changed to <= cutoff."
+    )
+    assert over.id not in remaining
