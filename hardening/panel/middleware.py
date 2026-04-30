@@ -22,6 +22,7 @@ from hardening.panel.rate_limit import limiter
 from hardening.reality.endpoint import router as reality_router
 from hardening.sni.endpoint import router as sni_router
 from ops.audit.config import validate_startup as validate_audit_startup
+from ops.audit.endpoint import router as audit_router
 from ops.audit.middleware import AuditMiddleware
 from ops.audit.scheduler import install_audit_scheduler
 from ops.billing.checkout_endpoint import (
@@ -77,6 +78,7 @@ def apply_panel_hardening(app: FastAPI) -> None:
     app.include_router(billing_checkout_router)
     app.include_router(reality_router)
     app.include_router(health_router)
+    app.include_router(audit_router)
     install_iplimit_scheduler(app)
     install_billing_scheduler(app)
     # Audit log (S-AL Phase 4 retention sweep). validate_startup runs
