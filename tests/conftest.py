@@ -19,10 +19,19 @@ Non-goals for now:
 from __future__ import annotations
 
 import os
-from collections.abc import Generator, Iterator
-from typing import TYPE_CHECKING
 
-import pytest
+# CRITICAL: set JWT_SECRET_KEY at conftest module-import time, BEFORE
+# any test module imports `app.config.env` (which captures the env var
+# at import time into a module-level constant). Doing this in a
+# session-scoped autouse fixture is too late — the constant is already
+# bound to "" and ``get_secret_key`` falls back to the DB-backed
+# legacy path which queries the ``jwt`` table.
+os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret-not-for-prod")
+
+from collections.abc import Generator, Iterator  # noqa: E402
+from typing import TYPE_CHECKING  # noqa: E402
+
+import pytest  # noqa: E402
 
 # Type-only imports. `from __future__ import annotations` makes every
 # annotation a lazy string, so names imported here never need to exist
@@ -61,6 +70,10 @@ def _isolated_env() -> Iterator[None]:
 
     # Point the app at an ephemeral in-memory SQLite unless a test overrides.
     os.environ.setdefault("SQLALCHEMY_DATABASE_URL", "sqlite:///:memory:")
+
+    # JWT_SECRET_KEY is pinned at conftest module-import time (see top
+    # of file) so ``app.config.env`` captures it. Tests that need a
+    # different value should monkeypatch and call ``get_secret_key.cache_clear()``.
 
     # Billing encryption + public URL. Production panels supply these
     # via .env; tests mirror that contract so the channel create/patch
@@ -129,6 +142,7 @@ def db_session() -> Generator[Session, None, None]:
     # the explicit list rather than going back to a full
     # ``create_all`` of the whole metadata.
     from app.db.base import Base
+    from app.db.models import JWT  # upstream model — needed by audit JWT
     from ops.audit.db import AuditEvent
 
     engine = create_engine(
@@ -136,7 +150,14 @@ def db_session() -> Generator[Session, None, None]:
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    Base.metadata.create_all(engine, tables=[AuditEvent.__table__])
+    # Materialise just the tables our audit-log tests touch:
+    # - aegis_audit_events: target table for inserts/queries.
+    # - jwt: ``app.utils.auth.create_admin_token`` reads/writes the
+    #   shared admin JWT secret here on first call (single-row table),
+    #   so AL.2c.3 actor-decode tests need it to mint tokens.
+    Base.metadata.create_all(
+        engine, tables=[AuditEvent.__table__, JWT.__table__]
+    )
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     session = SessionLocal()
     try:

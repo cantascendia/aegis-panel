@@ -1,28 +1,46 @@
 """FastAPI middleware that writes audit rows for admin mutate actions.
 
-S-AL Phase 2c.2 — MVP middleware. Captures the **anonymous-baseline**
-audit signal:
+S-AL Phase 2c.2/2c.3 — middleware with **JWT-based actor decode**:
 
 - ``path`` / ``method`` / ``action``(=route name)
 - HTTP status code → ``result`` (success / failure / denied)
-- ``ip`` / ``user_agent`` / ``request_id`` / ``ts``
+- ``actor_id`` (None — no DB query) / ``actor_username`` /
+  ``actor_type`` from JWT ``sub`` and ``access`` claims (AL.2c.3)
+- ``ip`` (D-012 trusted-proxy gated) / ``user_agent`` /
+  ``request_id`` / ``ts``
 - ``error_message`` for ``status_code >= 400``
 
-Deliberately **not** in this MVP:
+Why **JWT decode, not DB lookup**:
 
-- ``actor_id`` / ``actor_username`` — extracting these from the
-  request requires JWT decode + DB lookup, which:
-  1. Bloats middleware import surface (would touch
-     ``app/utils/jwt.py`` which is in the upstream sync zone).
-  2. Doubles the auth work the FastAPI ``Depends(get_current_admin)``
-     dependency already does for every admin route.
-  Lands in **AL.2c.3** as a follow-up PR with a thin
-  ``request.state.audit_actor`` setter dependency added to the four
-  upstream admin routers.
+The token is the source of truth that the request's ``sudo_admin``
+dependency would itself trust — pyjwt verification covers the
+"actor is who they claim" guarantee. Going to the DB to resolve
+``actor_id`` doubles the cost of every audit-eligible request and
+adds a third place admin-rename history can drift.
+``actor_username`` is the SEALED snapshot field (PR #125) that
+makes admin renames non-destructive to the audit trail; pairing
+it with the JWT ``access`` claim (``"admin"`` or ``"sudo"``) gives
+us the actor_type without a join.
+
+Failure modes for actor decode:
+- No ``Authorization`` header → anonymous (pre-auth failures, e.g.
+  failed login attempts; SEALED schema explicitly contemplates this).
+- Malformed / expired / invalid-signature token → anonymous (pyjwt's
+  ``InvalidTokenError`` is swallowed in ``get_admin_payload``;
+  caller gets ``None``).
+- Valid token without ``access ∈ {"admin", "sudo"}`` → anonymous
+  (defensive against future token shapes; today the validator in
+  ``app.utils.auth.get_admin_payload`` rejects these).
+
+Deliberately **not** here:
+
 - ``before_state`` / ``after_state`` — requires per-route SELECT
   hooks; lands in **AL.2c.4**.
 - ``target_type`` / ``target_id`` — depends on per-route metadata
   (path-param parsing); lands in AL.2c.4.
+- ``actor_id`` (DB-resolved) — opportunistic enhancement; the
+  JWT-only path is sufficient for the current forensic workflow
+  (operators search by username, not numeric id).
 
 90% of the forensic value comes from the anonymous baseline — a
 "who-did-what-when" question can be answered by joining IP+UA+ts
@@ -71,19 +89,24 @@ SEALED contract from L-018 (LESSONS).
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import re as _re
 import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from decouple import config as decouple_config
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from app.db import GetDB
+from app.utils.auth import get_admin_payload
 from ops.audit.config import is_audit_enabled
 from ops.audit.db import (
+    ACTOR_TYPE_ADMIN,
     ACTOR_TYPE_ANONYMOUS,
+    ACTOR_TYPE_SUDO,
     RESULT_DENIED,
     RESULT_FAILURE,
     RESULT_SUCCESS,
@@ -245,10 +268,14 @@ class AuditMiddleware(BaseHTTPMiddleware):
         block" guarantee.
         """
         try:
+            actor_type, actor_username = _resolve_actor(request)
             row = AuditEvent(
+                # ``actor_id`` stays None — JWT-only path; resolving the
+                # numeric id needs a DB lookup the audit-write critical
+                # path can't afford. Operators search by username.
                 actor_id=None,
-                actor_type=ACTOR_TYPE_ANONYMOUS,
-                actor_username=None,
+                actor_type=actor_type,
+                actor_username=actor_username,
                 action=_action_from_request(request),
                 method=request.method.upper(),
                 path=request.url.path[:512],
@@ -303,16 +330,120 @@ def _action_from_request(request: Request) -> str:
 
 
 def _resolve_ip(request: Request) -> str:
-    """Best-effort client IP resolution.
+    """Client IP resolution with D-012 trusted-proxy gate.
 
-    MVP: returns ``request.client.host`` directly. **No trusted-proxy
-    gate yet** — that lands in AL.2c.3 alongside actor decode (both
-    need ``AUDIT_TRUSTED_PROXIES`` env var per the per-feature D-012
-    pattern from billing/iplimit). Until AL.2c.3 ships, behind a
-    proxy the audit row records the proxy's IP, not the real client
-    — operators should treat the field as "first-hop" rather than
-    "true client" until D-012 wiring lands.
+    Decision logic (mirrors ``ops.billing.checkout_endpoint``):
+
+    1. If ``request.client`` is None (broken ASGI server) → ``"unknown"``.
+    2. If transport peer is in ``AUDIT_TRUSTED_PROXIES`` AND
+       ``X-Forwarded-For`` is set → return XFF leftmost token (the
+       real client). This is the panel-behind-Nginx / panel-behind-CF
+       case.
+    3. Otherwise → return transport peer (the safe default;
+       attacker can spoof XFF only if our env trusts their peer,
+       which is the operator's choice).
+
+    Per-feature env (D-012) — does NOT reuse ``BILLING_TRUSTED_PROXIES``.
+    Operators may set them to the same value, but cross-feature
+    coupling here would be a sneaky source of "I changed billing
+    config and now audit IPs are wrong" incidents.
     """
     if request.client is None:
         return "unknown"
-    return request.client.host[:45]
+    peer = request.client.host
+    xff = request.headers.get("x-forwarded-for")
+    if xff and _peer_is_trusted_proxy(peer):
+        # Leftmost XFF token is the original client per RFC 7239.
+        # Strip whitespace, cap to ipv6-max-len.
+        first = xff.split(",", 1)[0].strip()
+        if first:
+            return first[:45]
+    return peer[:45]
+
+
+# ---------------------------------------------------------------------
+# AUDIT_TRUSTED_PROXIES env (D-012 per-feature pattern)
+# ---------------------------------------------------------------------
+
+
+def _parse_trusted_proxies(
+    raw: str,
+) -> tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...]:
+    """Parse comma-separated CIDR list. Bad entries are dropped with a
+    warning rather than crashing boot — same shape as
+    ``ops.billing.config._parse_trusted_proxies``.
+    """
+    if not raw:
+        return ()
+    parsed: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
+    for entry in raw.split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        try:
+            parsed.append(ipaddress.ip_network(entry, strict=False))
+        except ValueError:
+            logger.warning(
+                "AUDIT_TRUSTED_PROXIES dropped invalid CIDR %r", entry
+            )
+    return tuple(parsed)
+
+
+_AUDIT_TRUSTED_PROXIES: tuple[
+    ipaddress.IPv4Network | ipaddress.IPv6Network, ...
+] = _parse_trusted_proxies(
+    decouple_config("AUDIT_TRUSTED_PROXIES", default="")
+)
+
+
+def _peer_is_trusted_proxy(peer_ip: str) -> bool:
+    """True iff ``peer_ip`` falls within ``AUDIT_TRUSTED_PROXIES``."""
+    if not _AUDIT_TRUSTED_PROXIES:
+        return False
+    try:
+        peer = ipaddress.ip_address(peer_ip)
+    except ValueError:
+        return False
+    return any(peer in cidr for cidr in _AUDIT_TRUSTED_PROXIES)
+
+
+def _reload_trusted_proxies_for_tests() -> None:
+    """Test hook — re-read AUDIT_TRUSTED_PROXIES env. Production
+    code MUST NOT call this. Mirrors the billing reload pattern."""
+    global _AUDIT_TRUSTED_PROXIES
+    _AUDIT_TRUSTED_PROXIES = _parse_trusted_proxies(
+        decouple_config("AUDIT_TRUSTED_PROXIES", default="")
+    )
+
+
+# ---------------------------------------------------------------------
+# Actor extraction (AL.2c.3 — JWT decode, no DB lookup)
+# ---------------------------------------------------------------------
+
+
+def _resolve_actor(request: Request) -> tuple[str, str | None]:
+    """Decode the bearer token and return ``(actor_type, actor_username)``.
+
+    - No ``Authorization`` header / not Bearer → ``(ANONYMOUS, None)``
+    - Malformed / expired / invalid-signature → ``(ANONYMOUS, None)``
+      (``get_admin_payload`` swallows ``InvalidTokenError`` and
+      returns ``None``).
+    - Valid admin token → ``("admin", username)``
+    - Valid sudo token → ``("sudo_admin", username)``
+
+    Pure function: no DB, no IO, no global state — fast enough to
+    run on every audit-eligible request without a perf budget hit.
+    """
+    auth = request.headers.get("authorization")
+    if not auth:
+        return ACTOR_TYPE_ANONYMOUS, None
+    parts = auth.split(maxsplit=1)
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return ACTOR_TYPE_ANONYMOUS, None
+    payload = get_admin_payload(parts[1])
+    if not payload:
+        return ACTOR_TYPE_ANONYMOUS, None
+    actor_type = (
+        ACTOR_TYPE_SUDO if payload.get("is_sudo") else ACTOR_TYPE_ADMIN
+    )
+    return actor_type, payload.get("username")
