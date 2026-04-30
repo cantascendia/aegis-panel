@@ -46,6 +46,15 @@ from sqlalchemy import (
     LargeBinary,
     String,
 )
+
+# SQLite quirk: only ``INTEGER PRIMARY KEY`` aliases rowid for
+# autoincrement. ``BIGINT PRIMARY KEY`` is treated as a generic numeric
+# affinity column and will NOT auto-generate ids — inserts without an
+# explicit id raise ``IntegrityError``. We want PostgreSQL to keep
+# BIGINT for capacity, so use a typed variant: BIGINT on PG, INTEGER on
+# SQLite. (codex review 2026-04-30 P2; matches SQLAlchemy 2.0 docs
+# §"Type-specific dialect-level variants".)
+_AUDIT_PK_TYPE = BigInteger().with_variant(Integer(), "sqlite")
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -92,7 +101,7 @@ class AuditEvent(Base):
 
     __tablename__ = "aegis_audit_events"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(_AUDIT_PK_TYPE, primary_key=True)
 
     # — Actor —
     # NULL = anonymous (e.g. failed pre-auth login); otherwise the

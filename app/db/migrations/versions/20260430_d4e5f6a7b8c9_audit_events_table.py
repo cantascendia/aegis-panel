@@ -42,11 +42,18 @@ down_revision = "c3d2e1f4a5b6"
 branch_labels = None
 depends_on = None
 
+# SQLite quirk: BIGINT PRIMARY KEY does NOT alias rowid (only the
+# literal ``INTEGER PRIMARY KEY`` does), so inserts without an explicit
+# id raise IntegrityError. Mirror the model's BigInteger.with_variant
+# so PostgreSQL keeps BIGINT capacity while SQLite gets the INTEGER
+# rowid alias for autoincrement. See ops/audit/db.py docstring.
+_PK_TYPE = sa.BigInteger().with_variant(sa.Integer(), "sqlite")
+
 
 def upgrade() -> None:
     op.create_table(
         "aegis_audit_events",
-        sa.Column("id", sa.BigInteger(), primary_key=True),
+        sa.Column("id", _PK_TYPE, primary_key=True),
         # Actor
         sa.Column("actor_id", sa.Integer(), nullable=True),
         sa.Column("actor_type", sa.String(length=16), nullable=False),
