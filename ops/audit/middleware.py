@@ -72,6 +72,7 @@ SEALED contract from L-018 (LESSONS).
 from __future__ import annotations
 
 import logging
+import re as _re
 import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
@@ -102,22 +103,30 @@ logger = logging.getLogger(__name__)
 
 _MUTATING_METHODS = frozenset({"POST", "PATCH", "PUT", "DELETE"})
 
-# Path prefixes that get audited. Curated rather than "all admin" to
-# keep the first deployment scope predictable (see module docstring).
-# Append-only: new fork-owned admin routers get added here, never
-# silently expand via wildcards.
-_AUDIT_PATH_PREFIXES: tuple[str, ...] = (
+# Path patterns (regex) that get audited. Curated rather than "all
+# admin" to keep the first deployment scope predictable (see module
+# docstring). Append-only: new fork-owned admin routers get added
+# here, never silently expand via broader wildcards.
+#
+# Why regex over prefix-match (codex review P2 on commit 6a3afdb):
+# the IP-limit router is mounted at ``/api/users`` and exposes
+# ``PATCH /api/users/{username}/iplimit/override`` —
+# a literal-prefix list ``/api/iplimit`` MISSES it. We keep the list
+# precise (one regex per fork-owned mutate surface) so future router
+# moves trigger an explicit edit, not a silent miss.
+
+_AUDIT_PATH_PATTERNS: tuple[_re.Pattern[str], ...] = (
     # SNI dashboard
-    "/api/nodes/sni-suggest",
-    # IP-limit policy admin
-    "/api/iplimit",
+    _re.compile(r"^/api/nodes/sni-suggest(?:/|$)"),
+    # IP-limit policy admin (mounted on user object — codex P2 fix)
+    _re.compile(r"^/api/users/[^/]+/iplimit(?:/|$)"),
     # Billing admin (plans, channels, invoices) + checkout
-    "/api/billing/admin",
-    "/api/billing/cart",
+    _re.compile(r"^/api/billing/admin(?:/|$)"),
+    _re.compile(r"^/api/billing/cart(?:/|$)"),
     # Reality config audit (admin trigger)
-    "/api/reality/audit",
+    _re.compile(r"^/api/reality/audit(?:/|$)"),
     # Health extended (sudo-only diagnostic)
-    "/api/aegis/health/extended",
+    _re.compile(r"^/api/aegis/health/extended(?:/|$)"),
 )
 
 
@@ -129,7 +138,7 @@ def _should_audit(method: str, path: str) -> bool:
     """
     if method.upper() not in _MUTATING_METHODS:
         return False
-    return any(path.startswith(prefix) for prefix in _AUDIT_PATH_PREFIXES)
+    return any(pattern.match(path) for pattern in _AUDIT_PATH_PATTERNS)
 
 
 # ---------------------------------------------------------------------
@@ -178,7 +187,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
 
-    async def dispatch(self, request: "Request", call_next):  # type: ignore[override]
+    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
         # Inject a request id eagerly so downstream loggers / handlers
         # can correlate even if audit ends up not writing a row.
         request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
@@ -188,17 +197,22 @@ class AuditMiddleware(BaseHTTPMiddleware):
         try:
             response: Response = await call_next(request)
         except Exception:
-            # The handler raised. Re-raise after attempting an audit
-            # row with status_code=500 + the exception class name as
-            # error_message (we don't include the message body — could
-            # contain sensitive payload echo). Audit failure here is
-            # double-failure tolerant: caught below in _try_write.
-            self._try_write(
-                request=request,
-                request_id=request_id,
-                status_code=500,
-                error_message="UnhandledException",
-            )
+            # The handler raised. Re-raise unconditionally; only WRITE
+            # an audit row if the request would have been audited on
+            # success — opt-out + scope rules apply equally to the
+            # exception path (codex review P2 on commit 6a3afdb:
+            # without this guard, RETENTION=0 deployments still
+            # persisted rows for failing requests, and out-of-scope
+            # paths got logged on exception).
+            if is_audit_enabled() and _should_audit(
+                request.method, request.url.path
+            ):
+                self._try_write(
+                    request=request,
+                    request_id=request_id,
+                    status_code=500,
+                    error_message="UnhandledException",
+                )
             raise
 
         if not is_audit_enabled():
@@ -219,7 +233,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
     def _try_write(
         self,
         *,
-        request: "Request",
+        request: Request,
         request_id: str,
         status_code: int,
         error_message: str | None,
@@ -273,7 +287,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
 # ---------------------------------------------------------------------
 
 
-def _action_from_request(request: "Request") -> str:
+def _action_from_request(request: Request) -> str:
     """Resolve the audit ``action`` field.
 
     Prefer Starlette's resolved route name (``request.scope["route"].name``)
@@ -288,7 +302,7 @@ def _action_from_request(request: "Request") -> str:
     return f"{request.method.upper()}:{request.url.path}"[:128]
 
 
-def _resolve_ip(request: "Request") -> str:
+def _resolve_ip(request: Request) -> str:
     """Best-effort client IP resolution.
 
     MVP: returns ``request.client.host`` directly. **No trusted-proxy

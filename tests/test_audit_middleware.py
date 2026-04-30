@@ -32,19 +32,31 @@ if TYPE_CHECKING:
         # Mutate + in-scope → audit
         ("POST", "/api/billing/admin/plans", True),
         ("PATCH", "/api/billing/admin/plans/42", True),
-        ("DELETE", "/api/iplimit/policy/7", True),
         ("PUT", "/api/billing/admin/channels/3", True),
         ("POST", "/api/reality/audit", True),
         ("POST", "/api/aegis/health/extended", True),
         ("POST", "/api/nodes/sni-suggest", True),
         ("POST", "/api/billing/cart/checkout", True),
+        # IP-limit: real router prefix is /api/users/{username}/iplimit
+        # (codex P2 fix on commit 6a3afdb — the prefix-match version
+        # missed this surface entirely).
+        ("PATCH", "/api/users/alice/iplimit/override", True),
+        ("DELETE", "/api/users/bob/iplimit/disable", True),
         # Mutate + out-of-scope → skip
         ("POST", "/api/admins", False),  # upstream admin path, not audited yet
-        ("POST", "/api/users/42", False),
+        ("POST", "/api/users/42", False),  # plain user mutate, not audited
         ("POST", "/", False),
+        # IP-limit pattern must NOT over-match — `/iplimit` substring
+        # alone in some other path shouldn't audit.
+        ("POST", "/api/users", False),
+        (
+            "POST",
+            "/api/users/iplimit-doc",
+            False,
+        ),  # not a real route, but pin pattern strictness
         # Read-only methods → skip even if path is in scope
         ("GET", "/api/billing/admin/plans", False),
-        ("HEAD", "/api/iplimit/policy", False),
+        ("HEAD", "/api/users/alice/iplimit", False),
         ("OPTIONS", "/api/billing/admin/plans", False),
     ],
 )
@@ -95,7 +107,7 @@ def test_classify_result(status: int, expected: str) -> None:
 # ---------------------------------------------------------------------
 
 
-def _make_app(monkeypatch: pytest.MonkeyPatch, db_session) -> "object":
+def _make_app(monkeypatch: pytest.MonkeyPatch, db_session) -> object:
     """Construct a tiny FastAPI app with AuditMiddleware mounted and
     GetDB redirected at the test ``db_session`` so audit writes
     actually land in the in-memory SQLite under the test's control."""
@@ -142,7 +154,7 @@ def _make_app(monkeypatch: pytest.MonkeyPatch, db_session) -> "object":
 
 
 def test_middleware_writes_row_for_in_scope_mutate(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
     monkeypatch.setenv("AUDIT_SECRET_KEY", "x" * 44 + "=")
@@ -168,7 +180,7 @@ def test_middleware_writes_row_for_in_scope_mutate(
 
 
 def test_middleware_skips_read_only(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
     monkeypatch.setenv("AUDIT_SECRET_KEY", "x" * 44 + "=")
@@ -182,7 +194,7 @@ def test_middleware_skips_read_only(
 
 
 def test_middleware_skips_out_of_scope_path(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
     monkeypatch.setenv("AUDIT_SECRET_KEY", "x" * 44 + "=")
@@ -196,7 +208,7 @@ def test_middleware_skips_out_of_scope_path(
 
 
 def test_middleware_skips_when_audit_disabled(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """RETENTION=0 → middleware returns early without any DB write."""
     monkeypatch.setenv("AUDIT_RETENTION_DAYS", "0")
@@ -211,7 +223,7 @@ def test_middleware_skips_when_audit_disabled(
 
 
 def test_middleware_records_handler_500_then_reraises(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Handler raised → middleware writes row with status=500 +
     re-raises so the framework's exception handlers can run.
@@ -232,8 +244,62 @@ def test_middleware_records_handler_500_then_reraises(
     assert rows[0].error_message == "UnhandledException"
 
 
+def test_middleware_handler_500_skips_row_when_audit_disabled(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """RETENTION=0 must apply to exception path too (codex P2 fix
+    on commit 6a3afdb): handler raises in opt-out deployment →
+    no audit row, exception still propagates."""
+    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "0")
+    client = _make_app(monkeypatch, db_session)
+
+    resp = client.post("/api/billing/admin/explode")
+    assert resp.status_code == 500
+
+    from ops.audit.db import AuditEvent
+
+    assert db_session.query(AuditEvent).count() == 0
+
+
+def test_middleware_handler_500_on_out_of_scope_path_skips_row(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Out-of-scope path raising must also skip the audit row
+    (codex P2 — exception path must honor scope)."""
+    from contextlib import contextmanager
+
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from ops.audit import middleware as audit_mw
+
+    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "30")
+    monkeypatch.setenv("AUDIT_SECRET_KEY", "x" * 44 + "=")
+
+    app = FastAPI()
+    app.add_middleware(audit_mw.AuditMiddleware)
+
+    @app.post("/api/some-other-route/explode")
+    async def _explode() -> dict:
+        raise RuntimeError("boom")
+
+    @contextmanager
+    def _fake_getdb():
+        yield db_session
+
+    monkeypatch.setattr(audit_mw, "GetDB", _fake_getdb)
+    client = TestClient(app, raise_server_exceptions=False)
+
+    resp = client.post("/api/some-other-route/explode")
+    assert resp.status_code == 500
+
+    from ops.audit.db import AuditEvent
+
+    assert db_session.query(AuditEvent).count() == 0
+
+
 def test_middleware_audit_db_failure_does_not_break_response(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """L-018 invariant: if audit row insert fails, the user's
     request must still succeed."""
@@ -269,7 +335,7 @@ def test_middleware_audit_db_failure_does_not_break_response(
 
 
 def test_middleware_x_request_id_honored(
-    db_session: "Session", monkeypatch: pytest.MonkeyPatch
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Request id from incoming header should propagate into the
     audit row's request_id column."""
