@@ -40,8 +40,17 @@ def test_base_includes_critical_secrets() -> None:
     must_redact = {
         "password",
         "passwd",
+        # ``hashed_password`` is the actual Admin column (codex review
+        # P2 — must redact or offline-crackable hash leaks via audit).
+        "hashed_password",
+        "password_hash",  # alias retained
         "jwt",
         "secret_key",
+        # ``key`` and ``subscription_url`` are the actual User
+        # bearer-credential fields per ``app.models.user.User`` /
+        # ``UserResponse`` — codex review P2.
+        "key",
+        "subscription_url",
         "merchant_key",
         "trc20_private_key",
         "private_key",
@@ -51,6 +60,33 @@ def test_base_includes_critical_secrets() -> None:
     }
     missing = must_redact - BASE_REDACT_FIELDS
     assert not missing, f"Sealed base must cover: {missing}"
+
+
+def test_base_redacts_real_user_bearer_fields() -> None:
+    """Regression: codex review 2026-04-30 P2 — User.key (16-hex
+    bearer) and UserResponse.subscription_url must redact."""
+    from ops.audit.redact import redact_payload
+
+    payload = {
+        "username": "alice",
+        "key": "a1b2c3d4e5f6a7b8",  # User.key
+        "subscription_url": "https://panel.example.com/sub/eyJ...",
+    }
+    out = redact_payload(payload)
+    assert out["username"] == "alice"
+    assert out["key"] == REDACTED_PLACEHOLDER
+    assert out["subscription_url"] == REDACTED_PLACEHOLDER
+
+
+def test_base_redacts_real_admin_password_field() -> None:
+    """Regression: codex review 2026-04-30 P2 — Admin.hashed_password
+    must redact (not just password_hash alias)."""
+    from ops.audit.redact import redact_payload
+
+    payload = {"username": "ops_dave", "hashed_password": "$2b$12$abc..."}
+    out = redact_payload(payload)
+    assert out["username"] == "ops_dave"
+    assert out["hashed_password"] == REDACTED_PLACEHOLDER
 
 
 # ---------------------------------------------------------------------

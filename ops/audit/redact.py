@@ -66,15 +66,29 @@ from typing import Any
 
 BASE_REDACT_FIELDS: frozenset[str] = frozenset(
     {
-        # Auth / API credentials
+        # Auth / API credentials.
+        # ``hashed_password`` is the actual column name on
+        # ``app.db.models.Admin`` (PR #125 audit codex review 2026-04-30
+        # P2 — verified by ``grep "hashed_password" app/db/models.py``).
+        # ``password_hash`` retained as belt-and-braces alias.
         "password",
         "passwd",
+        "hashed_password",
         "password_hash",
         "jwt",
         "jwt_secret",
         "secret_key",
         "api_key",
         "api_token",
+        # ``key`` is the actual column on ``app.db.models.User`` (a
+        # 16-hex bearer token — per ``UserResponse``, anyone with the
+        # value gets that user's traffic). Adding it here costs us
+        # some over-match noise on generic ``{"key": ..., "value": ...}``
+        # config dicts, but secrets > ergonomics. Operators wanting
+        # narrower behavior can rename their config keys (e.g.
+        # ``"setting"`` instead of ``"key"``) — the redactor is a
+        # secret guarantee, not a convenience layer.
+        "key",
         # Merchant / payment-channel credentials
         "merchant_key",
         "merchant_key_encrypted",
@@ -83,8 +97,11 @@ BASE_REDACT_FIELDS: frozenset[str] = frozenset(
         "trc20_private_key",
         "private_key",
         "mnemonic",
-        # Subscription URLs and tokens that act as bearer credentials
-        # (anyone with the URL gets the user's traffic).
+        # Subscription URLs and tokens that act as bearer credentials.
+        # ``subscription_url`` is the actual UserResponse field
+        # (codex review P2 — anyone with the full URL gets the user's
+        # traffic).
+        "subscription_url",
         "subscription_token",
         "sub_token",
     }
