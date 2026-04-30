@@ -36,8 +36,13 @@ const buildSearchParams = (params: AuditListParams): string => {
 const fetchAuditEvents = async (
     params: AuditListParams,
 ): Promise<AuditEventListResponse> => {
+    // VITE_BASE_API already ends in ``/api/`` per .env.example, so the
+    // path here is relative to that prefix (matches the reality module
+    // pattern: ``/reality/audit`` not ``/api/reality/audit``).
+    // Codex review P2 on commit 21d2870 — earlier draft double-
+    // prefixed the path and would have hit /api/api/audit/events.
     const qs = buildSearchParams(params);
-    const path = qs ? `/api/audit/events?${qs}` : "/api/audit/events";
+    const path = qs ? `/audit/events?${qs}` : "/audit/events";
     return fetch(path);
 };
 
