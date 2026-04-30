@@ -96,13 +96,54 @@ def _isolated_env() -> Iterator[None]:
 
 @pytest.fixture
 def db_session() -> Generator[Session, None, None]:
-    """Per-test SQLAlchemy session bound to an in-memory SQLite.
+    """Per-test SQLAlchemy session bound to a fresh in-memory SQLite.
 
-    TODO(round-1, P0-security PR): wire this to `app.db.Session` with a
-    transaction+rollback wrapper so tests never leak state.
+    Each test gets its own throw-away DB:
+    - New ``StaticPool`` engine (single-connection so multiple
+      ``Session`` objects in one test see the same in-memory schema).
+    - ``Base.metadata.create_all`` to materialise upstream tables AND
+      every fork-owned model registered via ``app.db.extra_models``
+      (LESSONS L-014 — that aggregator is the single registration
+      point so this fixture doesn't need to know about new modules).
+    - Yielded session is committed-as-you-go (no transaction wrapper);
+      teardown drops the engine so the next test starts clean.
+
+    AL.4 unblock: the original Round-1 ``pytest.skip`` was a stub
+    (TODO P0-security PR never landed because tests didn't need DB
+    until billing). AL.4 retention sweep tests are the first concrete
+    consumer; codex review on the AL.4 PR (REVIEW-QUEUE.md, commit
+    49c7c7c) flagged the stub as a P2.
     """
-    pytest.skip("db_session fixture not implemented yet (round-1 follow-up)")
-    yield  # type: ignore[misc]  # unreachable, satisfies generator contract
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    # Import the audit ORM module so AuditEvent is registered on
+    # Base.metadata. We deliberately do NOT import the upstream model
+    # aggregator here: a few upstream columns (e.g.
+    # ``admins.subscription_url_prefix`` with ``default=""``) emit DDL
+    # that SQLite rejects as ``DEFAULT  NOT NULL`` (empty literal,
+    # syntax error). Fixing that belongs in upstream and is out of
+    # scope for AL.4. Tests using db_session today only need the
+    # audit table; future fork modules should append their tables to
+    # the explicit list rather than going back to a full
+    # ``create_all`` of the whole metadata.
+    from app.db.base import Base
+    from ops.audit.db import AuditEvent
+
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine, tables=[AuditEvent.__table__])
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
 
 
 # ---------------------------------------------------------------------------

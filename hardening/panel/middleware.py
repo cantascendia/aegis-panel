@@ -21,6 +21,8 @@ from hardening.iplimit.scheduler import install_iplimit_scheduler
 from hardening.panel.rate_limit import limiter
 from hardening.reality.endpoint import router as reality_router
 from hardening.sni.endpoint import router as sni_router
+from ops.audit.config import validate_startup as validate_audit_startup
+from ops.audit.scheduler import install_audit_scheduler
 from ops.billing.checkout_endpoint import (
     checkout_router as billing_checkout_router,
 )
@@ -71,3 +73,11 @@ def apply_panel_hardening(app: FastAPI) -> None:
     app.include_router(health_router)
     install_iplimit_scheduler(app)
     install_billing_scheduler(app)
+    # Audit log (S-AL Phase 4 retention sweep). validate_startup runs
+    # FIRST so panel boot fails loudly if AUDIT_RETENTION_DAYS > 0
+    # but AUDIT_SECRET_KEY is missing/malformed (D-018 contract);
+    # only after validate_startup does install_audit_scheduler add
+    # the daily 03:00 UTC sweep job. AuditMiddleware (AL.2c.2) wires
+    # in this same block in a future PR.
+    validate_audit_startup()
+    install_audit_scheduler(app)
