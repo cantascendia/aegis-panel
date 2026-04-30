@@ -1,15 +1,15 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-29 late-7 wave-3 (post-harness-audit)(Harness 健康分 78→94 + 项目治理 3 大文件就位:CONSTITUTION DRAFT / HARNESS-CHANGELOG / evals/ 5 P0;wave-2 batch 后又 ship 5 PR + 3 issue 收口)
+> 最后更新:2026-04-30 late-7 wave-4 (post-issue-102-closure)(issue #102 R.4 follow-up 4 component tests ✅;skills 缺口闭环 PR #111;harness v3.6 同步 PR #115 + drift 收口 #116/#117/#118/#120/#122;Harness 维度 94→97)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid late-7 wave-3 —— Harness 健康分 78→94 + 项目治理 3 大文件就位(CONSTITUTION DRAFT / HARNESS-CHANGELOG / evals/ 5 P0)**
+**Round 3 mid late-7 wave-4 —— issue #102 收口 + harness v3.6 同步 + drift cleanup(Harness 94→97)**
 
-> 本 wave 没新功能 ship,**全部是 governance / harness 自审落地**。商业化 / 差异化 #3 / 差异化 #4 状态承袭 wave-2 不变(全 5/5 闭环)。本 wave 主线是 `/cto-harness-audit` 第二跑验证 78→94,三大缺口(evals / CONSTITUTION / HARNESS-CHANGELOG)全部闭环;同时 PR #105 修了 handbook 路径笔误,PR #107 同步 cto-* commands,PR #108 bulk sync agents/skills/rules/output-styles,PR #109 init evals/ 5 P0 trajectories,PR #110 落 CONSTITUTION + HARNESS-CHANGELOG。
+> 本 wave 仍无新业务功能 ship,**主线是 governance / harness 第三轮收口**。商业化 / 差异化 #3 / 差异化 #4 状态承袭 wave-3 不变(全 5/5 闭环)。本 wave 主要 ship:PR #111 同步 3 个 skill 到 `.claude/skills/`(关闭 Harness ROI 缺口 #1);PR #113 R.4 module 4 component tests(关闭 issue #102,差异化 #3 测试覆盖到 dashboard);PR #114 wave-3 batch refresh;PR #115 sync playbook v3.6(§44 replay + §45 canary + §48 cross-review);PR #116 skills-sync drift checker + SubagentStop 修;PR #117 L-027 → `.agents/rules/sub-agent-worktree.md` + 2 regression evals;PR #118 codex-bridge business path SSOT(`scripts/business-paths.txt`);PR #120 reality-dashboard 空审计 UX 修;PR #122 harness drift cleanup 残留收口。
 
 状态:🟢 v0.2 实质完工,商业化(A.x)5/5 端到端跑通;**差异化 #3 Reality 配置审计 5/5 全闭环**(R.1-R.3 后端 + R.5 OPS-runbook + R.4 dashboard PR #99);差异化 #4(一体化部署)5/5 全 ship;v0.3 audit-log + RBAC SPEC 双骨架已 ship(PR #101),等用户拍 7 个 TBD(issue #103 #104)。各 session 跑独立 worktree(L-018 / 铁规则 #7):
 
@@ -26,7 +26,7 @@
 **Pre-kickoff(待用户决策驱动后启动)**:
 - **S-AL** audit-log session: SPEC ✅ ship (PR #101);等 issue #103 4 TBDs 拍板 + CONSTITUTION SEALED 双先决条件
 - **S-RB** RBAC session: SPEC ✅ ship (PR #101);等 issue #104 3 TBDs + S-AL 完工双先决条件
-- **S-X-2** R.4 follow-up tests: issue #102 open(4 component tests for reality module),**in-flight 临时 worktree test PR 并行中**(本会话 wave-3 第八波)
+- ~~**S-X-2** R.4 follow-up tests~~ ✅ **closed PR #113**(issue #102 4 component tests for reality module 落地,差异化 #3 测试覆盖延伸到 dashboard)
 - **S-CI** CI eval-gate workflow: 等 SPEC + 双签(forbidden 路径 `.github/workflows/**`,§32 强制双签);issue 待建
 
 多会话协作索引见 `docs/ai-cto/SESSIONS.md`(本轮新增)。
@@ -95,15 +95,20 @@ Marzneshin 硬 fork,面向商业化机场 >200 付费用户 + 多节点,**Round 
 
 ## 当前代码质量评分
 
-**7.85 / 10**(R0 5.0 → R1 6.8 → R2 前半 7.1 → R2 v0.2 7.3 → R3 opener 7.6 → R3 mid late-7 7.8 → R3 mid late-7 wave-2 post-merge 7.85 → **R3 mid late-7 wave-3 post-harness-audit 7.85**)
+**7.85 / 10**(R0 5.0 → R1 6.8 → R2 前半 7.1 → R2 v0.2 7.3 → R3 opener 7.6 → R3 mid late-7 7.8 → R3 mid late-7 wave-2 post-merge 7.85 → R3 mid late-7 wave-3 post-harness-audit 7.85 → **R3 mid late-7 wave-4 post-issue-102-closure 7.85**)
 
-**wave-3 维度变化**:产品总分维持 **7.85**(无新功能 ship,只 governance / harness 自审落地,产品维度无变化);新增独立 **Harness 维度** 78 → **94**(+16,不计入产品总分,但是 agent harness 能力 / 治理 / 流程的横切指标)。
+**wave-4 维度变化**:产品总分维持 **7.85**(R.4 component tests 是测试覆盖深化,不计新功能);**Harness 维度** 94 → **97**(+3,skills 缺口闭环 + v3.6 同步 + drift 收口);测试维度 7 → **7.5** 信号驱动(R.4 module 4 component tests ship 关闭差异化 #3 dashboard 测试缺口)。
 
-**Harness 维度** 升分 +16 的 concrete delta:
+**Harness 维度** 升分 +3 的 concrete delta:
+1. ✅ `.claude/skills/` 缺 3 个项目自研 skill 同步(PR #111)→ +2(关闭 wave-3 ROI 缺口 #1)
+2. ✅ playbook v3.6 整体同步(PR #115:§44 replay + §45 canary + §48 cross-review;PR #116 skills-sync drift checker;PR #117 L-027 → rule;PR #118 codex-bridge SSOT)→ +1
+3. ⚠️ `.github/workflows/eval-gate.yml` 仍缺 → -1(wave-4 残余 ROI Top-1)
+4. ⚠️ CONSTITUTION DRAFT → SEALED 仍待双签 → -1(wave-4 残余 ROI Top-2)
+
+**wave-3 历史 delta(承袭)**:
 1. ✅ `evals/` 5 P0 trajectory 落地(PR #109)→ +10(铁律 #12 可执行)
-2. ✅ `HARNESS-CHANGELOG.md` 创建(PR #110)→ +5(harness 改动可追溯)
-3. ✅ `CONSTITUTION.md` 创建(PR #110,DRAFT)→ +5(项目宪法第一版,等双签)
-4. ⚠️ `.claude/skills/` 缺 3 个 + `eval-gate.yml` 缺 → -4(残余 ROI Top-3)
+2. ✅ `HARNESS-CHANGELOG.md` 创建(PR #110)→ +5
+3. ✅ `CONSTITUTION.md` 创建(PR #110,DRAFT)→ +5
 
 **回顾 wave-2 post-merge 升分 +0.05 的 concrete delta(承袭)**:
 1. **R.4 Reality dashboard frontend ship**(PR #99) —— 差异化 #3 用户可见闭环最后一公里完工,R.1-R.5 全链路 5/5 闭环
@@ -117,12 +122,12 @@ UX 维度 7 → **8** 信号驱动(wave-2 已计提,wave-3 维持):R.4 dashboard
 | 代码质量 | 6 | 6 | 7 | 7 | 7 | 7 | **7** | 保持(billing / Reality / health 模块均符合 rules)|
 | 性能 | 5 | 6 | 6 | 6 | 6 | 6 | **6** | 保持(无性能改动)|
 | 安全 | 3 ⚠️ | 8 | 8 | 8 | 8 | 8 | **8** | 保持 |
-| 测试 | 1 ⚠️ | 5 | 6 | 7 | 7 | 7 | **7** | R.4 follow-up tests in-flight(issue #102,临时 worktree test PR 并行中);保持高位 |
+| 测试 | 1 ⚠️ | 5 | 6 | 7 | 7 | 7 | **7.5** | wave-4 +0.5:R.4 module 4 component tests ship(PR #113),差异化 #3 dashboard 测试覆盖闭环 |
 | DX | 6 | 8 | 8 | 8 | 8 | 8 | **8** | 保持 |
-| 功能完整性 | 4 | 4 | 5 | 5 | 6 | 7 | **7** | 保持(wave-3 无新功能 ship)|
-| UX | 7 | 7 | 7 | 7 | 8 | 8 | **8** | 保持 |
-| **产品总分** | **5.0** | **6.8** | **7.3** | **7.6** | **7.8** | **7.85** | **7.85** | wave-3 无新功能;governance 升级算 Harness 维度独立计 |
-| 🆕 Harness(独立) | - | - | - | - | - | 78 | **94** | **+16**:evals/ + CONSTITUTION + HARNESS-CHANGELOG 三大治理文件落地(`/cto-harness-audit` 第二跑验证)|
+| 功能完整性 | 4 | 4 | 5 | 5 | 6 | 7 | **7** | 保持(wave-4 无新功能 ship)|
+| UX | 7 | 7 | 7 | 7 | 8 | 8 | **8** | 保持(reality dashboard UX 修 #120 是细化,不升档)|
+| **产品总分** | **5.0** | **6.8** | **7.3** | **7.6** | **7.8** | **7.85** | **7.85** | wave-4 测试 +0.5 但产品总分计算方式无新功能未升档;governance 升级算 Harness 维度独立计 |
+| 🆕 Harness(独立) | - | - | - | - | - | 78 | **97** | **+3**(wave-3 78→94 + wave-4 94→97):skills 缺口闭环 + v3.6 同步 + drift 收口 |
 
 ## 关键决策记录
 
@@ -253,10 +258,24 @@ UX 维度 7 → **8** 信号驱动(wave-2 已计提,wave-3 维持):R.4 dashboard
 | **#108** | **chore(harness): bulk sync from playbook**(`.claude/agents/` + `.claude/skills/` + `.claude/output-styles/` + `.claude/statusline.sh` + cto-image / cto-link 命令)| ✅ 合并 | session 0 | `fb4e1a2` |
 | **#109** | **chore(evals): init evals/ + 5 P0 trajectories**(铁律 #12 可执行,首套 trajectory yaml)| ✅ 合并 | session 0 | `06db847` |
 | **#110** | **docs(ai-cto): init CONSTITUTION + HARNESS-CHANGELOG**(§37 + §34 audit follow-up,DRAFT 状态)| ✅ 合并 | session 0 | `5e718d8` |
-| **本 PR(late-7 wave-3 batch)** | docs(ai-cto): late-7 wave-3 S-O batch — STATUS / SESSIONS / LESSONS / HARNESS-CHANGELOG 与 9 PR + 3 issue + harness 78→94 对齐 | (本 PR) | **S-O batch** | - |
+| **#114** | **docs(ai-cto): late-7 wave-3 S-O batch — capture harness 78→94 + 9 PR + 3 issue closure** | ✅ 合并 | **S-O batch** | `c5d16c1` |
+
+**Round 3 mid late-7 wave-4 post-issue-102-closure**(8 个 PR + 本 PR):
+
+| PR | 内容 | 状态 | Session | SHA |
+|---|---|---|---|---|
+| **#111** | **chore(skills): sync agpl-compliance + reality-config-audit + sni-selector to .claude/skills/**(关闭 Harness wave-3 ROI 缺口 #1)| ✅ 合并 | session 0 | `f39fd59` |
+| **#113** | **test(dashboard): R.4 follow-up — 4 component tests for reality module**(关闭 issue #102,差异化 #3 dashboard 测试闭环)| ✅ 合并 | **S-X-2 临时 worktree** | `0cce4ba` |
+| **#115** | **chore(harness): sync playbook v3.6**(§44 replay + §45 canary + §48 cross-review)| ✅ 合并 | session 0 | `9bf3e1b` |
+| **#116** | **chore(harness): add skills-sync drift checker + fix SubagentStop STATUS write** | ✅ 合并 | session 0 | `e572ba3` |
+| **#117** | **docs(governance): L-027 → .agents/rules/sub-agent-worktree.md + 2 regression evals**(D-018 候选升级为硬规则)| ✅ 合并 | session 0 | `3fa8faf` |
+| **#118** | **chore(codex-bridge): fix business path filter — use SSOT scripts/business-paths.txt**(v3.6.1 教训:hardcoded 业务路径在 dashboard/src/ silent skip)| ✅ 合并 | session 0 | `8909101` |
+| **#120** | **fix(reality-dashboard): empty audit shows dash, not worst_score=100**(UX 细化)| ✅ 合并 | session 0 | `31508b8` |
+| **#122** | **chore(harness): drift cleanup post v3.6 sync**(.agents/skills/ 双源清理 + cto-relink-all 补全 + cto-audit §1-§28→§1-§42 + scheduled_tasks.lock gitignore)| (open) | session 0 | - |
+| **本 PR(late-7 wave-4 batch)** | docs(ai-cto): late-7 wave-4 S-O batch — STATUS 与 8 PR + issue #102 closure + Harness 94→97 对齐 | (本 PR) | **S-O batch** | - |
 
 **Tracking issues**(待用户/CTO 决策驱动):
-- **issue #102** `test(dashboard): R.4 follow-up — 4 component tests for reality module` — S-X-2 session pre-kickoff
+- ~~**issue #102**~~ ✅ **closed by PR #113**(R.4 follow-up 4 component tests)
 - **issue #103** `spec(audit-log): finalize 4 TBDs before opening S-AL session` — 等用户拍 4 TBDs
 - **issue #104** `spec(rbac): finalize 3 TBDs before opening S-RB session (depends on audit-log)` — 等用户拍 3 TBDs + 等 #103 ship
 
@@ -318,10 +337,11 @@ Round 0 列表的全部 + Round 1 新增:
   - RBAC(issue #104 3 TBDs 拍板 + S-AL ship 后)
   - XHTTP / Hysteria2 备用通道(差异化扩展,scope TBD)
   - `.github/workflows/eval-gate.yml` CI eval-runner 自动调度(forbidden 路径,§32 强制双签)
-- **Harness 残余 ROI Top-3**(94 → 99+):
-  1. `.claude/skills/` 缺 3 个(agpl-compliance / reality-config-audit / sni-selector)→ in-flight chore PR
+- **Harness 残余 ROI Top-2**(97 → 99+):
+  1. ~~`.claude/skills/` 缺 3 个~~ ✅ **closed PR #111**(2026-04-30)
   2. `.github/workflows/eval-gate.yml` CI 自动调度缺 → 待 SPEC + 双签
   3. CONSTITUTION DRAFT → SEALED 等用户决策
+- **aegis-O worktree 严重过期**(停留在 PR #61 / `149e0e2`,落后 main 50+ commits + 大量脏文件):下次 S-O session 启动前需重建 worktree(`git worktree remove` + 重新 add)
 
 ## 竞品关键发现
 
@@ -342,7 +362,15 @@ Round 0 列表的全部 + Round 1 新增:
 
 ## 📅 最后同步确认
 
-**Round 3 mid late-7 wave-3 post-harness-audit batch S-O refresh**(2026-04-29,本 PR):
+**Round 3 mid late-7 wave-4 post-issue-102-closure batch S-O refresh**(2026-04-30,本 PR):
+
+- **本批次触发**:上一个 batch (PR #114, commit `c5d16c1`) 后又 ship 8 PR(#111/#113/#115/#116/#117/#118/#120)+ 1 PR open(#122 harness drift cleanup)+ issue #102 closed(PR #113)+ Harness 94→97(skills 缺口闭环 + v3.6 同步 + drift 收口),STATUS 不能 lag → S-O 立即批刷
+- **本批次更新动作**:metadata 时间戳 → 2026-04-30 late-7 wave-4 (post-issue-102-closure);Session table → S-X-2 标 closed by PR #113;tracking issues → #102 closed;PR 累计表新增 wave-4 段(#111/#113/#115/#116/#117/#118/#120/#122 + 本 PR);Harness 维度 94 → **97**(+3,skills #111 + v3.6 同步);测试维度 7 → **7.5**(R.4 dashboard 测试覆盖);"下一步推进" Harness ROI Top-3 → Top-2(skills 已闭环);记录 aegis-O worktree 严重过期问题
+- **本批次零代码改动 + 零 SPEC 改动 + 不动 .claude/* / .agents/* / DECISIONS / ROADMAP**
+
+---
+
+**Round 3 mid late-7 wave-3 post-harness-audit batch S-O refresh**(2026-04-29,PR #114,保留以示阶段切换):
 
 - **本批次触发**:上一个 batch (PR #106, commit `c168520`) 后又 ship 5 PR(#105/#107/#108/#109/#110)+ 3 issue(#102/#103/#104)+ harness audit 第二跑验证 78→94,STATUS / SESSIONS / LESSONS / HARNESS-CHANGELOG 不能 lag → S-O 立即批刷
 - **本批次更新动作**:metadata 时间戳 → 2026-04-29 late-7 wave-3 (post-harness-audit);Session table → **S-O 累计 PR 表 +#106/#110;pre-kickoff 行 S-AL/S-RB 加 CONSTITUTION SEALED 先决条件 + S-X-2 标 in-flight + 新增 S-CI**;产品总分维持 **7.85**(无新功能 ship);新增 **Harness 维度** 78 → **94**(+16);PR 累计表新增 wave-3 段(#105/#107/#108/#109/#110 + 本 PR);"项目治理" 新段(CONSTITUTION + HARNESS-CHANGELOG + harness audit 78→94);"下一步推进" 段补充 operator / 决策驱动 / SPEC 待开 / Harness 残余 ROI Top-3
@@ -387,7 +415,8 @@ Round 0 列表的全部 + Round 1 新增:
 | Round 3 mid late-7 wave | 2026-04-28 | A.4 完结 + AGPL §13 合规自检 + 改名清理 + **差异化 #4 一体化部署 D.1-D.5 当天 5 PR 并行 ship** | #86 BRIEF / #87 A.4 flip-on / #88 agpl-selfcheck.sh(差异化 #4 #1) / #89 rename / #90 NOTICE / #91 STATUS drive-by / #93 admin health dashboard 页 / **#94 D.4 CF Tunnel / #95 D.1 install.sh / #96 D.5 OPS-deploy-runbook + deploy-smoke CI / #97 D.2 marznode standalone / #98 D.3 Ansible playbook** |
 | Round 3 mid late-7 batch | 2026-04-28 | **S-O 正式 batch refresh** | PR #100 全 docs 同步 + L-025 + D-016/D-017 |
 | Round 3 mid late-7 wave-2 post-merge | 2026-04-28 | R.4 + SPEC 双骨架 + tracking issues 收口 | #99 R.4 dashboard reality module(差异化 #3 全链路闭环)+ #101 SPEC-audit-log + SPEC-rbac skeletons + tracking issues #102/#103/#104 + PR #106 (S-O batch wave-2) |
-| **Round 3 mid late-7 wave-3 post-harness-audit**(本 PR) | 2026-04-29 | **Harness 健康分 78→94 + 项目治理 3 大文件就位** | **#105 handbook 路径修复** + **#107 cto-* commands sync** + **#108 bulk harness sync(agents/skills/output-styles)** + **#109 evals/ 5 P0 init** + **#110 CONSTITUTION + HARNESS-CHANGELOG init** + 本 PR (S-O batch wave-3 + L-027) |
+| Round 3 mid late-7 wave-3 post-harness-audit | 2026-04-29 | **Harness 健康分 78→94 + 项目治理 3 大文件就位** | #105 handbook 路径修复 + #107 cto-* commands sync + #108 bulk harness sync + #109 evals/ 5 P0 init + #110 CONSTITUTION + HARNESS-CHANGELOG init + #114 (S-O batch wave-3 + L-027) |
+| **Round 3 mid late-7 wave-4 post-issue-102-closure**(本 PR) | 2026-04-30 | **issue #102 收口 + harness v3.6 同步 + drift cleanup(Harness 94→97)** | **#111 skills sync(关闭 ROI #1)** + **#113 R.4 4 component tests(关闭 issue #102)** + **#115 playbook v3.6 sync** + **#116 skills-sync drift checker** + **#117 L-027 → rule** + **#118 codex-bridge SSOT** + **#120 reality-dashboard 空审计 UX** + **#122 harness drift cleanup** + 本 PR (S-O batch wave-4) |
 
 详细历史信息保留在 git log + 各 PR description + LESSONS/DECISIONS 条目中,STATUS 不再展开。
 
