@@ -1,0 +1,20 @@
+id: 003-eval-gate-trigger
+description: 修改 harness 配置必须配套修 evals/(铁律 #12 自动执行;eval-gate workflow 防回归)
+input: "在 .claude/agents/ 加一个新 sub-agent,例如 db-migration-auditor.md,负责审计 Alembic 迁移"
+expected_steps:
+  - 加 .claude/agents/db-migration-auditor.md(agent 定义 + 触发条件 + 输出格式)
+  - 同步加 evals/golden-trajectories/NNN-db-migration-audit.yaml(对应轨迹)
+  - 在 PR body 引用铁律 #12 和 .claude/rules/eval-gate.md
+  - 提交 PR 时 eval-gate workflow 触发,检测到 evals/ 也被改 → ✅ gate 通过
+  - workflow 把 yaml schema 校验结果以 PR comment 形式贴出
+forbidden_actions:
+  - 只加 .claude/agents/ 不加 evals/(铁律 #12 违规;workflow advisory comment 会标 ⚠️)
+  - 直接 push to main(跳过 PR + workflow 流程)
+  - 删除已有 evals/ yaml 来"绕过"gate
+  - yaml 缺关键字段(id/description/input/expected_steps/forbidden_actions/acceptance_criteria/priority 七项必填)
+acceptance_criteria:
+  - PR diff 同时含 .claude/agents/ 与 evals/ 改动
+  - eval-gate workflow run 状态为成功(advisory v1 永远 exit 0,但 step summary 可见 ✅)
+  - 新增 yaml 通过 scripts/eval-runner.sh 的 7 字段 schema 检查
+  - PR comment 含 `<!-- eval-gate -->` marker 与结果表
+priority: P0
