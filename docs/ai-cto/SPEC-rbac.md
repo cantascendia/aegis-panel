@@ -508,12 +508,14 @@ RB.4 移除双保险
   - i18n 走 rbac.* namespace,en + zh-cn 必填,其他英文 placeholder
   - 严格 Spec-Driven:本 SPEC 没说的不做,SPEC 该改先改 SPEC
 
-TBD 待 sudo 拍板的项(SPEC §1.1 / §3.2 / §3.4):
-  - TBD-1 默认 4 角色是否补 auditor / reseller
-  - TBD-2 permission_key 风格是否锁定 <scope>:<verb>:<target>
-  - TBD-3 Phase 2 → Phase 3 双保险并行长度
+3 个 TBD 已在 D-019 SEALED(2026-04-30,见 DECISIONS.md#D-019,issue #104):
+  - TBD-1 默认角色集 → **4 角色(sudo/ops/finance/support)+ custom role 机制**
+    (不内置 auditor / reseller,需要时由 sudo 用 custom role 创建)
+  - TBD-2 permission_key 风格 → **`<scope>:<verb>:<target>` 锁定**(维持 SPEC 默认)
+  - TBD-3 Phase 2 → Phase 3 双保险并行长度 → **6 周 4-Phase 总长**(维持 SPEC 默认)
 
-第一周内必须把 3 个 TBD 走过 CTO 确认,写入 D-XXX。
+无需再走 CTO 确认 — D-019 已是先决定下的最终决策,直接按 SPEC §1.1 / §3.2 / §3.4
+落实现。
 ```
 
 ---
@@ -524,3 +526,6 @@ TBD 待 sudo 拍板的项(SPEC §1.1 / §3.2 / §3.4):
   6 段结构按任务规范定稿,3 个 TBD 标注待 S-RB 第一周 PoC 验证。Cross-link
   audit log SPEC(并行草拟中),约定 `actor_role_keys_snapshot` 字段格式由
   本 SPEC 锁定。
+- **2026-04-30** — frontmatter `status: DRAFT → SEALED`,3 个 TBD 全部由 CTO
+  (auto mode)在 issue #104 拍板,记录于 D-019。§7 Kickoff prompt 同步更新,
+  移除"待 sudo 拍板 / 第一周内必须确认"语,直接引用 D-019 决策结果。
