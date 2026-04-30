@@ -8,6 +8,95 @@
 
 ---
 
+## L-033 | Round 3 mid late-8 first-real-deploy | "代码差异化在仓库睡着"— upstream 镜像不读 fork 代码,生产 panel 跟同行一样
+
+**现象**: 部署完发现一个矛盾:
+
+| | 仓库代码 (fork) | 生产 panel 镜像 |
+|---|---|---|
+| 镜像 | cantascendia/aegis-panel | **dawsh/marzneshin:v0.2.0 (upstream)** |
+| SNI selector (差异化 #1) | ✅ ship | ❌ 不在镜像里 |
+| Reality audit (差异化 #3) | ✅ ship | ❌ 不在镜像里 |
+| IP limiter (差异化 #2) | ✅ PR #24 ship | ❌ 不在镜像里 |
+| 233 后端测试 + CI | ✅ 跑 (GitHub Actions) | N/A |
+| D-012 trusted_proxies | ✅ ship | ❌ 不在镜像里 |
+| audit-log 19 PR (v0.3) | ✅ stack | ❌ 不在镜像里 |
+
+**生产 panel 实际跑的 = upstream Marzneshin 原版** = 跟 Hiddify / 3X-UI / Remnawave 一样级别。**所有差异化代码在仓库 sleeper**。
+
+实战体现(本会话 24h 内):
+- L-031 SNI 选错 2 次 — 因为 sni-selector 没在 panel 跑,我手动选
+- L-032 panel↔marznode mTLS 炸 — upstream bug,我们没 patch 镜像
+- L-030 install.sh 6 bug + L-032 第 7 bug — 都是因为 upstream 镜像跟 fork install.sh 假设不匹配
+
+**根因**:
+
+```
+fork 流程缺一步:
+  COMPETITORS.md 说 "我们差异化 ✅"
+  → 写 SPEC + 实现代码 + 233 测试
+  → push 到 GitHub 仓库
+  → ❌ 没有 build & push panel 镜像到 registry
+  → ❌ 没有改 install.sh 默认拉自构镜像
+  → 部署用 dawsh/marzneshin (upstream 原版)
+  → 差异化代码永远不被消费
+```
+
+实战中 = "你跟同行一样",不是因为差异化不存在,而是**没有部署链让差异化生效**。
+
+**防线 / 修复路径**(C 阶段必做):
+
+1. **建 image build pipeline**(GitHub Actions):
+   - push to main → docker build → push cantascendia/aegis-panel:v0.x.x
+   - 标 v0.3.0 = 第一个真正自构镜像
+
+2. **install.sh 默认拉自构镜像**:
+   ```bash
+   AEGIS_VERSION="${AEGIS_VERSION:-v0.3.0}"  # 自构版本号
+   # docker-compose 拉 cantascendia/aegis-panel:v0.3.0,不再 dawsh/marzneshin
+   ```
+
+3. **加 deploy-smoke CI gate**:
+   - 自构镜像 push 后,跑端到端测试(创建 user / 跑订阅 / mTLS 通信)
+   - 失败阻塞 deploy
+   - 防 L-030/L-032 类 bug 再次溜过 dry-run
+
+4. **patch upstream bugs 通过 fork**:
+   - L-032 panel↔marznode mTLS 在 cantascendia/aegis-panel 自构镜像里修
+   - 不再依赖 upstream patch (上游 dormant 7 个月,等不及)
+
+**B 阶段 work-around**(< 50 客户阶段不做自构镜像):
+
+- 用 upstream 镜像 + 手动 work-around (sync-clients / 手动 SNI 选择)
+- 接受"差异化对客户感知 = 0"的现实
+- 群里**只讲"信任 + 朋友 + 退款"** 不讲技术差异化(L-031 已沉淀)
+- 50 客户后再投入 1-2 周做自构镜像 — ROI 算得过
+
+**C 阶段触发条件**:
+
+```
+任一满足 → 启动自构镜像项目 (~1-2 周工程):
+  - 客户数 ≥ 50 (sync-clients work-around 手动维护成本上升)
+  - 客户问 "你们机场跟别家有啥区别" (品牌差异化诉求)
+  - panel↔marznode mTLS bug 严重影响多节点部署
+  - 客户数据安全要求(audit-log 用户可见)
+```
+
+**沉淀**: ✅ 本 entry。
+
+**升级建议**(下次 batch S-O):
+- 加 D-XXX 决策: "v0.3 第一个产物 = 自构 panel 镜像 + image registry pipeline"
+- 把 COMPETITORS.md 矩阵分两列: "代码层" vs "生产层"(明确哪些已生效)
+- 让 fork 自检 (`agpl-selfcheck.sh` 类似)同时跑 "image-deployed-check" — 验证 panel image 是 fork 自构而非 upstream
+
+**关联**: 
+- L-030 (install bugs), L-031 (SNI), L-032 (mTLS),
+- COMPETITORS.md 矩阵 (5 件硬差异化)
+- VISION.md "差异化护城河四件" 全部 sleeper code
+- C 阶段第一件大事 = 让差异化醒过来
+
+---
+
 ## L-032 | Round 3 mid late-8 first-real-deploy panel↔marznode | gRPC mTLS 链断,xray clients 永远空,user 全断
 
 **现象**: friend_b 试了 30min Reality 节点,流量统计停在 0.01GB,客户端报"连接超时,没有信号"。我自己手机也连不上(在日本 → 排除 GFW)。深查发现:
