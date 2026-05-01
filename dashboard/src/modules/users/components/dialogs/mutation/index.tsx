@@ -23,6 +23,7 @@ import { ServicesField } from "@marzneshin/modules/services";
 import { NoteField } from "./fields";
 import { type MutationDialogProps, useMutationDialog } from "@marzneshin/common/hooks";
 import { DataLimitFields, ExpirationMethodFields } from "./sections";
+import { QuickPlans } from "./quick-plans";
 
 export const UsersMutationDialog: FC<MutationDialogProps<UserMutationType>> = ({
     entity,
@@ -72,6 +73,12 @@ export const UsersMutationDialog: FC<MutationDialogProps<UserMutationType>> = ({
                                 <div className="space-y-3">
                                     <UsernameField disabled={!!entity?.username} />
                                     <Separator />
+                                    {!entity && (
+                                        <>
+                                            <QuickPlans />
+                                            <Separator />
+                                        </>
+                                    )}
                                     <DataLimitFields />
                                     <Separator />
                                     <ExpirationMethodFields entity={entity} />
