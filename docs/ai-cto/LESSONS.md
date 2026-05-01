@@ -8,6 +8,60 @@
 
 ---
 
+## L-035 | Round 3 mid late-8 wave-3 | grpclib 修暴露更深问题：marznode TLS 配置错位
+
+**起因**：wave-3 修 `_monitor_channel`（PR #163 / v0.3.7）替换 `except: pass` 为显式 `logger.error(... exc_info=True)`。生产滚动后 panel 日志立刻冒出**之前看不见的真错误**：
+
+```
+grpclib.exceptions.GRPCError: (<Status.UNKNOWN: 2>, 'Missing content-type header', None)
+File ".../marznode/grpclib.py", line 193, in _sync
+File ".../marznode/grpclib.py", line 189, in _fetch_backends
+```
+
+每次 `_sync()` → `_fetch_backends` RPC，marznode 返回的 HTTP/2 响应**缺 `content-type: application/grpc` 头**。grpclib 客户端拒收。
+
+**深挖**：probe marznode 62051 端口
+- 明文 HTTP `curl http://...:62051/...` → `Empty reply from server`
+- HTTPS `curl -k https://...:62051/...` → `Connection reset by peer`
+- TLS 握手 `openssl s_client` → ✅ TLSv1.3 + AES_256_GCM_SHA384 + self-signed cert（"Verify return code: 18"）
+- marznode env: **`INSECURE=True` + `SSL_CLIENT_CERT_FILE=/etc/marzneshin/ssl_client_cert.pem`**
+
+**矛盾** — marznode 标称 INSECURE 但实际跑 TLS。INSECURE 的语义是"不验证客户端 cert"，不是"明文"。
+- panel grpclib client 用自签 cert + `verify_mode=CERT_NONE` 连进去（TLS OK）
+- 但 marznode 应用层校验 panel cert 失败（panel-issued cert vs marznode 期望的 CA 不匹配）
+- 失败方式：连接维持但 RPC 响应空 → panel 收到不完整 HTTP/2 → 报 `Missing content-type header`
+
+**为什么之前看不见**：v0.3.0 → v0.3.6 的 grpclib.py 代码用的是 `try: await self._sync(); except: pass`——任何异常都吞了。每次 `_sync()` 失败后 panel 静默 retry，永远不到日志。L-032 wave-2 我们只看见"clients 不同步"现象，反推到"_streaming_task 被取消"假设——其实 _sync 根本就没成功过一次，stream task 也没真启动过。
+
+我们之前以为 PUT 节点后 xray 拿到 5 客户是"`_sync()` 跑了一次然后 stream 死"——其实那 5 客户是从 rollback backup 恢复的，panel 连一次成功的 RepopulateUsers 都没发过。
+
+**真根因（仍未修）**：marznode 端 TLS 配置（INSECURE 模式 + 客户端 cert 校验语义）与 panel 端不一致。可能选项：
+1. marznode 改 `INSECURE=False` + 提供真服务端 cert + panel 信任此 CA（最干净）
+2. panel 改用 `insecure_channel`（grpcio backend）+ marznode 关 TLS（也明文）—— 测试发现 marznode 不管 INSECURE 都跑 TLS，所以这条路不通
+3. 改 marznode 源（upstream `dawsh/marznode:v0.2.0`），不可行（不维护其镜像）
+4. fork marznode + 自构镜像 + 改 TLS 逻辑 —— C 阶段考虑
+
+**当前生产状态**：
+- v0.3.7 grpclib 监控修 ship → ✅（错误可见 + 重试逻辑健全）
+- 真 RPC 仍 broken → 🔴
+- aegis-sync-clients workaround 仍是 B 阶段唯一 operational sync 路径 → ✅
+- 操作员体验无变化（aegis-user CLI 自动调 sync）
+
+**B 阶段就绪度**：仍 9.0/10。workaround 真稳。客户感知 0 影响。
+
+**Wave-4 候选**（独立 SPEC）：marznode TLS 配置对齐。需要：
+- 读 dawsh/marznode 源理解 INSECURE 实际语义
+- 决定 panel cert 颁发流程是否要变（NodeSettings.certificate 是 panel-issued self-signed）
+- 测：换成 panel 提供 marznode 服务端 cert + 自己作为 CA 签客户端 cert 模型
+- 估时 4-6h（含 marznode 行为验证）
+
+**落地防线**：
+- ✅ 永远不再用 `except: pass` 包 RPC 调用 — `.agents/rules/no-silent-rpc-error.md`（待写）
+- ✅ wave-3 grpclib 修保留（即使真 RPC 还没通，可观测性大改善）
+- ⏳ Wave-4 独立 SPEC
+
+---
+
 ## L-032 (final) | Round 3 mid late-8 wave-2 | panel↔marznode mTLS 修不动；Phase C workaround 兜住 B 阶段
 
 **现象（最终诊断）**: panel API 创建/删除用户后，xray_config.json 不变，客户端连不上。需要手工 jq 注 UUID。
