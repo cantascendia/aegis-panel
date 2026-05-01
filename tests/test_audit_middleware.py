@@ -754,6 +754,7 @@ def test_l034_request_state_dict_not_corrupted_for_downstream(
     dict would TypeError. Use request.state.x = y API."""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
+    from starlette.requests import Request as StarletteRequest
 
     from ops.audit import middleware as audit_mw
 
@@ -762,7 +763,7 @@ def test_l034_request_state_dict_not_corrupted_for_downstream(
     app.add_middleware(audit_mw.AuditMiddleware)
 
     @app.get("/probe-state")
-    async def _probe(request) -> dict:  # type: ignore[no-untyped-def]
+    async def _probe(request: StarletteRequest) -> dict:
         # 1. audit_request_id is reachable via request.state attribute API
         rid = getattr(request.state, "audit_request_id", None)
         # 2. scope['state'] should still be subscriptable as a dict
