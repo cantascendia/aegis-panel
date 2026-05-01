@@ -123,3 +123,15 @@ fi
 
 note "OK: all checks passed"
 exit 0
+
+# 6. DEBUG flag accidentally left on (wave-9 incident)
+# /opt/aegis/.env should NOT have DEBUG=True. The flag disables
+# dashboard static-file mount in app/marzneshin.py:main():
+#   if not DEBUG: app.mount(DASHBOARD_PATH, StaticFiles(...))
+# A leaked DEBUG=True from a marznode debug session blackholes the
+# entire dashboard URL silently — operator only finds out when they
+# try to log in and get 404.
+debug_env="$(grep -E '^DEBUG=' /opt/aegis/.env 2>/dev/null | grep -i 'true' || true)"
+if [[ -n "${debug_env}" ]]; then
+  alert "DEBUG=True in /opt/aegis/.env — dashboard static mount disabled. Remove this line + restart panel."
+fi
