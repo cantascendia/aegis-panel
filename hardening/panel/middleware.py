@@ -13,7 +13,11 @@ from typing import TYPE_CHECKING
 
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
+# SlowAPIMiddleware imported but currently NOT mounted — see add_middleware
+# block below for the FastAPI scope-incompatibility rationale (L-034).
+# Kept around so re-enabling is a one-line change once slowapi ships pure
+# ASGI middleware.
+from slowapi.middleware import SlowAPIMiddleware  # noqa: F401
 
 from hardening.health.endpoint import router as health_router
 from hardening.iplimit.endpoint import router as iplimit_router
@@ -65,7 +69,17 @@ def apply_panel_hardening(app: FastAPI) -> None:
     """
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.add_middleware(SlowAPIMiddleware)
+    # SlowAPIMiddleware deliberately NOT mounted (L-034): it extends
+    # starlette.BaseHTTPMiddleware which is incompatible with FastAPI 0.115+
+    # dependency injection — `fastapi_inner_astack` is dropped from request
+    # scope, breaking any route that uses Depends() with an async context
+    # manager (e.g. GET /api/users → 500). Decorated routes
+    # (`@limiter.limit(...)`) do NOT need this middleware to function — the
+    # decorator inspects request directly and applies limits per-route.
+    # Application-wide rate limiting (every request) is intentionally
+    # deferred until slowapi rewrites as pure ASGI middleware OR we replace
+    # with a different limiter (e.g. starlette-limiter).
+    # app.add_middleware(SlowAPIMiddleware)
     # AuditMiddleware (AL.2c.2 MVP — anonymous baseline). Mount AFTER
     # SlowAPI so rate-limit rejections are captured in the audit row
     # (status=429 → result=failure). See SPEC §How.2 ordering:
