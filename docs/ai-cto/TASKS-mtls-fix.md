@@ -85,7 +85,18 @@ jq -r '.inbounds[].settings.clients[] | .email + \"=\" + .id' /opt/aegis/data/ma
 
 **判定**：
 - clients 长度 ≥ 4 + log 含 `Connected to node` / `opened the stream` → ✅ H-E 正确，跳到 T4 验证
-- clients 仍 0 → ❌ H-E 不全对，进 T2 Phase B
+- clients 仍 0 → ❌ H-E 不全对：
+
+  **🔴 强制中间步 T1.6 rollback（codex P1 / 镜像 PLAN A7）**：
+
+  ```bash
+  ssh -i ~/.ssh/id_ed25519 root@202.182.120.132 "aegis-mtls-rollback"
+  # 确认 friend_b 重新可连：
+  ssh ... "jq '.inbounds[].settings.clients | length' /opt/aegis/data/marznode/xray_config.json"  # 应为 4
+  # 浏览器 / v2rayNG 验证 friend_b 订阅恢复连接
+  ```
+
+  确认 4 用户 connect 恢复后才进 T2。T2 在 panel 容器 / log / 模拟环境内做诊断，**不再清 xray_config.json**直到 v0.3.6 build 出来一次性切换。
 
 ---
 
