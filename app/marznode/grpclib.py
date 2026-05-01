@@ -72,28 +72,73 @@ class MarzNodeGRPCLIB(MarzNodeBase, MarzNodeDB):
         self._monitor_task.cancel()
 
     async def _monitor_channel(self):
+        # L-032 wave-3 fix (PR will reference upstream marzneshin#TBD if we
+        # ever upstream this). Three behavior changes vs the upstream version:
+        #
+        # 1) `__connect__` timeout 2s → 10s. 2s is too tight for grpclib's
+        #    HTTP/2 GOAWAY handling; in production we observed every second
+        #    monitor iteration timing out even when marznode was healthy and
+        #    the channel was still TLS-connected, because grpclib's
+        #    Channel.__connect__() does a full reconnection probe that
+        #    involves cert revalidation.
+        #
+        # 2) Require N consecutive timeouts (default 3) before marking
+        #    unhealthy + cancelling streaming task. A single transient
+        #    timeout is normal under load; cancelling the SyncUsers stream
+        #    on the first timeout was the actual bug — the queue consumer
+        #    died and every subsequent panel API user create/delete dropped
+        #    silently into _updates_queue with no consumer.
+        #
+        # 3) Always (re-)spawn streaming task whenever it's missing or done.
+        #    Previously it was only spawned in the "first sync after reconnect"
+        #    branch; if it ever crashed mid-iteration (e.g. server-side
+        #    StreamTerminatedError), it never restarted until full
+        #    disconnect-reconnect cycle.
+        consecutive_timeouts = 0
+        MAX_TIMEOUTS = 3
+        CONNECT_TIMEOUT_S = 10
         while state := self._channel._state:
             logger.debug("node %i channel state: %s", self.id, state.value)
             try:
-                await asyncio.wait_for(self._channel.__connect__(), timeout=2)
+                await asyncio.wait_for(
+                    self._channel.__connect__(),
+                    timeout=CONNECT_TIMEOUT_S,
+                )
             except Exception:
-                logger.debug("timeout for node, id: %i", self.id)
-                self.set_status(NodeStatus.unhealthy, "timeout")
-                self.synced = False
-                if self._streaming_task:
-                    self._streaming_task.cancel()
+                consecutive_timeouts += 1
+                logger.debug(
+                    "node %i connect timeout %d/%d",
+                    self.id, consecutive_timeouts, MAX_TIMEOUTS,
+                )
+                if consecutive_timeouts >= MAX_TIMEOUTS:
+                    self.set_status(NodeStatus.unhealthy, "timeout")
+                    self.synced = False
+                    if self._streaming_task:
+                        self._streaming_task.cancel()
+                        self._streaming_task = None
+                    consecutive_timeouts = 0  # reset for retry cycle
             else:
+                consecutive_timeouts = 0
                 if not self.synced:
                     try:
                         await self._sync()
-                    except:
-                        pass
-                    else:
-                        self._streaming_task = asyncio.create_task(
-                            self._stream_user_updates()
+                    except Exception as e:
+                        logger.error(
+                            "sync failed for node %i: %s",
+                            self.id, e, exc_info=True,
                         )
-                        self.set_status(NodeStatus.healthy)
-                        logger.info("Connected to node %i", self.id)
+                        await asyncio.sleep(10)
+                        continue
+                # Always (re-)spawn streaming task if missing or done.
+                # Decoupled from _sync success because SyncUsers stream is
+                # independent of RepopulateUsers RPC and should self-heal.
+                if (self._streaming_task is None
+                        or self._streaming_task.done()):
+                    self._streaming_task = asyncio.create_task(
+                        self._stream_user_updates()
+                    )
+                self.set_status(NodeStatus.healthy)
+                logger.info("Connected to node %i", self.id)
             await asyncio.sleep(10)
 
     async def _stream_user_updates(self):
