@@ -46,8 +46,17 @@ class Node(BaseModel):
     name: str
     address: str
     port: int = 53042
+    # AEGIS fork (L-036 wave-6): default flipped from grpclib → grpcio.
+    # Rationale: marznode v0.5.x ships with INSECURE=True default in our
+    # compose (deploy/compose/docker-compose.{prod,sqlite}.yml), which makes
+    # it serve plain HTTP/2. panel grpclib backend wraps SSL → protocol
+    # mismatch → "Missing content-type header" GRPCError. grpcio backend
+    # uses insecure_channel which matches.
+    # Operators wanting full mTLS must (a) set INSECURE=False on marznode
+    # AND (b) pass connection_backend=grpclib in NodeCreate API payload.
+    # Upstream-sync diff is intentional — one line, easy to merge.
     connection_backend: NodeConnectionBackend = Field(
-        default=NodeConnectionBackend.grpclib
+        default=NodeConnectionBackend.grpcio
     )
     usage_coefficient: float = Field(ge=0, default=1.0)
     model_config = ConfigDict(from_attributes=True)
