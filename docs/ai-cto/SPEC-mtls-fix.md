@@ -57,6 +57,7 @@
 | AC-5 | panel `/api/nodes/1/inbounds` 返回 200 + 实际 inbound 列表 | curl |
 | AC-6 | 节点 status 显示 `healthy`，message 列空（无 timeout 残留） | `select status, message from nodes` |
 | AC-7 | 失败可在 30 秒回滚到 v0.3.5 + 手工注入态，4 用户连接不中断 ≥30s | 演练 |
+| AC-8 | marznode 容器重启（`docker restart aegis-marznode`）后 ≤30s 内 panel 自动调 `RepopulateUsers` 把全量用户列表重新推送，xray_config.json 的 clients 跟 panel users 表完全一致 | restart marznode → 等 30s → diff `jq '.inbounds[].settings.clients[].id'` 与 `select id,username from users` |
 
 ---
 
@@ -142,7 +143,7 @@ DB 实测：`select connection_backend from nodes` = `grpclib`。grpclib 是带 
 ## 7. 不属于本 SPEC 的回归测试
 
 - L-034 防御 eval：tag bump 后 paginated endpoint 200（已在 L-034 wave-2 候选 #4 staging VPS workflow 内）
-- 节点重启后 panel 自动 RepopulateUsers 端到端 case：**纳入本 SPEC 的 AC-2 + plan 阶段细化**
+- 节点重启 RepopulateUsers 端到端 case：**已纳入 AC-8**（codex review 反馈，原稿误标为 AC-2 覆盖）
 
 ---
 
