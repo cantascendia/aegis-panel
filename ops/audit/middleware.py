@@ -228,19 +228,21 @@ class AuditMiddleware:
 
         # Inject a request id eagerly so downstream loggers / handlers
         # can correlate even if audit ends up not writing a row.
-        # FastAPI populates ``scope["state"]`` lazily; we ensure the dict
-        # exists then attach our key so handlers can access via
-        # ``request.state.audit_request_id``.
+        # Starlette's ``Request.state`` property reads/initializes
+        # ``scope["state"]`` as a dict and wraps it via ``State(...)``;
+        # writing through ``request.state.x = y`` is the supported API
+        # and stays compatible with Starlette/FastAPI's expectations.
+        # Codex review P2 on commit 0e26017 caught: assigning a
+        # ``State`` instance directly to ``scope["state"]`` would break
+        # other middleware/handlers that index it as a dict.
         request = Request(scope, receive)
         request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
-        if "state" not in scope:
-            from starlette.datastructures import State
-            scope["state"] = State()
         try:
-            scope["state"].audit_request_id = request_id
-        except (AttributeError, TypeError):
-            # Best-effort: if scope["state"] isn't a State-like object,
-            # don't crash — audit middleware must never block requests.
+            request.state.audit_request_id = request_id
+        except Exception:  # noqa: BLE001
+            # Best-effort: audit middleware must never block requests.
+            # E.g. if scope["state"] was already set to a non-State by
+            # an upstream middleware that pre-dated this one.
             pass
 
         # Wrap send to observe response status.
