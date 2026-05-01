@@ -1,13 +1,31 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-01 late-8 wave-4 (L-036 marznode 版本错位 = 真根因；marznode v0.2.0→v0.5.7 + grpcio backend 切换；RPC 整体连通 5/6 用户)(L-035 推断的 TLS 错位修正：实际是 proto 不同代——marznode v0.2.0 有 FetchInbounds/RestartXray，panel 调 FetchBackends/RestartBackend，路由不存在 → grpclib 返回缺 content-type 的 unimplemented 响应；v0.5.7 真支持 INSECURE=True plain HTTP/2，匹配 panel grpcio backend；老用户 5/5 通过 _sync RepopulateUsers 真同步；新用户 incremental SyncUsers stream 仍 broken → wave-5 独立 SPEC；aegis-sync-clients workaround 仍是 100% 覆盖兜底)
+> 最后更新:2026-05-01 late-8 wave-5 (L-037 真相：RPC 一直工作，是诊断 endpoint 在骗我们；增量同步端到端 ≤2s)(panel grpcio.py INFO 日志 + 临时 marznode DEBUG=True 实测 wave5_pure 创建 → 2 秒内 marznode `adding user` + xray runtime 加载；wave-2/3/4 全程被误导 — `/api/nodes/1/xray/config` 返回静态 xray_config.json 文件而非 xray 内存运行时；正确监控用 `/api/system/stats/users` active count；B 阶段就绪度 9.0 → 9.5/10；aegis-sync-clients 现在是 disaster-recovery only 而非主路径)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid late-8 wave-4 —— marznode 版本错位真根因 + 部分 RPC 连通 (B 阶段就绪度 9.0 → 9.2/10)**
+**Round 3 mid late-8 wave-5 —— RPC 一直在工作；诊断方法被误导 (B 阶段就绪度 9.2 → 9.5/10)**
+
+> wave-5 顿悟：panel↔marznode 增量 SyncUsers RPC **从 wave-4 升 marznode v0.5.7 + grpcio backend 之后就一直工作**。我们 wave-2/3/4 全程被错误的诊断 endpoint 骗了——`/api/nodes/1/xray/config` 返回**静态 xray_config.json 文件**而非 xray 内存运行时；marznode `_add_user` 通过 xray gRPC 把用户加到内存（不写文件），所以文件视角看"没变化"实际系统已同步。
+>
+> wave-5 ship：PR #167 panel grpcio.py 加 INFO 日志（`SyncUsers stream opening/opened/dequeued/wrote`）+ tag v0.3.8 + 临时给 marznode 加 `DEBUG=True` env 看 marznode 端 `_add_user` 日志。**真实测**：panel API 创建 wave5_pure → 2 秒内 marznode 日志 `adding user wave5_pure to inbound Reality-VLESS` + panel `active` count 7 → 8。删除同样实时。
+>
+> **真正的 B 阶段就绪度 9.5/10**（之前 9.0 因为以为还有 RPC gap；实际没有）。
+>
+> wave-5 ship：PR #166 L-036 wave-4 docs；PR #167 v0.3.8 grpcio INFO 日志；PR #168 L-037 wave-5 docs（本 PR）。
+>
+> wave-6 候选（按 ROI）：
+> 1) **移除 aegis-user CLI 的 aegis-sync-clients 自动调用** — 真 RPC 是首要路径，sync-clients 仅 disaster recovery（10 min PR）
+> 2) install.sh 默认 `connection_backend=grpcio`（防新装走 grpclib 失败）
+> 3) AuditMiddleware pure ASGI 重写（差异化 #5 sleeper 唤醒）
+> 4) staging VPS workflow
+
+---
+
+## 历史:Round 3 mid late-8 wave-4 —— marznode 版本错位真根因 + 部分 RPC 连通 (B 阶段就绪度 9.0 → 9.2/10)
 
 > wave-4 主线：升 marznode v0.2.0 → v0.5.7 + 切 panel `connection_backend=grpcio` → panel↔marznode RPC 整体连通。**L-036 修正 L-035 的"TLS 错位"假设**——真根因是 marznode v0.2.0 的 gRPC API 是老的（FetchInbounds/RestartXray），panel v0.3.x 调新 API（FetchBackends/RestartBackend），路由不存在导致 grpclib 报 `Missing content-type header`。
 >

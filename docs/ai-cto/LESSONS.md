@@ -8,6 +8,56 @@
 
 ---
 
+## L-037 | Round 3 mid late-8 wave-5 | RPC 一直在工作；误导的诊断 endpoint 让我们 wave-2/3/4 都误判
+
+**结论**：panel↔marznode 增量 SyncUsers 流式 RPC **从 wave-4 开始就完全工作**。我们 wave-2/3/4 全部"看 xray_config.json file 没新增用户 → 推断 RPC 失败"的诊断方法**错了**。
+
+**真相**：marznode v0.5.7 的 `_add_user(user, inbound)` 调 xray gRPC `add_inbound_user`——**只动 xray 内存运行时**，**不写回 xray_config.json 文件**。`/api/nodes/1/xray/config` panel API 返回 marznode `FetchBackendConfig` 结果，**就是读 xray_config.json 文件**（不是 xray 内存）。所以即使 xray 内存里有 100 个用户，文件没变，endpoint 也只显示 boot 时那 5 个。
+
+**wave-5 诊断（PR #167 / v0.3.8）**：在 panel grpcio.py 的 `_stream_user_updates` + `update_user` 加 INFO 日志，临时给 marznode 加 `DEBUG=True` 环境变量。**真生产实测**：
+
+```
+panel  | New user `wave5_pure` added
+panel  | node 1: queueing update_user user=wave5_pure id=21 inbounds=['Reality-VLESS']
+panel  | node 1: dequeued user wave5_pure (id=21) inbounds=['Reality-VLESS']
+panel  | node 1: wrote user wave5_pure to SyncUsers stream
+marznode | DEBUG - service: adding user `wave5_pure` to inbound `Reality-VLESS`
+marznode | DEBUG - xray_backend: xtls-rprx-vision
+```
+
+panel API → marznode xray runtime **端到端 ≤2 秒**。delete 也一样。`api/system/stats/users` active count 实时 +1 / -1。
+
+**之前 wave-2/3/4 误判路径**：
+- wave-2 看到"clients=5"以为 _sync 工作了 → 实际是 rollback backup 恢复
+- wave-3 修 grpclib `_monitor_channel` 后看到 `Missing content-type header` → 推断 TLS 错位
+- wave-4 升 marznode v0.5.7 + grpcio backend 后看到"5 clients in xray_config" 不变 → 推断"incremental stream 还 broken"
+- wave-5 加 DEBUG 后才看清楚：marznode **DEBUG 日志已经显示 `adding user`**（增量同步在工作），只是 xray_config.json file 不会因为 dynamic add 而更新
+
+**正确诊断 endpoint**：
+- ❌ `GET /api/nodes/1/xray/config` — 返回静态 xray_config.json 文件
+- ✅ `GET /api/system/stats/users` — 返回真实 active user count
+- ✅ marznode container 的 `_add_user` DEBUG 日志（需 `DEBUG=True` env）
+- ✅ panel grpcio v0.3.8+ INFO 日志（永久打开，零额外成本）
+
+**因此 aegis-sync-clients.sh workaround 现在是真的可选**：
+- 真正同步路径：panel API → grpcio SyncUsers stream → marznode xray runtime（已工作）
+- workaround 路径：panel DB → 写 xray_config.json → restart marznode（可弃用，但留作 disaster recovery）
+- 操作员 UX：建议保留 `aegis-user` CLI 调 `aegis-sync-clients` 作为 belt-and-suspenders（如果 panel _stream_user_updates task 死了，sync-clients 仍能恢复）
+
+**真 B 阶段就绪度：9.5/10**（之前以 9.0 计是因为以为 RPC 还有 gap；实际无 gap）。
+
+**落地防线**：
+- ✅ panel grpcio.py INFO 日志保留（PR #167 v0.3.8）
+- ✅ marznode `DEBUG=True` 默认 OFF（performance + log volume），调试时临时打开
+- ⏳ wave-6 候选：移除 aegis-user CLI 的 sync-clients 自动调用（让真 RPC 是首要路径，sync-clients 仅手动 fallback）
+- ⏳ wave-6 候选：写 `OPS-runbook-debug-marznode.md` — 教操作员怎么打开 DEBUG 调试
+
+**深教训**：
+> 当工具显示"什么都没变"时，**先问那个工具是否在看正确的数据源**——而不是假设系统真的什么都没做。
+> wave-2/3/4 我们烧了大量精力修"不工作的 RPC"，实际 RPC 早就工作了，是我们的诊断 endpoint 在骗人。
+
+---
+
 ## L-036 | Round 3 mid late-8 wave-4 | marznode 版本错位 = panel↔marznode 真正的根因（不是 TLS）
 
 **wave-3 假设修正**：L-035 推断 "TLS 配置错位"——错。真根因更直接：**marznode v0.2.0 vs panel v0.3.x 的 gRPC proto 不同代**。
