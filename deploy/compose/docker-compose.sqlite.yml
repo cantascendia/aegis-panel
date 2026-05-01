@@ -11,7 +11,7 @@
 
 services:
   panel:
-    image: dawsh/marzneshin:${AEGIS_VERSION:-latest}
+    image: ghcr.io/cantascendia/aegis-panel:${AEGIS_VERSION:-latest}
     container_name: aegis-panel
     restart: always
     network_mode: host

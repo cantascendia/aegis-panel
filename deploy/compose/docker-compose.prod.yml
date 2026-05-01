@@ -82,7 +82,7 @@ services:
     # init-style container: runs `alembic upgrade head` then exits 0.
     # panel depends on this completing successfully before booting, so a
     # broken migration blocks the panel rather than leaving it half-migrated.
-    image: dawsh/marzneshin:${AEGIS_VERSION:-latest}
+    image: ghcr.io/cantascendia/aegis-panel:${AEGIS_VERSION:-latest}
     container_name: aegis-alembic
     network_mode: host
     env_file:
@@ -99,7 +99,7 @@ services:
         max-file: "3"
 
   panel:
-    image: dawsh/marzneshin:${AEGIS_VERSION:-latest}
+    image: ghcr.io/cantascendia/aegis-panel:${AEGIS_VERSION:-latest}
     container_name: aegis-panel
     restart: always
     network_mode: host

@@ -43,7 +43,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 # Defaults
 # ---------------------------------------------------------------------------
 AEGIS_PREFIX="${AEGIS_PREFIX:-/opt/aegis}"
-AEGIS_VERSION="${AEGIS_VERSION:-v0.2.0}"
+AEGIS_VERSION="${AEGIS_VERSION:-v0.3.0}"
 
 DB_KIND="postgres"
 MARZNODE_MODE="same-host"
@@ -464,6 +464,26 @@ fetch_marznode_client_cert() {
   log "wrote marznode client cert (${out})"
 }
 
+# ---------------------------------------------------------------------------
+# deploy_aegis_upgrade_script — install /usr/local/bin/aegis-upgrade so
+# operators can roll the panel image with one command. Idempotent on purpose
+# (no step sentinel): re-runs of install.sh keep the on-host script fresh.
+# ---------------------------------------------------------------------------
+deploy_aegis_upgrade_script() {
+  local src="${REPO_ROOT}/scripts/aegis-upgrade.sh"
+  local dst="/usr/local/bin/aegis-upgrade"
+  if [[ ! -r "${src}" ]]; then
+    warn "aegis-upgrade source not found at ${src}, skipping deploy"
+    return 0
+  fi
+  if (( DRY_RUN )); then
+    log "dry-run: would install ${dst}"
+    return 0
+  fi
+  install -m 0755 "${src}" "${dst}"
+  log "installed ${dst} (run 'aegis-upgrade vX.Y.Z' to roll panel image)"
+}
+
 step_7_wait_health() {
   if step_done 7; then log "step 7 (health): already done, skipping"; return 0; fi
   log "step 7: wait for panel health"
@@ -587,6 +607,7 @@ main() {
   step_5_render_env
   step_6_compose_up
   step_7_wait_health
+  deploy_aegis_upgrade_script
   step_8_emit_credentials
   step_9_next_steps
 
