@@ -130,9 +130,25 @@ async def checkout(
                     "RATE_FEN_PER_USDT, MEMO_SALT} env vars."
                 ),
             )
+        # Eagerly validate full TRC20 config BEFORE any invoice row
+        # is written. ``get_trc20_provider`` raises
+        # ``Trc20Misconfigured`` when ``BILLING_TRC20_ENABLED=true``
+        # but one of the supporting env vars (``RECEIVE_ADDRESS`` /
+        # ``RATE_FEN_PER_USDT`` / ``MEMO_SALT``) is empty / invalid.
+        # Catching it later (after invoice creation) would either
+        # leak an orphan ``pending`` row or require an extra
+        # rollback path; lifting the check here keeps the "no DB
+        # write on misconfig" invariant simple. Per codex P2 review.
+        from ops.billing.trc20_config import Trc20Misconfigured
+
+        try:
+            trc20_provider = get_provider("trc20")
+        except Trc20Misconfigured as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         channel = None
         provider_field = "trc20"
     else:
+        trc20_provider = None
         channel = db.execute(
             select(PaymentChannel).where(
                 PaymentChannel.channel_code == body.channel_code
@@ -220,7 +236,10 @@ async def checkout(
     )
 
     if is_trc20:
-        provider = get_provider("trc20")
+        # Pre-resolved during config validation above (so a partial
+        # TRC20 env yields a 503 BEFORE we mint a pending invoice).
+        assert trc20_provider is not None
+        provider = trc20_provider
     else:
         provider = get_provider(
             "epay",

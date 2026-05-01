@@ -249,6 +249,41 @@ def test_trc20_checkout_skips_public_base_url_check(
 # ---------------------------------------------------------------------
 
 
+def test_trc20_checkout_503_when_partially_configured(client, seeded_plan):
+    """Codex P2 review: ``BILLING_TRC20_ENABLED=true`` + a missing
+    supporting env var (e.g. ``RECEIVE_ADDRESS``) used to surface as
+    an unhandled 500 because ``get_provider("trc20")`` raised
+    ``Trc20Misconfigured`` outside any except block.
+
+    Post-fix: catch ``Trc20Misconfigured`` BEFORE writing the invoice
+    row and translate to 503 with the missing-vars list. The "no DB
+    write on misconfig" invariant matches the
+    ``BILLING_TRC20_ENABLED=false`` branch.
+    """
+    trc20_config._reload_for_tests(
+        enabled=True,
+        receive_address="",  # gap → triggers Trc20Misconfigured
+        rate_fen_per_usdt=720,
+        memo_salt="test-memo-salt",
+    )
+    try:
+        r = client.post(
+            "/api/billing/cart/checkout",
+            json={
+                "user_id": 1,
+                "channel_code": "trc20",
+                "lines": [{"plan_id": seeded_plan["id"], "quantity": 1}],
+                "success_url": "https://panel.test/ok",
+                "cancel_url": "https://panel.test/cancel",
+            },
+        )
+        assert r.status_code == 503, r.text
+        # Body must name the missing env var so the operator can act
+        assert "BILLING_TRC20_RECEIVE_ADDRESS" in r.text
+    finally:
+        trc20_config._reload_for_tests(enabled=False)
+
+
 def test_trc20_checkout_503_when_disabled(client, seeded_plan):
     """Default fixture state is ``BILLING_TRC20_ENABLED=false``
     (no ``trc20_enabled`` fixture used). Operator hasn't opted in →
