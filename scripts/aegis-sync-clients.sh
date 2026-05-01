@@ -35,20 +35,51 @@ if [[ ! -f "${XRAY_CONFIG}" ]]; then
   exit 2
 fi
 
-# Generate clients JSON array from panel DB (using xxhash.xxh128 transform
-# from app/utils/keygen.py:gen_uuid — guarantees match with vless URI).
-CLIENTS_JSON="$(docker exec "${PANEL_CONTAINER}" python3 -c "
-import json, sqlite3, uuid, xxhash
+# Codex review on commit adae9ad caught: multi-inbound deployments. The
+# panel's normal sync path builds per-user inbound tags via get_node_users.
+# This workaround currently writes the same clients[] to every inbound. For
+# B-stage (single Reality-VLESS inbound on single node) this is correct, but
+# multi-inbound topologies need per-inbound user lists. Single-inbound check
+# fail-closed if found:
+INBOUND_COUNT="$(jq '.inbounds | length' "${XRAY_CONFIG}")"
+if [[ "${INBOUND_COUNT}" -gt 1 ]]; then
+  echo "[sync] FATAL: ${INBOUND_COUNT} inbounds detected. Per-inbound sync" >&2
+  echo "[sync]   not implemented (codex review P1 on adae9ad). This script" >&2
+  echo "[sync]   is safe for single-inbound deployments only. Block until" >&2
+  echo "[sync]   wave-3 grpclib.py real fix lands or per-inbound logic ships." >&2
+  exit 4
+fi
+
+# Generate clients JSON array from panel DB.
+# UUID generation matches app/utils/keygen.py:gen_uuid (codex P2): respect
+# AUTH_GENERATION_ALGORITHM env. PLAIN mode → key as UUID directly; otherwise
+# xxhash.xxh128(key) bytes → UUID. Read panel env from container env (the
+# panel process loaded its own AUTH_GENERATION_ALGORITHM at boot).
+AUTH_ALGO="$(docker exec "${PANEL_CONTAINER}" sh -c 'echo "${AUTH_GENERATION_ALGORITHM:-XXH128}"' | tr -d '[:space:]')"
+echo "[sync] panel AUTH_GENERATION_ALGORITHM=${AUTH_ALGO}"
+
+# Preserve flow field of existing clients if any (codex P1.2): if all
+# existing clients share the same flow, reuse it; if mixed/empty, default to
+# empty (matches what panel emits in vless URI today — `&flow=` not present
+# in the subscription URL, so server `flow:""` is correct for current setup).
+EXISTING_FLOW="$(jq -r '[.inbounds[].settings.clients[].flow // ""] | unique | if length == 1 then .[0] else "" end' "${XRAY_CONFIG}")"
+echo "[sync] preserving flow='${EXISTING_FLOW}' (must match subscription vless URI)"
+
+CLIENTS_JSON="$(docker exec -e AUTH_ALGO="${AUTH_ALGO}" -e EXISTING_FLOW="${EXISTING_FLOW}" "${PANEL_CONTAINER}" python3 -c "
+import json, os, sqlite3, uuid, xxhash
+auth_algo = os.environ.get('AUTH_ALGO', 'XXH128').upper()
+flow = os.environ.get('EXISTING_FLOW', '')
 c = sqlite3.connect('${DB_PATH_IN_CONTAINER}')
 clients = []
-# Active users only (removed=0). enabled flag exists on some schema versions.
 rows = c.execute(
     \"select id, username, key from users where removed=0 and enabled=1\"
 ).fetchall()
 for uid, uname, key in rows:
-    xray_uuid = str(uuid.UUID(bytes=xxhash.xxh128(key.encode()).digest()))
-    # email = numeric user.id (matches marznode's int(stat.name.split('.')[0]))
-    clients.append({'id': xray_uuid, 'email': str(uid), 'flow': ''})
+    if auth_algo == 'PLAIN':
+        xray_uuid = str(uuid.UUID(key))
+    else:
+        xray_uuid = str(uuid.UUID(bytes=xxhash.xxh128(key.encode()).digest()))
+    clients.append({'id': xray_uuid, 'email': str(uid), 'flow': flow})
 print(json.dumps(clients))
 ")"
 
