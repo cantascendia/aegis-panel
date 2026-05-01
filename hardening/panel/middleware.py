@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+
 # SlowAPIMiddleware imported but currently NOT mounted — see add_middleware
 # block below for the FastAPI scope-incompatibility rationale (L-034).
 # Kept around so re-enabling is a one-line change once slowapi ships pure
