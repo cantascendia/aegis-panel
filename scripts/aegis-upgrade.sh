@@ -62,13 +62,18 @@ chmod 600 "${tmp}"
 mv -f "${tmp}" "${ENV_FILE}"
 
 # Pull only the panel image — marznode / postgres / redis stay put.
+# `--env-file` is required: compose interpolates `${AEGIS_VERSION}` from the
+# env file at parse time. If the operator's compose file lives outside
+# /opt/aegis/.env's directory (the common install layout), compose falls
+# back to `${AEGIS_VERSION:-latest}` and we'd silently pull `:latest`
+# instead of the requested tag. Verified during 2026-05-01 v0.3.5 cutover.
 echo "[upgrade] docker compose pull panel"
-docker compose -f "${COMPOSE_FILE}" pull panel
+docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" pull panel
 
 # Roll panel. Compose recreates the container with the new image; volume mounts
 # (host paths under /opt/aegis/data/) are preserved across the swap.
 echo "[upgrade] docker compose up -d panel"
-docker compose -f "${COMPOSE_FILE}" up -d panel
+docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d panel
 
 # Give Alembic a moment, then dump status.
 sleep 5
