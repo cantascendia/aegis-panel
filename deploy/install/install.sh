@@ -305,6 +305,23 @@ step_3_collect_inputs() {
   if [[ -z "${XRAY_SUBSCRIPTION_PATH}" ]]; then XRAY_SUBSCRIPTION_PATH="/$(rand_urlsafe 8)"; fi
   if [[ -z "${POSTGRES_PASSWORD}" ]]; then POSTGRES_PASSWORD="$(rand_urlsafe 32)"; fi
   if [[ -z "${REDIS_PASSWORD}"    ]]; then REDIS_PASSWORD="$(rand_urlsafe 24)"; fi
+  # AUDIT_SECRET_KEY: Fernet key = 32 raw random bytes encoded as url-safe
+  # base64 (44 chars with `=` padding). Required by ops/audit/config.py:
+  # validate_startup when AUDIT_RETENTION_DAYS > 0 — panel boots into restart
+  # loop with AuditMisconfigured otherwise. v0.3.5 production hot-patched
+  # manually; this seeds on every fresh install.
+  #
+  # Generated via openssl (host hard dep verified in step 1) — codex P2
+  # review on commit 11b4d08 caught: original used `python3 cryptography`
+  # which is NOT a host dep (only in the panel image's venv), so fresh
+  # installs would silently leave the key empty.
+  if [[ -z "${AUDIT_SECRET_KEY}"  ]]; then
+    if command -v openssl >/dev/null 2>&1; then
+      AUDIT_SECRET_KEY="$(openssl rand 32 | base64 | tr '+/' '-_' | tr -d '\n')"
+    else
+      warn "openssl missing — AUDIT_SECRET_KEY left empty (panel won't boot if AUDIT_RETENTION_DAYS>0)"
+    fi
+  fi
 
   # Build database URL based on selection.
   if [[ "${DB_KIND}" == "postgres" ]]; then
@@ -332,7 +349,7 @@ step_3_collect_inputs() {
   export PANEL_PORT MARZNODE_GRPC_PORT
   export POSTGRES_PORT POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD
   export REDIS_PORT REDIS_PASSWORD
-  export DATABASE_URL CF_TUNNEL_ENABLED CF_TUNNEL_NAME
+  export DATABASE_URL CF_TUNNEL_ENABLED CF_TUNNEL_NAME AUDIT_SECRET_KEY
   # render_env_template reads AEGIS_DOMAIN by name — alias for clarity.
   export AEGIS_DOMAIN="${DOMAIN}"
 
@@ -468,20 +485,31 @@ fetch_marznode_client_cert() {
 # deploy_aegis_upgrade_script — install /usr/local/bin/aegis-upgrade so
 # operators can roll the panel image with one command. Idempotent on purpose
 # (no step sentinel): re-runs of install.sh keep the on-host script fresh.
+# Also installs aegis-sync-clients (L-032 workaround until wave-3 grpclib fix).
 # ---------------------------------------------------------------------------
 deploy_aegis_upgrade_script() {
-  local src="${REPO_ROOT}/scripts/aegis-upgrade.sh"
-  local dst="/usr/local/bin/aegis-upgrade"
-  if [[ ! -r "${src}" ]]; then
-    warn "aegis-upgrade source not found at ${src}, skipping deploy"
-    return 0
+  local installed=0
+  local src dst
+  for pair in \
+      "${REPO_ROOT}/scripts/aegis-upgrade.sh:/usr/local/bin/aegis-upgrade" \
+      "${REPO_ROOT}/scripts/aegis-sync-clients.sh:/usr/local/bin/aegis-sync-clients"; do
+    src="${pair%:*}"
+    dst="${pair##*:}"
+    if [[ ! -r "${src}" ]]; then
+      warn "${src} not found, skipping deploy of ${dst##*/}"
+      continue
+    fi
+    if (( DRY_RUN )); then
+      log "dry-run: would install ${dst}"
+    else
+      install -m 0755 "${src}" "${dst}"
+      log "installed ${dst}"
+    fi
+    installed=$(( installed + 1 ))
+  done
+  if (( installed > 0 )); then
+    log "operator helpers ready (aegis-upgrade + aegis-sync-clients)"
   fi
-  if (( DRY_RUN )); then
-    log "dry-run: would install ${dst}"
-    return 0
-  fi
-  install -m 0755 "${src}" "${dst}"
-  log "installed ${dst} (run 'aegis-upgrade vX.Y.Z' to roll panel image)"
 }
 
 step_7_wait_health() {

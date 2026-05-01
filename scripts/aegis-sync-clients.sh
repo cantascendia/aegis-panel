@@ -23,8 +23,33 @@ IFS=$'\n\t'
 
 PANEL_CONTAINER="${AEGIS_PANEL_CONTAINER:-aegis-panel}"
 XRAY_CONFIG="${AEGIS_XRAY_CONFIG:-/opt/aegis/data/marznode/xray_config.json}"
-COMPOSE_FILE="${AEGIS_COMPOSE_FILE:-/opt/aegis-src/deploy/compose/docker-compose.sqlite.yml}"
 DB_PATH_IN_CONTAINER="${AEGIS_DB_IN_CONTAINER:-/var/lib/marzneshin/db.sqlite3}"
+
+# Compose file auto-detect (codex P2 review on commit 11b4d08): the path
+# varies across install layouts (manual git-clone vs Ansible vs Marzneshin
+# upstream layout). Try known paths in priority order; operator can still
+# override with AEGIS_COMPOSE_FILE env. SQLite first since that's the S1
+# default for low-RAM VPSes.
+if [[ -z "${AEGIS_COMPOSE_FILE:-}" ]]; then
+  for candidate in \
+      /opt/aegis-src/deploy/compose/docker-compose.sqlite.yml \
+      /opt/aegis-src/deploy/compose/docker-compose.prod.yml \
+      /opt/aegis/src/deploy/compose/docker-compose.sqlite.yml \
+      /opt/aegis/src/deploy/compose/docker-compose.prod.yml \
+      /opt/aegis/compose/docker-compose.sqlite.yml \
+      /opt/aegis/compose/docker-compose.prod.yml; do
+    if [[ -f "${candidate}" ]]; then
+      COMPOSE_FILE="${candidate}"
+      break
+    fi
+  done
+  if [[ -z "${COMPOSE_FILE:-}" ]]; then
+    echo "[sync] FATAL: cannot find docker-compose file. Set AEGIS_COMPOSE_FILE." >&2
+    exit 2
+  fi
+else
+  COMPOSE_FILE="${AEGIS_COMPOSE_FILE}"
+fi
 
 if ! docker ps --format '{{.Names}}' | grep -q "^${PANEL_CONTAINER}$"; then
   echo "[sync] FATAL: panel container '${PANEL_CONTAINER}' not running" >&2

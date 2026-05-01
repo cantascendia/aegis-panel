@@ -80,6 +80,7 @@ render_env_template() {
     "__DATABASE_URL__"
     "__CF_TUNNEL_ENABLED__"
     "__CF_TUNNEL_NAME__"
+    "__AUDIT_SECRET_KEY__"
   )
   local -a values=(
     "${AEGIS_VERSION:-v0.2.0}"
@@ -100,6 +101,7 @@ render_env_template() {
     "${DATABASE_URL:-sqlite:////var/lib/marzneshin/db.sqlite3}"
     "${CF_TUNNEL_ENABLED:-false}"
     "${CF_TUNNEL_NAME:-}"
+    "${AUDIT_SECRET_KEY:-}"
   )
 
   # Read template once, run replacements in-memory, write atomically.
