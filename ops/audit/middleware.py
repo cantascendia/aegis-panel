@@ -97,8 +97,8 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from decouple import config as decouple_config
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
+from starlette.requests import Request
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.db import GetDB
 from app.utils.auth import get_admin_payload
@@ -113,9 +113,6 @@ from ops.audit.db import (
     AuditEvent,
 )
 
-if TYPE_CHECKING:
-    from starlette.requests import Request
-    from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
 
@@ -200,35 +197,69 @@ def _now_utc_naive() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-class AuditMiddleware(BaseHTTPMiddleware):
-    """ASGI middleware that records mutate actions to ``aegis_audit_events``.
+class AuditMiddleware:
+    """Pure ASGI middleware that records mutate actions to ``aegis_audit_events``.
+
+    L-034 wave-6 rewrite (PR #170): converted from ``BaseHTTPMiddleware``
+    to pure ASGI to fix incompatibility with FastAPI 0.115+ scope
+    propagation. The old version dropped ``fastapi_inner_astack`` from
+    request scope, breaking any route using ``Depends()`` with an async
+    context manager (e.g. GET /api/users → 500 AssertionError on
+    fastapi_inner_astack).
+
+    Pure ASGI keeps the original scope intact: we wrap ``send`` to
+    observe the response status, but the handler runs against the
+    untouched scope so FastAPI's DI works.
 
     See module docstring for the MVP scope and the deliberate
     ``actor_id == None`` baseline.
     """
 
     def __init__(self, app: ASGIApp) -> None:
-        super().__init__(app)
+        self.app = app
 
-    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+    async def __call__(
+        self, scope: Scope, receive: Receive, send: Send
+    ) -> None:
+        # Pass non-HTTP traffic (websocket, lifespan) straight through.
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
         # Inject a request id eagerly so downstream loggers / handlers
         # can correlate even if audit ends up not writing a row.
+        # FastAPI populates ``scope["state"]`` lazily; we ensure the dict
+        # exists then attach our key so handlers can access via
+        # ``request.state.audit_request_id``.
+        request = Request(scope, receive)
         request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
-        request.state.audit_request_id = request_id
+        if "state" not in scope:
+            from starlette.datastructures import State
+            scope["state"] = State()
+        try:
+            scope["state"].audit_request_id = request_id
+        except (AttributeError, TypeError):
+            # Best-effort: if scope["state"] isn't a State-like object,
+            # don't crash — audit middleware must never block requests.
+            pass
+
+        # Wrap send to observe response status.
+        status_holder: list[int] = [200]
+
+        async def _send_wrapper(message):
+            if message["type"] == "http.response.start":
+                status_holder[0] = message["status"]
+            await send(message)
 
         # Always run the handler — audit is observational, never gating.
         try:
-            response: Response = await call_next(request)
+            await self.app(scope, receive, _send_wrapper)
         except Exception:
-            # The handler raised. Re-raise unconditionally; only WRITE
-            # an audit row if the request would have been audited on
-            # success — opt-out + scope rules apply equally to the
-            # exception path (codex review P2 on commit 6a3afdb:
-            # without this guard, RETENTION=0 deployments still
-            # persisted rows for failing requests, and out-of-scope
-            # paths got logged on exception).
+            # Handler raised before sending response. Re-raise; only
+            # WRITE an audit row if the request would have been audited
+            # on success (codex review P2 on commit 6a3afdb).
             if is_audit_enabled() and _should_audit(
-                request.method, request.url.path
+                scope["method"], scope["path"]
             ):
                 self._try_write(
                     request=request,
@@ -240,18 +271,17 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
         if not is_audit_enabled():
             # Opt-out path (D-018 TBD-1): retention=0 → no rows.
-            return response
+            return
 
-        if not _should_audit(request.method, request.url.path):
-            return response
+        if not _should_audit(scope["method"], scope["path"]):
+            return
 
         self._try_write(
             request=request,
             request_id=request_id,
-            status_code=response.status_code,
+            status_code=status_holder[0],
             error_message=None,
         )
-        return response
 
     def _try_write(
         self,
