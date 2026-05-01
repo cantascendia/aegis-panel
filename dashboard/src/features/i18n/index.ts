@@ -27,9 +27,17 @@ i18n
         react: {
             useSuspense: false,
         },
-        load: 'languageOnly',
+        // load: 'currentOnly' keeps the region suffix so 'zh-cn' requests
+        // /locales/zh-cn.json. Earlier 'languageOnly' truncated to 'zh' which
+        // 404'd because the file is named zh-cn.json — clicking 简体中文 in
+        // the LanguageSwitchMenu silently fell back to fallbackLng='en'.
+        load: 'currentOnly',
         detection: {
             order: ['localStorage', 'sessionStorage', 'cookie', 'navigator'],
+            // caches tells i18next-browser-languagedetector which storages to
+            // PERSIST the chosen language to. Without this the choice is lost
+            // on every page reload.
+            caches: ['localStorage'],
         },
         backend: {
             loadPath: `/locales/{{lng}}.json`,
