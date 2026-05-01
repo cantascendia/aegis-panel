@@ -94,7 +94,6 @@ import logging
 import re as _re
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
 
 from decouple import config as decouple_config
 from starlette.requests import Request
@@ -112,7 +111,6 @@ from ops.audit.db import (
     RESULT_SUCCESS,
     AuditEvent,
 )
-
 
 logger = logging.getLogger(__name__)
 
