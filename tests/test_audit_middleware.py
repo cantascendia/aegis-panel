@@ -767,7 +767,9 @@ def test_l034_request_state_dict_not_corrupted_for_downstream(
         captured["scope_state_type"] = type(scope.get("state")).__name__
         captured["scope_state_value"] = scope.get("state")
         # Send a minimal HTTP response so middleware's __call__ completes.
-        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send(
+            {"type": "http.response.start", "status": 200, "headers": []}
+        )
         await send({"type": "http.response.body", "body": b"ok"})
 
     mw = audit_mw.AuditMiddleware(inner_app)
@@ -819,7 +821,9 @@ def test_l034_audit_disabled_zero_db_writes(
     from ops.audit.db import AuditEvent
 
     rows = db_session.query(AuditEvent).all()
-    assert rows == []  # zero rows when retention=0 even with middleware mounted
+    assert (
+        rows == []
+    )  # zero rows when retention=0 even with middleware mounted
 
 
 def test_l034_non_http_scope_passthrough(

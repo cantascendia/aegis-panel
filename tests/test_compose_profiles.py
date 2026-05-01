@@ -41,7 +41,9 @@ def test_marznode_version_decoupled_from_aegis_version() -> None:
 def test_env_template_has_marznode_version_field() -> None:
     """Fresh installs must seed MARZNODE_VERSION in the rendered .env
     so operators see the variable + can override without surprise."""
-    tmpl = Path("deploy/install/templates/env.tmpl").read_text(encoding="utf-8")
+    tmpl = Path("deploy/install/templates/env.tmpl").read_text(
+        encoding="utf-8"
+    )
     assert "MARZNODE_VERSION=v0.5.7" in tmpl
 
 
@@ -49,5 +51,7 @@ def test_env_template_has_audit_secret_key_placeholder() -> None:
     """Fresh installs must seed AUDIT_SECRET_KEY (Fernet) so the panel
     boot's validate_startup() doesn't crash with AuditMisconfigured
     when AUDIT_RETENTION_DAYS > 0 (B.2 wave-2 closure)."""
-    tmpl = Path("deploy/install/templates/env.tmpl").read_text(encoding="utf-8")
+    tmpl = Path("deploy/install/templates/env.tmpl").read_text(
+        encoding="utf-8"
+    )
     assert "AUDIT_SECRET_KEY=__AUDIT_SECRET_KEY__" in tmpl
