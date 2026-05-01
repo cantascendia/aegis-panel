@@ -12,7 +12,7 @@
 
 services:
   marznode:
-    image: dawsh/marznode:${AEGIS_VERSION:-latest}
+    image: dawsh/marznode:${MARZNODE_VERSION:-v0.5.7}
     container_name: aegis-marznode
     restart: always
     # host networking matches the upstream marznode service so gRPC, xray

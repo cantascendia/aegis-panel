@@ -137,7 +137,7 @@ services:
         max-file: "3"
 
   marznode:
-    image: dawsh/marznode:${AEGIS_VERSION:-latest}
+    image: dawsh/marznode:${MARZNODE_VERSION:-v0.5.7}
     container_name: aegis-marznode
     restart: always
     network_mode: host
