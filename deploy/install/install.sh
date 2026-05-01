@@ -305,17 +305,21 @@ step_3_collect_inputs() {
   if [[ -z "${XRAY_SUBSCRIPTION_PATH}" ]]; then XRAY_SUBSCRIPTION_PATH="/$(rand_urlsafe 8)"; fi
   if [[ -z "${POSTGRES_PASSWORD}" ]]; then POSTGRES_PASSWORD="$(rand_urlsafe 32)"; fi
   if [[ -z "${REDIS_PASSWORD}"    ]]; then REDIS_PASSWORD="$(rand_urlsafe 24)"; fi
-  # AUDIT_SECRET_KEY: Fernet key (32 url-safe-b64 bytes = 44 chars). Required
-  # by ops/audit/config.py:validate_startup when AUDIT_RETENTION_DAYS > 0.
-  # Without this, panel boot asserts AuditMisconfigured and goes into restart
-  # loop. v0.3.5 production hot-patched manually; this seeds it on every fresh
-  # install so it never repeats. Uses python cryptography (already a dep).
+  # AUDIT_SECRET_KEY: Fernet key = 32 raw random bytes encoded as url-safe
+  # base64 (44 chars with `=` padding). Required by ops/audit/config.py:
+  # validate_startup when AUDIT_RETENTION_DAYS > 0 — panel boots into restart
+  # loop with AuditMisconfigured otherwise. v0.3.5 production hot-patched
+  # manually; this seeds on every fresh install.
+  #
+  # Generated via openssl (host hard dep verified in step 1) — codex P2
+  # review on commit 11b4d08 caught: original used `python3 cryptography`
+  # which is NOT a host dep (only in the panel image's venv), so fresh
+  # installs would silently leave the key empty.
   if [[ -z "${AUDIT_SECRET_KEY}"  ]]; then
-    AUDIT_SECRET_KEY="$(python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())' 2>/dev/null || echo)"
-    if [[ -z "${AUDIT_SECRET_KEY}" ]]; then
-      warn "python3 cryptography not available — AUDIT_SECRET_KEY left empty"
-      warn "  panel will refuse to boot if AUDIT_RETENTION_DAYS > 0"
-      warn "  generate later: docker exec aegis-panel python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+    if command -v openssl >/dev/null 2>&1; then
+      AUDIT_SECRET_KEY="$(openssl rand 32 | base64 | tr '+/' '-_' | tr -d '\n')"
+    else
+      warn "openssl missing — AUDIT_SECRET_KEY left empty (panel won't boot if AUDIT_RETENTION_DAYS>0)"
     fi
   fi
 
