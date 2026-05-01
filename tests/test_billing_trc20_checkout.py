@@ -42,7 +42,6 @@ from ops.billing.db import (
     Invoice,
 )
 
-
 # ---------------------------------------------------------------------
 # Fixtures (parallel structure to test_billing_checkout_webhook.py;
 # kept in this module so fix lands as a single self-contained file).
