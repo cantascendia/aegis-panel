@@ -751,33 +751,53 @@ def test_l034_request_state_dict_not_corrupted_for_downstream(
     """Codex P2 on commit 0e26017: AuditMiddleware must NOT assign a
     State object to scope['state']; Starlette expects a dict and wraps
     it via Request.state. Other handlers/middleware indexing it as a
-    dict would TypeError. Use request.state.x = y API."""
-    from fastapi import FastAPI, Request
-    from fastapi.testclient import TestClient
+    dict would TypeError. Use request.state.x = y API.
+
+    Pure ASGI unit test (no FastAPI DI) — directly drive __call__ with
+    a fake scope, capture what middleware does to scope['state']."""
+    import asyncio
 
     from ops.audit import middleware as audit_mw
 
     monkeypatch.setenv("AUDIT_RETENTION_DAYS", "0")
-    app = FastAPI()
-    app.add_middleware(audit_mw.AuditMiddleware)
 
-    @app.get("/probe-state")
-    async def _probe(request: Request) -> dict:
-        # 1. audit_request_id is reachable via request.state attribute API
-        rid = getattr(request.state, "audit_request_id", None)
-        # 2. scope['state'] should still be subscriptable as a dict
-        scope_state = request.scope.get("state")
-        return {
-            "request_id_present": bool(rid),
-            "scope_state_is_mapping": hasattr(scope_state, "__getitem__")
-            or hasattr(scope_state, "_state"),
-        }
+    captured: dict = {}
 
-    client = TestClient(app)
-    resp = client.get("/probe-state", headers={"X-Request-ID": "rid-from-test"})
-    assert resp.status_code == 200, resp.text
-    body = resp.json()
-    assert body["request_id_present"] is True
+    async def inner_app(scope, receive, send):
+        captured["scope_state_type"] = type(scope.get("state")).__name__
+        captured["scope_state_value"] = scope.get("state")
+        # Send a minimal HTTP response so middleware's __call__ completes.
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"ok"})
+
+    mw = audit_mw.AuditMiddleware(inner_app)
+
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/probe",
+        "headers": [(b"x-request-id", b"rid-from-test")],
+        "client": ("127.0.0.1", 12345),
+    }
+
+    async def _recv():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def _send(msg):
+        pass
+
+    asyncio.run(mw(scope, _recv, _send))
+
+    # scope[state] should be a dict (Starlette's expected shape) not a
+    # State instance directly. The audit_request_id should be readable
+    # via request.state API path (which is dict access under the hood).
+    scope_state = captured["scope_state_value"]
+    assert scope_state is not None, "AuditMiddleware never set scope[state]"
+    assert isinstance(scope_state, dict), (
+        f"scope[state] must be dict for Starlette compat; got "
+        f"{captured['scope_state_type']}"
+    )
+    assert scope_state.get("audit_request_id") == "rid-from-test"
 
 
 def test_l034_audit_disabled_zero_db_writes(
