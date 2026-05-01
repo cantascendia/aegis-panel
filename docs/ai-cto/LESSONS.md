@@ -8,6 +8,62 @@
 
 ---
 
+## L-036 | Round 3 mid late-8 wave-4 | marznode 版本错位 = panel↔marznode 真正的根因（不是 TLS）
+
+**wave-3 假设修正**：L-035 推断 "TLS 配置错位"——错。真根因更直接：**marznode v0.2.0 vs panel v0.3.x 的 gRPC proto 不同代**。
+
+**深查 marznode v0.2.0 容器源码**（`/app/marznode/service/service_grpc.py`）：
+
+| 旧 API (marznode v0.2.0) | 新 API (panel v0.3.x 调) |
+|---|---|
+| `FetchInbounds` | `FetchBackends` |
+| `RestartXray` | `RestartBackend` |
+| `FetchXrayConfig` | `FetchBackendConfig` |
+| `StreamXrayLogs` | `StreamBackendLogs` |
+
+panel 调 `/marznode.MarzService/FetchBackends` → marznode v0.2.0 没 handler → grpclib 服务端返回**缺 grpc content-type 的 unimplemented 响应** → panel 客户端报 `Missing content-type header`。
+
+不是 TLS 错位（`openssl s_client` 探测时 marznode v0.2.0 实际跑 TLS，但 wave-4 升 v0.5.7 后 INSECURE=True env 真的让 marznode 跑 plain HTTP/2——证明 v0.2.0 的 INSECURE 是个 noop env，v0.5.7 才尊重）。
+
+**marznode tag 选择**（`registry.hub.docker.com/v2/repositories/dawsh/marznode/tags`）：
+- v0.5.7（2025-02-23 / `latest`）= 最新有 Backend API + 真正的 INSECURE 支持
+- v0.2.x = 老的 Xray-only API
+
+**修法 wave-4**（PR #165）：
+- compose 三处 `image: dawsh/marznode:${AEGIS_VERSION:-latest}` → `${MARZNODE_VERSION:-v0.5.7}`
+- `env.tmpl` 加 `MARZNODE_VERSION=v0.5.7` 字段（独立于 AEGIS_VERSION，因为 marznode 是 upstream 不 fork）
+- 生产 VPS：`.env` 加 `MARZNODE_VERSION=v0.5.7`，`docker compose pull marznode` + `up -d --force-recreate marznode`
+- panel `connection_backend` 从 `grpclib`（TLS）切到 `grpcio`（insecure_channel = plain HTTP/2，匹配 marznode INSECURE=True）
+
+**生产验证（v0.3.7 panel + marznode v0.5.7 + grpcio backend）**：
+- ✅ panel log: `@app.marznode.grpcio: Connected to node 1`
+- ✅ `_sync()` `_fetch_backends` 成功（panel DB `backends` 表写入：`xray / 25.2.21`）
+- ✅ `_repopulate_users` 成功推 5 个老用户（marznode runtime xray config 含全部 5 用户，email 是数字 ID `1..5`）
+- ✅ marznode 日志 0 ValueError（之前 spam 也消失）
+- ❌ **incremental SyncUsers stream 仍 broken**：API 创新用户（id=18 wave4_long）panel 端 `update_user` 入队列，marznode 完全不收。`_stream_user_updates` 任务可能 silent crash 或 marznode `_update_user` 对新用户 add 路径有问题
+- ❌ PUT 节点触发 `_sync` 重跑也不能让新用户进 marznode runtime（深层未解：marznode `_storage.list_inbounds(tag=['Reality-VLESS'])` 可能返回空，导致 `_add_user` 跳过新用户）
+
+**wave-4 部分胜利**：
+- panel↔marznode RPC **整体连通**（之前 6 个版本 0% RPC 工作率 → 现在 5/6 用户通过 RepopulateUsers 真同步）
+- email 数字格式由 marznode 自己输出（之前是 panel 错误手注 username 字符串）
+- 老用户管理（增删 admin / 老用户 disable）走 RPC 真生效
+
+**wave-5 候选**（独立 SPEC）：incremental SyncUsers stream + 新用户 add-to-MemoryStorage 路径
+- 写最小可复现：panel API 创建用户 → marznode log debug → panel grpcio `_stream_user_updates` task 状态
+- 可能根因：marznode v0.5.7 的 `_update_user` 对 storage 没有的新用户 + `list_inbounds` 返回空时 silent skip
+- 修法选项：(a) 修 marznode 端逻辑（不可行，upstream 不 fork）；(b) panel 创建用户后 force-trigger RPC 路径；(c) 升 marznode 到更新 tag 看上游修了没
+
+**Phase C workaround 仍是 B 阶段唯一全覆盖路径**：
+- aegis-sync-clients.sh 直接写 xray_config.json + restart marznode → 100% 同步保证
+- 缺点：每次 marznode 重启丢 in-memory state（包括 `_storage` 收到的增量同步）；下次 panel _sync 重新填回。可接受。
+
+**落地防线**：
+- ✅ env.tmpl pin `MARZNODE_VERSION` 独立变量
+- ✅ panel default node `connection_backend` 应在新装时设为 `grpcio`（新增 install.sh 改动 — 待 wave-5 PR）
+- ⏳ wave-5 SPEC：marznode 增量 RPC 不工作根因 + 修法
+
+---
+
 ## L-035 | Round 3 mid late-8 wave-3 | grpclib 修暴露更深问题：marznode TLS 配置错位
 
 **起因**：wave-3 修 `_monitor_channel`（PR #163 / v0.3.7）替换 `except: pass` 为显式 `logger.error(... exc_info=True)`。生产滚动后 panel 日志立刻冒出**之前看不见的真错误**：

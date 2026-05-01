@@ -1,13 +1,33 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-01 late-8 wave-3 (grpclib monitor 修 + L-035 marznode TLS 错位发现)(v0.3.7 ship 替换 except:pass 为 logger.error 后真 RPC 错误曝光:`Missing content-type header`;深查发现 marznode INSECURE=True 实际仍跑 TLS，panel 客户端 cert 与 marznode 期望 CA 不匹配；wave-2 看到的"clients=5"实为 rollback backup 恢复，panel 从未真正 RepopulateUsers 成功；workaround 仍是 B 阶段唯一同步路径；wave-4 候选独立 SPEC marznode TLS 配置对齐 4-6h)
+> 最后更新:2026-05-01 late-8 wave-4 (L-036 marznode 版本错位 = 真根因；marznode v0.2.0→v0.5.7 + grpcio backend 切换；RPC 整体连通 5/6 用户)(L-035 推断的 TLS 错位修正：实际是 proto 不同代——marznode v0.2.0 有 FetchInbounds/RestartXray，panel 调 FetchBackends/RestartBackend，路由不存在 → grpclib 返回缺 content-type 的 unimplemented 响应；v0.5.7 真支持 INSECURE=True plain HTTP/2，匹配 panel grpcio backend；老用户 5/5 通过 _sync RepopulateUsers 真同步；新用户 incremental SyncUsers stream 仍 broken → wave-5 独立 SPEC；aegis-sync-clients workaround 仍是 100% 覆盖兜底)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid late-8 wave-3 —— grpclib 监控修 + marznode TLS 错位发现 (B 阶段就绪度持稳 9.0/10)**
+**Round 3 mid late-8 wave-4 —— marznode 版本错位真根因 + 部分 RPC 连通 (B 阶段就绪度 9.0 → 9.2/10)**
+
+> wave-4 主线：升 marznode v0.2.0 → v0.5.7 + 切 panel `connection_backend=grpcio` → panel↔marznode RPC 整体连通。**L-036 修正 L-035 的"TLS 错位"假设**——真根因是 marznode v0.2.0 的 gRPC API 是老的（FetchInbounds/RestartXray），panel v0.3.x 调新 API（FetchBackends/RestartBackend），路由不存在导致 grpclib 报 `Missing content-type header`。
+>
+> wave-4 ship：PR #165 compose 三处 `dawsh/marznode:${AEGIS_VERSION:-latest}` → `${MARZNODE_VERSION:-v0.5.7}` + env.tmpl 加 `MARZNODE_VERSION` 字段。生产 VPS 已升级 marznode + 切 grpcio backend。
+>
+> **生产实测**（v0.3.7 panel + marznode v0.5.7）：
+> - ✅ panel log: `Connected to node 1`
+> - ✅ `_sync()` `_fetch_backends` + `_repopulate_users` 真成功（marznode runtime xray 全 5 用户，email 数字 ID）
+> - ✅ marznode 0 ValueError spam
+> - ❌ incremental SyncUsers stream 对**新建用户**仍不传播（panel 入队但 marznode 不收）
+>
+> **wave-5 候选**（按 ROI）：
+> 1) **incremental SyncUsers stream 修**（独立 SPEC，4-6h）— 解锁真正实时同步，可弃 aegis-sync-clients workaround
+> 2) install.sh 默认 `connection_backend=grpcio`（防新装走 grpclib 失败）
+> 3) AuditMiddleware pure ASGI 重写（差异化 #5 sleeper 唤醒）
+> 4) staging VPS workflow
+
+---
+
+## 历史:Round 3 mid late-8 wave-3 —— grpclib 监控修 + marznode TLS 错位发现 (B 阶段就绪度持稳 9.0/10)
 
 > wave-3 ship：PR #163 grpclib `_monitor_channel` 重构（timeout 2s→10s + N=3 consecutive timeout 才取消 streaming task + 总是 respawn 完成的 stream task + `except: pass` → `logger.error(... exc_info=True)`）+ tag v0.3.7 + 生产滚动。
 >
