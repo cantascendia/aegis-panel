@@ -8,6 +8,51 @@
 
 ---
 
+## L-034 | Round 3 mid late-8 fork-cutover | BaseHTTPMiddleware × FastAPI 0.115+ scope 不兼容族(4 PR 链式发现)
+
+**现象**: v0.3.0 切 fork 镜像后 dashboard Management 页面空 / 全部分页 endpoint 500:
+
+```
+AssertionError: fastapi_inner_astack not found in request scope
+```
+
+`/api/users` `/api/admins` `/api/services` 全 500;`/api/users/{name}` `/api/system/stats/users` 200。差别 = 是否分页(`Page[T]` + `paginate(...)`)。
+
+**4 个 PR 链式查根因(v0.3.1 → v0.3.5)**:
+
+| PR | 假设 | 验证后结果 |
+|---|---|---|
+| #151 v0.3.2 | `AuditMiddleware`(BaseHTTPMiddleware)是元凶 | 条件挂载后仍 500 — 不是它 |
+| #152 v0.3.3 | `SlowAPIMiddleware`(也 BaseHTTPMiddleware)是元凶 | 取消挂载后仍 500 — 不是它 |
+| #153 v0.3.4 | `fastapi-pagination==0.12.31` 与 fastapi 0.121 不兼容,patch 升 0.12.34 | 仍 500 — fix 不在 0.12 系列 |
+| #154 v0.3.5 | 跨主版本升 `fastapi-pagination → 0.15.12` | ✅ 修好 |
+
+**根因(双层)**:
+
+1. **应用层**: `fastapi-pagination` 0.12.x 实现假设了 FastAPI ≤ 0.114 的请求生命周期。FastAPI 0.115 引入 `fastapi_inner_astack` scope key + assert,0.12.x 没适配,所有 `paginate(...)` 路由 assert fail。fix 在 0.13.0 重写。
+
+2. **中间件层**: starlette `BaseHTTPMiddleware` 的工作方式(包一层 ASGI app + 单独 scope)与 FastAPI 0.115 假设的 scope 直传相冲突。**任何 `BaseHTTPMiddleware`-based middleware 在 FastAPI 0.115+ 下都是定时炸弹**:
+   - `AuditMiddleware`(我们写的) ❌
+   - `SlowAPIMiddleware`(slowapi 0.1.9) ❌
+   - 凡是 `class XXX(BaseHTTPMiddleware)` 都要重写为 pure ASGI(`async def __call__(self, scope, receive, send)`)
+
+**实战体现**:
+- 测试期 4 个用户场景下 dashboard Home 能用,Management 整页空。换个用户操作就 500。
+- 4 个候选都"听起来像"根因,但只有 #154 是真的;#151 #152 是合理但非必要的 hardening。
+- 4 PR 连发,生产 panel 在 1 小时内被滚 5 次。零数据丢失(volume mount + idempotent aegis-upgrade),证明 cutover 流程本身可靠。
+
+**根因(流程)**: 我们的 fork CI 没有 staging VPS,SPEC #119 / #149 没要求"先在 staging 跑 30 分钟"再合 main → 生产是第一次真跑 fork 镜像,bug 当场暴露。L-033 + L-034 都是这个流程缺口的衍生。
+
+**落地防线**:
+
+- ✅ requirements.txt 锁 `fastapi-pagination >= 0.15`(防回退)
+- ✅ AuditMiddleware 改回 pure ASGI(下一个 PR,v0.4 阻塞)
+- ⏳ `.agents/rules/no-base-http-middleware.md` — 凡新 middleware 必须 pure ASGI,review 时 grep `BaseHTTPMiddleware` 警告
+- ⏳ Round 3 mid late-9 起加 staging VPS:tag push → CI build → staging 自动 deploy + smoke → 通过才 promote 生产
+- ⏳ `evals/regression/` 加 case:tag bump 后 paginated endpoint 200 必跑
+
+---
+
 ## L-033 | Round 3 mid late-8 first-real-deploy | "代码差异化在仓库睡着"— upstream 镜像不读 fork 代码,生产 panel 跟同行一样
 
 **现象**: 部署完发现一个矛盾:

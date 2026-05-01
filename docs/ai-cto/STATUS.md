@@ -1,13 +1,35 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-04-30 late-7 wave-4 (post-issue-102-closure)(issue #102 R.4 follow-up 4 component tests ✅;skills 缺口闭环 PR #111;harness v3.6 同步 PR #115 + drift 收口 #116/#117/#118/#120/#122;Harness 维度 94→97)
+> 最后更新:2026-05-01 late-8 wave-1 (fork-cutover v0.3.0→v0.3.5)(L-033 sleeper code 闭环 + L-034 BaseHTTPMiddleware × FastAPI 0.115+ scope 兼容族 4-PR 链式修;生产 panel 首次跑 fork 镜像;ghcr.io 镜像构建链全跑通)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid late-7 wave-4 —— issue #102 收口 + harness v3.6 同步 + drift cleanup(Harness 94→97)**
+**Round 3 mid late-8 wave-1 —— Fork 镜像生产化(v0.3.5 cutover)+ L-033/L-034 闭环**
+
+> wave-1 主线:**生产 panel 从 upstream `dawsh/marzneshin:v0.2.0` 切到自构 `ghcr.io/cantascendia/aegis-panel:v0.3.5`**,关闭 L-033 "代码差异化在仓库睡着"。fork 代码(`hardening/` SNI 选型 + Reality 巡检 + IP 限制器,`ops/` 计费 + 审计,`apply_panel_hardening` hook)首次在生产执行。
+>
+> 切换中链式发现 L-034:`BaseHTTPMiddleware × FastAPI 0.115+ scope` 不兼容族——5 个 tag(v0.3.0 → v0.3.5)修 4 类 bug:i18n zh-cn / Dockerfile curl / AuditMiddleware 条件挂载 / SlowAPIMiddleware 取消 / **fastapi-pagination 0.12.31→0.15.12(真正修复)**。零数据丢失(volume mount + idempotent `aegis-upgrade`)。
+>
+> wave-1 ship:PR #149(ghcr cutover 基础设施)、#150(i18n+curl)、#151(audit cond)、#152(slowapi unmount)、#153/#154(pagination 0.12.34→0.15.12);tag v0.3.0 → v0.3.5。
+
+**当前生产状态**(2026-05-01):
+- Image: `ghcr.io/cantascendia/aegis-panel:v0.3.5`(panel)+ `dawsh/marznode:v0.2.0`(数据面 upstream)
+- 4 用户 + 1 admin(riku sudo)+ 全部 fork 表(`aegis_audit_events` / `aegis_billing_*` 5 张 / `aegis_iplimit_*` 3 张)留存
+- audit-log 临时 `AUDIT_RETENTION_DAYS=0` 关掉(L-034 中间件兼容性问题,v0.4 重写为 pure ASGI 后再开)
+- L-032 mTLS 仍未修(每次增删用户手工 jq 注 UUID 到 xray_config.json)
+
+**wave-1 后下一轮 wave-2 候选**(按 ROI):
+1. 🔴 L-032 panel↔marznode mTLS 修(运维痛点最大,客户增长前必须收口)
+2. 🟠 audit-log pure ASGI 重写(差异化 #5 sleeper 唤醒)
+3. 🟡 install.sh AUDIT_SECRET_KEY 自动生成(下次重装/新节点便利)
+4. 🟢 staging VPS + tag-promote workflow(L-034 流程根因兜底)
+
+---
+
+## 历史轮次:Round 3 mid late-7 wave-4 —— issue #102 收口 + harness v3.6 同步 + drift cleanup(Harness 94→97)
 
 > 本 wave 仍无新业务功能 ship,**主线是 governance / harness 第三轮收口**。商业化 / 差异化 #3 / 差异化 #4 状态承袭 wave-3 不变(全 5/5 闭环)。本 wave 主要 ship:PR #111 同步 3 个 skill 到 `.claude/skills/`(关闭 Harness ROI 缺口 #1);PR #113 R.4 module 4 component tests(关闭 issue #102,差异化 #3 测试覆盖到 dashboard);PR #114 wave-3 batch refresh;PR #115 sync playbook v3.6(§44 replay + §45 canary + §48 cross-review);PR #116 skills-sync drift checker + SubagentStop 修;PR #117 L-027 → `.agents/rules/sub-agent-worktree.md` + 2 regression evals;PR #118 codex-bridge business path SSOT(`scripts/business-paths.txt`);PR #120 reality-dashboard 空审计 UX 修;PR #122 harness drift cleanup 残留收口。
 
