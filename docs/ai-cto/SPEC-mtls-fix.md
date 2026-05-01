@@ -91,40 +91,18 @@ DB 实测：`select connection_backend from nodes` = `grpclib`。grpclib 是带 
 
 ---
 
-## 5. TBD（user 拍板才能 PLAN）
+## 5. TBD 决策（已锁定 — 用户授权 CTO 自决）
 
-### TBD-1：修复路径偏好
+| TBD | 选项 | 决策 | 理由 |
+|---|---|---|---|
+| TBD-1 修复路径 | A 数据先净化 / B 代码先读 / C 双管齐下 | **C** | A 30 分钟试 H-B 假设性价比最高；不通再 B |
+| TBD-2 回滚边界 | A 接受短暂中断 / B 延期 / C 通知 friend 后做 | **C** | friend_b/c 是测试员可通知；维护时段操作 |
+| TBD-3 H-B 失败回退顺序 | — | **H-A → H-D → 写 work-around** | 重发 cert 比改 TLS code 安全；最差也有 fallback 脚本兜底 |
+| TBD-4 xray client email 格式 | A 纯数字 / B 复合 / C 不动 | **A** `<user_id>` 纯数字 | marznode `int(stat.name.split(".")[0])` 期望此格式；最小改动 |
 
-- **A. 数据先净化（推荐）**：先清空 xray_config.json clients，停 spam，让 panel 走正常流程重新 SyncUsers。验证 H-B；如果通了则 80% 工作量直接消化。
-- **B. 代码先排查**：先读 panel grpclib stream 实现 + 加 logging，再改运行态。安全但慢，需要 build 新镜像。
-- **C. 双管齐下**：A 先做（30 分钟），不通再切 B。
-
-我推荐 **C**。
-
-### TBD-2：panel 操作的回滚边界
-
-修复中如果某 step 把 4 用户从 xray_config 全清空 → friend_b 当下连接断 5-30s。
-- **A. 接受短暂中断**（≤5 分钟、深夜执行）
-- **B. 不接受**：必须 friend_b/c 可以连得上，整个修复延期到客户少时段
-- **C. 通知 friend_b/c "晚 X 点 maintenance"，再做
-
-### TBD-3：H-B 假设若不成立怎么办
-
-如果清空 xray + restart 之后 panel 还是 SyncUsers 不通：
-- **A. 转 H-A 路径**（重发 cert，需读 marznode 容器的 CA 配置）
-- **B. 转 H-D**（TLS verify mode 调试，需修 grpclib.py）
-- **C. 暂停修复，写 work-around 脚本** `aegis-sync-clients`，B 阶段顶住（保守路线）
-
-我倾向 **A → B → C 顺序**。
-
-### TBD-4：xray client email 字段格式
-
-修好之后 panel SyncUsers 发出的 client `email` 应是什么格式？
-- **A. `<user_id>` 纯数字**（marznode `int()` 期望的格式）
-- **B. `<user_id>.<username>` 复合**（保留 debug 可读性）
-- **C. 由 marznode 决定**（panel 不改，marznode 自己处理 stat name parsing）
-
-读 panel grpclib 现状后才能决定。**默认 A**（最简单）。
+锁定时间：2026-05-01 specify phase 闭环。
+锁定方式：用户授权 CTO 自决（"你自己判断"）。
+反悔成本：PLAN 阶段还能回炉；impl 后改要新 SPEC。
 
 ---
 
@@ -155,13 +133,9 @@ DB 实测：`select connection_backend from nodes` = `grpclib`。grpclib 是带 
 
 ---
 
-## 9. 用户审核 checklist
+## 9. 状态
 
-- [ ] §1 业务影响排序认同？
-- [ ] §2 scope 划分认同？特别是排除多节点扩展、audit 重写
-- [ ] §3 AC 验收能验证？
-- [ ] TBD-1 路径偏好（A/B/**C**）
-- [ ] TBD-2 回滚边界（A/B/**C**）
-- [ ] TBD-3 H-B 不成立时的回退顺序
-- [ ] TBD-4 xray client email 格式（暂定 **A**）
-- [ ] §6 时间盒 6-9h 可接受？
+specify phase 已闭环（2026-05-01）：
+- ✅ TBDs 全部锁定（§5）
+- ✅ codex cross-review 通过（commit c9912f0，REVIEW-QUEUE.md 2026-05-01T13:45:53）+ AC-8 P2 修复（commit 1c544b2）
+- ⏭️ 下一步：PLAN-mtls-fix.md（phase 2/3）
