@@ -1,13 +1,27 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-01 late-8 wave-2 (L-032 mTLS Phase C workaround + v0.3.6 ship)(SPEC→PLAN→TASKS 三段式闭环 + 真正根因诊断:_monitor_channel.__connect__ 第二轮 timeout 杀 streaming task;Phase A 失败 → T1.6 强制 rollback → Phase C workaround ship;aegis-sync-clients.sh 接到 aegis-user CLI;AC-1..8 全过;wave-3 deferred 真正 grpclib 重写)
+> 最后更新:2026-05-01 late-8 wave-3 (grpclib monitor 修 + L-035 marznode TLS 错位发现)(v0.3.7 ship 替换 except:pass 为 logger.error 后真 RPC 错误曝光:`Missing content-type header`;深查发现 marznode INSECURE=True 实际仍跑 TLS，panel 客户端 cert 与 marznode 期望 CA 不匹配；wave-2 看到的"clients=5"实为 rollback backup 恢复，panel 从未真正 RepopulateUsers 成功；workaround 仍是 B 阶段唯一同步路径；wave-4 候选独立 SPEC marznode TLS 配置对齐 4-6h)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid late-8 wave-2 —— L-032 mTLS Phase C workaround + 运营就绪 (B 阶段就绪度 8.5 → 9.0/10)**
+**Round 3 mid late-8 wave-3 —— grpclib 监控修 + marznode TLS 错位发现 (B 阶段就绪度持稳 9.0/10)**
+
+> wave-3 ship：PR #163 grpclib `_monitor_channel` 重构（timeout 2s→10s + N=3 consecutive timeout 才取消 streaming task + 总是 respawn 完成的 stream task + `except: pass` → `logger.error(... exc_info=True)`）+ tag v0.3.7 + 生产滚动。
+>
+> **意外收获**：错误日志可见后立刻看到真 RPC 失败 `Missing content-type header`（之前 6 个版本一直被 `except: pass` 吞掉）。深查发现 wave-2 我们以为的"PUT 后 _sync 跑了一次"实际是错觉——是 rollback 从 backup 恢复的 5 用户，panel 从未真正 RepopulateUsers 成功过。
+>
+> **真根因 L-035**：marznode `INSECURE=True` 但实际仍跑 TLS（INSECURE 语义是"不校验客户端 cert"，不是"明文"）。panel 客户端 cert ↔ marznode 期望 CA 链不匹配，TLS 握手 OK 但应用层 RPC 响应被截断。
+>
+> **决策**：本 wave 仅 ship 监控可见性修（已完成），真 RPC 修推到 wave-4 独立 SPEC（4-6h，需研究 marznode INSECURE 语义 + 决定 cert 颁发模型）。aegis-sync-clients workaround 仍是唯一同步路径，操作员体验无影响。
+>
+> wave-4 候选（按 ROI 排）：1) **marznode TLS 配置对齐**（独立 SPEC，4-6h，解锁真 RPC 同步 + 多节点扩展）2) AuditMiddleware pure ASGI 重写（差异化 #5 sleeper 唤醒）3) staging VPS workflow 4) 客户 FAQ + 招募文案（≥3 付费客户路径）
+
+---
+
+## 历史:Round 3 mid late-8 wave-2 —— L-032 mTLS Phase C workaround + 运营就绪 (B 阶段就绪度 8.5 → 9.0/10)
 
 > wave-2 主线：**SPEC→PLAN→TASKS 三段式闭环修 L-032**（PR #156 #157 #158 docs + #159 #160 #161 impl + v0.3.6 ship）。
 >
