@@ -8,6 +8,62 @@
 
 ---
 
+## L-032 (final) | Round 3 mid late-8 wave-2 | panel↔marznode mTLS 修不动；Phase C workaround 兜住 B 阶段
+
+**现象（最终诊断）**: panel API 创建/删除用户后，xray_config.json 不变，客户端连不上。需要手工 jq 注 UUID。
+
+**5 个候选根因排查后，真正问题不止一个**：
+
+| H | 假设 | 真假 |
+|---|---|---|
+| H-A | client cert 与 marznode CA 不匹配 | ❌ 不是（TLS 握手成功） |
+| H-B | FetchUsersStats 异常掐断 channel | 部分（导致 status flap，但不直接影响 SyncUsers） |
+| H-E **新发现** | `_sync()` 失败 → streaming task 不 spawn → 用户更新 silent drop | ✅ 部分对，但更深 |
+| **真正主因** | panel `nodes_startup` lifespan 跑了，`add_node` 创建 MarzNodeGRPCLIB 实例，**但 `_monitor_channel` 第二轮 `__connect__()` 总 timeout 取消 streaming task**，导致 SyncUsers 永远只有第一次 _sync 时的批量 RepopulateUsers 一次机会 | 🎯 这才是 |
+
+**实战暴露**：
+- 2026-05-01 wave-2 执行 Phase A（清空 xray clients 等自动 RepopulateUsers）→ 60s 内 panel 完全无 grpclib log → 节点 last_status_change 卡 19h 前
+- PUT `/api/nodes/1` 触发 `modify_node` → `remove_node + add_node` → MarzNodeGRPCLIB 重新实例化 → _monitor_channel 第一轮 connect 成功 → _sync 跑 → RepopulateUsers 推 5 用户到 xray ✅
+- 10s 后 _monitor_channel 第二轮 → `await asyncio.wait_for(self._channel.__connect__(), timeout=2)` 超时 → 进 except 分支 → `set_status(unhealthy)` + `cancel(_streaming_task)` ❌
+- 之后 `update_user(test_e2e)` 调 `for node_id in marznode.nodes: ...put(_updates_queue)`，但消费者已死 → 数据塞 queue 但无人读 → silent drop
+
+**这是 grpclib 设计 bug**，不是 panel 代码 bug。修复需要：
+1. 调 `__connect__` timeout 从 2s → 5-10s
+2. 区分 transient timeout（不取消 streaming）vs real disconnect（取消）
+3. 或重写为 keepalive PING 机制
+
+涉及修改 upstream `app/marznode/grpclib.py` ~30 行。**估时 90 min + 测试 + 镜像 build + 滚 v0.3.7**——超出 wave-2 时间盒。
+
+**Phase C workaround ship**（PR #159, #160, #161）：
+
+`scripts/aegis-sync-clients.sh` 绕过整个 panel↔marznode RPC：
+- 直接读 panel SQLite DB → 用 xxhash.xxh128(key) 转 xray UUID（与订阅 URI 一致）
+- email = numeric `<user.id>` → 修复 marznode FetchUsersStats `int()` 报错族
+- atomic 写 xray_config.json + restart marznode
+- 集成到 aegis-user CLI（create/renew/disable 自动跑 sync）
+
+**B 阶段（10-200 客户）operational 上是稳的**：
+- 创建用户 → 5s 内 xray 同步 ✅ AC-1 通过
+- 删除/disable → 5s 内 xray 移除 ✅ AC-2 通过
+- marznode 30s+ 0 ValueError int() ✅ AC-3 通过
+- 节点重启 RepopulateUsers ✅ AC-8 通过
+- `aegis-mtls-rollback` 单行回滚 ≤30s ✅ AC-7 通过
+
+**deferred 到 wave-3**:
+- 真正 grpclib `_monitor_channel` 修（独立 SPEC）
+- AuditMiddleware pure ASGI 重写（B.4，依赖 RBAC schema 冻结）
+- staging VPS workflow（B.7）
+
+**操作员 UX 没退化**：操作员仍跑 `aegis-user create X plan`，CLI 自动调 sync。多了 ~3s 等 marznode restart。
+
+**落地防线**：
+- ✅ scripts/aegis-sync-clients.sh ship（PR #159）+ codex 3 项 P1/P2 修（multi-inbound guard / flow preservation / AUTH_GENERATION_ALGORITHM 兼容）
+- ✅ scripts/aegis-upgrade.sh `--env-file` 修（PR #160）
+- ✅ install.sh 自动生成 AUDIT_SECRET_KEY + 自动部署 sync helper（PR #161 + codex P2 修：openssl 替代 cryptography + 自动检测 compose path）
+- ⏳ wave-3 真正修 grpclib._monitor_channel（独立 SPEC + 90 min impl）
+
+---
+
 ## L-034 | Round 3 mid late-8 fork-cutover | BaseHTTPMiddleware × FastAPI 0.115+ scope 不兼容族(4 PR 链式发现)
 
 **现象**: v0.3.0 切 fork 镜像后 dashboard Management 页面空 / 全部分页 endpoint 500:
