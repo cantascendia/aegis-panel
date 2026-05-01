@@ -1,13 +1,27 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-01 late-8 wave-1 (fork-cutover v0.3.0→v0.3.5)(L-033 sleeper code 闭环 + L-034 BaseHTTPMiddleware × FastAPI 0.115+ scope 兼容族 4-PR 链式修;生产 panel 首次跑 fork 镜像;ghcr.io 镜像构建链全跑通)
+> 最后更新:2026-05-01 late-8 wave-2 (L-032 mTLS Phase C workaround + v0.3.6 ship)(SPEC→PLAN→TASKS 三段式闭环 + 真正根因诊断:_monitor_channel.__connect__ 第二轮 timeout 杀 streaming task;Phase A 失败 → T1.6 强制 rollback → Phase C workaround ship;aegis-sync-clients.sh 接到 aegis-user CLI;AC-1..8 全过;wave-3 deferred 真正 grpclib 重写)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid late-8 wave-1 —— Fork 镜像生产化(v0.3.5 cutover)+ L-033/L-034 闭环**
+**Round 3 mid late-8 wave-2 —— L-032 mTLS Phase C workaround + 运营就绪 (B 阶段就绪度 8.5 → 9.0/10)**
+
+> wave-2 主线：**SPEC→PLAN→TASKS 三段式闭环修 L-032**（PR #156 #157 #158 docs + #159 #160 #161 impl + v0.3.6 ship）。
+>
+> 实战发现 H-E 假设部分对，真正根因更深：`_monitor_channel.__connect__()` 第二轮总 timeout 杀 streaming task → SyncUsers RPC 永远只 spawn 一次 → 用户增删 silent drop。Phase A 数据净化失败后强制 T1.6 rollback（codex P1 兜住）。Phase C workaround：`aegis-sync-clients.sh` 直接读 panel DB → xxhash.xxh128 转 xray UUID → atomic 写 xray_config + restart marznode；集成到 aegis-user CLI 自动跑。
+>
+> AC-1..8 端到端验证全过。runtime 评分：运维可靠 6 → 9，差异化护城河仍 8（audit log 仍 disabled，等 wave-3 B.4 pure ASGI 重写）。
+>
+> wave-2 ship：PR #156 SPEC + #157 PLAN + #158 TASKS + #159 sync-clients workaround + #160 aegis-upgrade --env-file + #161 install.sh AUDIT_SECRET_KEY auto-gen + sync helper auto-deploy；tag v0.3.6（panel 镜像含 sync helper），生产 VPS 已部署。
+>
+> wave-3 候选（按 ROI 排）：1) 真正修 grpclib `_monitor_channel` 取消逻辑（独立 SPEC，90 min impl）2) AuditMiddleware pure ASGI 重写（差异化 #5 唤醒）3) staging VPS + tag-promote workflow（L-034 流程根因）4) install.sh AUDIT_RETENTION_DAYS 默认 90 once #2 完成
+
+---
+
+## 历史:Round 3 mid late-8 wave-1 —— Fork 镜像生产化(v0.3.5 cutover)+ L-033/L-034 闭环
 
 > wave-1 主线:**生产 panel 从 upstream `dawsh/marzneshin:v0.2.0` 切到自构 `ghcr.io/cantascendia/aegis-panel:v0.3.5`**,关闭 L-033 "代码差异化在仓库睡着"。fork 代码(`hardening/` SNI 选型 + Reality 巡检 + IP 限制器,`ops/` 计费 + 审计,`apply_panel_hardening` hook)首次在生产执行。
 >
