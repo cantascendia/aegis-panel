@@ -4,6 +4,8 @@
 > 配 [`ROADMAP-launch-B-to-C.md`](../ai-cto/ROADMAP-launch-B-to-C.md) 阶段规划使用。
 > 价格 / region 截至 **2026-05-01**,每季度 review 一次(下次 review:2026-08-01)。
 > 创建:2026-05-01 | 状态:LIVE
+>
+> **数据来源声明**:本文价格 / 流量 / region / 支付方式均为 operator 历史经验 + 各家公开官网估值,**非实时 quote**。下单前**必须**到 provider 官网核对当前条款 / 价格 / refund window。本文不构成对任何 provider 的官方背书。
 
 ---
 
@@ -509,11 +511,18 @@ review 完更新本文表格,commit 一条 `docs(launch): VPS-PROCUREMENT review
 
 ---
 
-## 附录 E:法律 / 合规一句话
+## 附录 E:法律 / 合规风险提示
 
-- 你买的是境外 VPS,**租用关系合法**;在 VPS 上跑 marznode + Reality 也合法(开源软件)
-- **VPS 不要登记成你公司名义**(如有公司),用个人账号
-- **不要在 VPS 上同时跑明显违法用途**(挖矿暗网 / 盗版 CDN / 钓鱼)— 会被 provider 封号牵连机场
-- 如有公司 / 团队,签一份 service agreement 与你 VPS 账号分离,降低连带风险
+> ⚠️ **本节非法律意见**。涉及刑事 / 商事风险的决策,请咨询执业律师 + 阅读各 provider 当前 ToS / AUP。本节仅列出 operator 视角的常见风险点,**不构成对合法性的判断**。
 
-完整法律边界见 `docs/ai-cto/DECISIONS.md` D-003。
+- VPS 租用本身在多数司法辖区是民事服务关系;但**在 VPS 上运行什么、向谁提供服务**才是风险点(各国法律 + provider ToS 双重约束)
+- 多数主流 provider 的 ToS 不直接禁止 proxy / VPN 用途,但**禁止滥用**(挖矿 / DDoS / 钓鱼 / 暗网 / 大规模爬虫)— 触发即封号,可能牵连同账号其他 VPS
+- 中国 to-C 机场涉及《中华人民共和国网络安全法》《电信条例》等,**强烈建议咨询律师**评估个人 / 公司层面风险
+- 实体登记选择(个人 vs 公司)涉及税务 / 责任 / 合规多维度,**不是 IT 决策**,请咨询会计师 + 律师
+- 不同 provider 对中国大陆用户注册 / 实名 / 支付的合规要求不同,以下单时 provider 实际要求为准
+
+**红线(无争议)**:
+- 不接 OFAC 制裁国家用户 / 不为已知刑事用途服务 / 不绕过 provider 明令禁止的用途
+- 不在 VPS 跑挖矿 / 暗网入口 / 钓鱼 / 大规模爬虫(几乎所有 provider ToS 明令禁止)
+
+完整法律边界讨论见 `docs/ai-cto/DECISIONS.md` D-003。本文档作者非律师,以 D-003 + 你自己咨询的律师意见为准。
