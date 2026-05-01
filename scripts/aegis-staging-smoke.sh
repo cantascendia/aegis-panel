@@ -102,37 +102,31 @@ services:
       - ${WORKDIR}/.env
     volumes:
       - ${WORKDIR}/data/panel:/var/lib/marzneshin
+    # Seed admin BEFORE main.py — codex P1 on commit 27e25dc:
+    # SUDO_USERNAME/PASSWORD env vars are read by 'marzneshin-cli admin
+    # import-from-env' subcommand only, NOT auto-imported on boot. Without
+    # this step the smoke script's /api/admins/token always 401s on a
+    # fresh DB.
     entrypoint:
       - /bin/sh
       - -c
       - |
-        alembic upgrade head && exec python main.py
+        alembic upgrade head && \
+        (marzneshin-cli admin import-from-env || marzneshin admin import-from-env || python -m cli.main admin import-from-env || true) && \
+        exec python main.py
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${PANEL_PORT}/openapi.json -o /dev/null || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 30
       start_period: 30s
-
-  marznode:
-    image: ${MARZNODE_IMG}
-    container_name: aegis-staging-marznode
-    network_mode: host
-    environment:
-      SERVICE_ADDRESS: "127.0.0.1"
-      SERVICE_PORT: "${MARZNODE_PORT}"
-      INSECURE: "True"
-      SSL_CLIENT_CERT_FILE: "/etc/marzneshin/ssl_client_cert.pem"
-      XRAY_EXECUTABLE_PATH: "/usr/local/bin/xray"
-      XRAY_ASSETS_PATH: "/usr/local/lib/xray"
-      XRAY_CONFIG_PATH: "/var/lib/marznode/xray_config.json"
-    volumes:
-      - ${WORKDIR}/data/marznode:/var/lib/marznode
-      - ${WORKDIR}/data/marznode-ssl:/etc/marzneshin
-    depends_on:
-      panel:
-        condition: service_healthy
 EOF
+# marznode service intentionally NOT in initial compose — codex P2 on
+# commit 27e25dc: SSL_CLIENT_CERT_FILE points to a file that doesn't
+# exist on a fresh staging volume; marznode would crash-loop. Real
+# install.sh fetches /api/nodes/settings AFTER panel is healthy. The
+# staging smoke similarly bootstraps cert post-panel-healthy then
+# starts marznode in §3 below.
 
 # ---------------------------------------------------------------------
 # 2. start
@@ -157,6 +151,42 @@ if [[ "${status}" != "healthy" ]]; then
   docker compose -f "${WORKDIR}/compose.yml" logs --tail=50 panel >&2
   exit 1
 fi
+
+# Bootstrap marznode cert from panel /api/nodes/settings (codex P2 fix).
+# Panel exposes the certificate publicly (it's the cert marznode trusts
+# as the *client* — same cert panel grpclib loads).
+echo "[smoke] bootstrapping marznode SSL_CLIENT_CERT_FILE..."
+panel_cert="$(curl -fsS -m 5 "http://127.0.0.1:${PANEL_PORT}/api/nodes/settings" \
+  | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["certificate"])' || echo)"
+if [[ -z "${panel_cert}" ]]; then
+  echo "[smoke] FAIL: cannot fetch /api/nodes/settings cert" >&2
+  exit 1
+fi
+echo "${panel_cert}" >"${WORKDIR}/data/marznode-ssl/ssl_client_cert.pem"
+chmod 644 "${WORKDIR}/data/marznode-ssl/ssl_client_cert.pem"
+
+# Now add marznode service + start it
+cat >>"${WORKDIR}/compose.yml" <<EOF
+
+  marznode:
+    image: ${MARZNODE_IMG}
+    container_name: aegis-staging-marznode
+    network_mode: host
+    environment:
+      SERVICE_ADDRESS: "127.0.0.1"
+      SERVICE_PORT: "${MARZNODE_PORT}"
+      INSECURE: "True"
+      SSL_CLIENT_CERT_FILE: "/etc/marzneshin/ssl_client_cert.pem"
+      XRAY_EXECUTABLE_PATH: "/usr/local/bin/xray"
+      XRAY_ASSETS_PATH: "/usr/local/lib/xray"
+      XRAY_CONFIG_PATH: "/var/lib/marznode/xray_config.json"
+    volumes:
+      - ${WORKDIR}/data/marznode:/var/lib/marznode
+      - ${WORKDIR}/data/marznode-ssl:/etc/marzneshin
+EOF
+echo "[smoke] starting marznode..."
+docker compose -f "${WORKDIR}/compose.yml" up -d marznode
+sleep 5  # let marznode boot
 
 # ---------------------------------------------------------------------
 # 3. smoke tests (mirrors OPS-go-live-checklist.md)
@@ -207,13 +237,22 @@ else
 
   echo
   echo "[smoke] ③ create user via API + propagation"
-  curl -fsS -m 10 -X POST "http://127.0.0.1:${PANEL_PORT}/api/users" \
+  # codex P2 fix: count failure as actual smoke FAIL (was permissive).
+  # Service ID 1 is created by alembic migration on fresh DB (default
+  # marzneshin schema seeds it). If your fork removed that migration,
+  # this check would surface the regression — which is the point.
+  user_resp_code="$(curl -sS -m 10 -o /dev/null -w '%{http_code}' \
+    -X POST "http://127.0.0.1:${PANEL_PORT}/api/users" \
     -H "Authorization: Bearer ${TOKEN}" \
     -H 'Content-Type: application/json' \
-    -d '{"username":"smoke_alice","service_ids":[1],"data_limit":1073741824,"data_limit_reset_strategy":"no_reset","expire_strategy":"never"}' >/dev/null 2>&1 \
-    && echo "  ✅ user create returned 200" \
-    || { echo "  ❌ user create failed (could be missing service_id 1; that's OK in fresh stage)"; }
-  # Note: services need to be seeded; smoke is permissive here.
+    -d '{"username":"smoke_alice","service_ids":[1],"data_limit":1073741824,"data_limit_reset_strategy":"no_reset","expire_strategy":"never"}')"
+  if [[ "${user_resp_code}" == "200" ]]; then
+    echo "  ✅ POST /api/users returned 200"
+    PASS=$(( PASS + 1 ))
+  else
+    echo "  ❌ POST /api/users returned ${user_resp_code} (regression on user create path)" >&2
+    FAIL=$(( FAIL + 1 ))
+  fi
 
   echo
   echo "[smoke] ④ audit log enabled"

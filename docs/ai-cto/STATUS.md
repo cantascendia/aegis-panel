@@ -1,13 +1,34 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-01 late-8 wave-7 (差异化 #5 audit log 真激活 + GO-LIVE checklist + 10 项回归测试 ship；B 阶段就绪度 9.5 → 9.8/10)(wave-6 PR #169 节点 backend default grpcio + PR #170 AuditMiddleware pure ASGI 重写 + tag v0.3.9 + 生产 AUDIT_RETENTION_DAYS=0→90 启用；wave-7 PR #171 ruff fix + #172 wave-3..6 回归测试 10 个 + #173 OPS-marznode-debug-runbook + #174 OPS-go-live-checklist；生产端到端 smoke 全过：API create→active +1→sub URL 200→audit row 落库；客户端实测唯一手工步骤待 iPhone 验)
+> 最后更新:2026-05-01 late-8 wave-8 (客户文案 + 招募 + 监控全链路落地；B 阶段就绪度 9.8 → 9.9/10，可邀客户)(wave-8 PR #176 docs/launch CUSTOMER-FAQ.md + RECRUIT-COPY.md + CUSTOMER-ONBOARDING.md + PR #177 aegis-staging-smoke.sh 本地 docker-compose 替代第 2 台 VPS + PR #178 aegis-watchdog.sh 每小时监控 cron + 本 STATUS 收口；前置 wave-6/7：差异化 #5 audit log 真激活 + 10 项回归测试 + 2 ops runbook + GO-LIVE checklist 生产实测全过)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid late-8 wave-7 —— 差异化 #5 唤醒 + GO-LIVE 测试网兜 + 文档闭环 (B 阶段就绪度 9.5 → 9.8/10)**
+**Round 3 mid late-8 wave-8 —— 客户文案 + 招募 + 监控落地 (B 阶段就绪度 9.8 → 9.9/10，可邀客户)**
+
+> wave-8 主线：用户指令 "继续，找付费客户"。三个客户层文档 + 两个运维脚本，让招募-onboarding-监控全链路成机械动作。
+>
+> wave-8 ship：
+> - PR #176 `docs/launch/CUSTOMER-FAQ.md`（50 问）+ `RECRUIT-COPY.md`（6 渠道模板）+ `CUSTOMER-ONBOARDING.md`（9 步操作员清单）
+> - PR #177 `scripts/aegis-staging-smoke.sh` — 替代第 2 台 VPS 的本地 docker-compose smoke，覆盖 ① 基础设施 ② grpcio default 回归 ③ user create ④ audit 表 ⑤ L-034 GET /api/users 200 canary
+> - PR #178（本 PR）`scripts/aegis-watchdog.sh` — 每小时 cron 监控（容器健康 / API 响应 / 磁盘 / audit row / DB↔API drift），可选 Telegram webhook 告警 + STATUS late-8 wave-8 收口
+>
+> **真 B 阶段就绪度 9.9/10**。剩 0.1 = bcrypt warning 静音（cosmetic，永远不必修），客户 self-service portal（D-016 反向决策，需 ≥3 客户实际请求触发）。
+>
+> **下一步是邀客户**，技术债已经收完。
+>
+> wave-9+ 候选（按 ROI）：
+> 1) 月底首位付费客户 → 完成第一笔 USDT 收款
+> 2) 第 2 节点（HK / SG）部署 — 等 ≥3 客户后启动
+> 3) bcrypt warning 静音（永远最低优先级）
+> 4) C 阶段触发条件监控（≥50 客户 / 自构 marznode 镜像 / SLA 退款保障）
+
+---
+
+## 历史:Round 3 mid late-8 wave-7 —— 差异化 #5 唤醒 + GO-LIVE 测试网兜 + 文档闭环 (B 阶段就绪度 9.5 → 9.8/10)
 
 > wave-6 主线：差异化 #5 audit log sleeper 唤醒。PR #170 把 `AuditMiddleware` 从 `BaseHTTPMiddleware` 重写为纯 ASGI（修 L-034），生产 AUDIT_RETENTION_DAYS 从 0 切到 90。PR #169 把 `NodeCreate.connection_backend` 默认从 grpclib 改 grpcio（匹配 marznode v0.5.x INSECURE=True）。tag v0.3.9 滚出。
 >
