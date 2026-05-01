@@ -1,13 +1,35 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-01 late-8 wave-5 (L-037 真相：RPC 一直工作，是诊断 endpoint 在骗我们；增量同步端到端 ≤2s)(panel grpcio.py INFO 日志 + 临时 marznode DEBUG=True 实测 wave5_pure 创建 → 2 秒内 marznode `adding user` + xray runtime 加载；wave-2/3/4 全程被误导 — `/api/nodes/1/xray/config` 返回静态 xray_config.json 文件而非 xray 内存运行时；正确监控用 `/api/system/stats/users` active count；B 阶段就绪度 9.0 → 9.5/10；aegis-sync-clients 现在是 disaster-recovery only 而非主路径)
+> 最后更新:2026-05-01 late-8 wave-7 (差异化 #5 audit log 真激活 + GO-LIVE checklist + 10 项回归测试 ship；B 阶段就绪度 9.5 → 9.8/10)(wave-6 PR #169 节点 backend default grpcio + PR #170 AuditMiddleware pure ASGI 重写 + tag v0.3.9 + 生产 AUDIT_RETENTION_DAYS=0→90 启用；wave-7 PR #171 ruff fix + #172 wave-3..6 回归测试 10 个 + #173 OPS-marznode-debug-runbook + #174 OPS-go-live-checklist；生产端到端 smoke 全过：API create→active +1→sub URL 200→audit row 落库；客户端实测唯一手工步骤待 iPhone 验)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
 
-**Round 3 mid late-8 wave-5 —— RPC 一直在工作；诊断方法被误导 (B 阶段就绪度 9.2 → 9.5/10)**
+**Round 3 mid late-8 wave-7 —— 差异化 #5 唤醒 + GO-LIVE 测试网兜 + 文档闭环 (B 阶段就绪度 9.5 → 9.8/10)**
+
+> wave-6 主线：差异化 #5 audit log sleeper 唤醒。PR #170 把 `AuditMiddleware` 从 `BaseHTTPMiddleware` 重写为纯 ASGI（修 L-034），生产 AUDIT_RETENTION_DAYS 从 0 切到 90。PR #169 把 `NodeCreate.connection_backend` 默认从 grpclib 改 grpcio（匹配 marznode v0.5.x INSECURE=True）。tag v0.3.9 滚出。
+>
+> wave-7 主线：用户指令 "find tests, fix bugs before paid customers see them"。
+> - PR #171：API CI 红了（wave-6 #170 留下 3 个 ruff lint），自修 main 全绿
+> - PR #172：写 10 个 wave-3..6 回归测试（4 audit middleware L-034、3 node default、3 compose），CI gate 锁死 fork-owned 默认值
+> - PR #173：`OPS-marznode-debug-runbook.md` — 防再被诊断 endpoint 误导（L-037 教训固化）
+> - PR #174：`OPS-go-live-checklist.md` — 邀第一个付费客户前 20 分钟自检，每次升级后必跑
+>
+> **生产端到端 smoke 全过**：infra 健康 + RPC 连通 + user CRUD 同步 ≤3s + sub URL 200 + audit row 落库 + rollback 脚本就位。**实际可邀客户**。
+>
+> **真 B 阶段就绪度 9.8/10**。剩 0.2 = staging VPS 还未做（wave-8 候选）+ 客户 FAQ 文案（wave-8）。
+>
+> wave-8 候选（按 ROI）：
+> 1) **客户 FAQ + 招募文案** — 直接产生付费客户路径，最高 ROI
+> 2) staging VPS + tag-promote workflow（L-034 流程根因兜底）
+> 3) 监控 SLO 定义 + grafana / 简单脚本（手册 §43 Reliability）
+> 4) bcrypt warning 静音（cosmetic，最低）
+
+---
+
+## 历史:Round 3 mid late-8 wave-5 —— RPC 一直在工作；诊断方法被误导 (B 阶段就绪度 9.2 → 9.5/10)
 
 > wave-5 顿悟：panel↔marznode 增量 SyncUsers RPC **从 wave-4 升 marznode v0.5.7 + grpcio backend 之后就一直工作**。我们 wave-2/3/4 全程被错误的诊断 endpoint 骗了——`/api/nodes/1/xray/config` 返回**静态 xray_config.json 文件**而非 xray 内存运行时；marznode `_add_user` 通过 xray gRPC 把用户加到内存（不写文件），所以文件视角看"没变化"实际系统已同步。
 >
