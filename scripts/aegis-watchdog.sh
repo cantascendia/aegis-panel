@@ -42,7 +42,11 @@ for svc in aegis-panel aegis-marznode; do
   if [[ "${status}" != "running" ]]; then
     alert "${svc} not running (status=${status})"
   fi
-  health="$(docker inspect "${svc}" --format '{{.State.Health.Status}}' 2>/dev/null || echo none)"
+  # Use {{if .State.Health}} guard to handle containers without healthcheck
+  # configured (marznode in our compose doesn't define one — empty string
+  # was being mis-parsed as 'unhealthy' in wave-9 false-positive).
+  health="$(docker inspect "${svc}" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' 2>/dev/null || echo none)"
+  [[ -z "${health}" ]] && health="none"
   if [[ "${health}" != "healthy" && "${health}" != "none" ]]; then
     alert "${svc} unhealthy (health=${health})"
   fi
