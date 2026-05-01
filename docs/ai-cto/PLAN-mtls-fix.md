@@ -85,7 +85,16 @@ _stream_user_updates  # 必须先启动
 
 **判定**：
 - A6 看到 4 用户 UUID → H-E 假设成立 + 自愈 → 跳到 Phase D 验证 AC-1..8
-- A6 仍空 → `_sync()` 还失败，进 Phase B 加日志诊断
+- A6 仍空 → `_sync()` 还失败：
+
+  **🔴 强制中间步 A7 — 先 rollback 恢复客户连接，再进 Phase B**（codex review P1：Phase B 调试 90 分钟期间不能让 friend_b/c 全程断线，必须把 ≤60s 维护窗口约束守住）：
+
+  ```bash
+  ssh root@VPS "aegis-mtls-rollback"
+  # 30s 内：xray_config.json 从 backup 恢复，marznode 重启，4 用户连接恢复
+  ```
+
+  确认 friend_b 重新可连后才进 Phase B。Phase B 调试在 panel 容器 / log / 模拟环境内做，**不再触碰 marznode 数据面**直到改完代码 build v0.3.6 一次性切换。
 
 ### 3.2 Phase B — 仅当 Phase A 失败时（90 min）
 
