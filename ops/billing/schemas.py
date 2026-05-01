@@ -313,8 +313,19 @@ class CheckoutIn(BaseModel):
 
 
 class CheckoutOut(BaseModel):
-    """Response from checkout. ``payment_url`` is the 码商-hosted
-    redirect for the user; clients should 302 the browser there."""
+    """Response from checkout.
+
+    For EPay channels ``payment_url`` is the 码商-hosted redirect URL
+    the client should 302 the browser to.
+
+    For TRC20 ``payment_url`` is an in-panel route
+    (``/billing/trc20/<id>``) that renders memo + receive_address +
+    QR + countdown. The TRC20-specific fields below are also returned
+    inline so a client that wants to skip a follow-up fetch (e.g.
+    embed the memo straight into a toast / clipboard helper) can.
+    All TRC20 fields are ``None`` for EPay invoices, preserving
+    backward compatibility with v0.4.0 EPay clients.
+    """
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -324,6 +335,11 @@ class CheckoutOut(BaseModel):
     provider_invoice_id: str
     state: str
     expires_at: datetime
+    # TRC20 conveniences. Optional; populated only when the cart
+    # checked out against ``channel_code == "trc20"``.
+    trc20_memo: str | None = Field(default=None)
+    trc20_expected_amount_millis: int | None = Field(default=None)
+    trc20_receive_address: str | None = Field(default=None)
 
 
 __all__ = [

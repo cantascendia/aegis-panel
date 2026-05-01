@@ -37,6 +37,7 @@ from sqlalchemy import select
 
 from app.dependencies import DBDep, SudoAdminDep
 from ops.billing import config as billing_config
+from ops.billing import trc20_config
 from ops.billing.db import (
     INVOICE_STATE_AWAITING_PAYMENT,
     INVOICE_STATE_PENDING,
@@ -100,21 +101,54 @@ async def checkout(
     intentionally stable so A.4 can reuse ``CheckoutIn`` / ``CheckoutOut``.
     """
 
-    channel = db.execute(
-        select(PaymentChannel).where(
-            PaymentChannel.channel_code == body.channel_code
-        )
-    ).scalar_one_or_none()
-    if channel is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"payment channel {body.channel_code!r} not found",
-        )
-    if not channel.enabled:
-        raise HTTPException(
-            status_code=409,
-            detail=f"payment channel {body.channel_code!r} is disabled",
-        )
+    # Channel resolution.
+    #
+    # Two payment families coexist with very different config shapes:
+    #
+    # - **EPay** (``channel_code != "trc20"``): one ``PaymentChannel``
+    #   row per 码商 carries merchant credentials and a notify_url
+    #   hostname (``BILLING_PUBLIC_BASE_URL``) the 码商 POSTs back to.
+    # - **TRC20** (``channel_code == "trc20"``): singleton, no DB row
+    #   (see ``ops/billing/db.py`` ``PaymentChannel`` docstring —
+    #   "TRC20 is NOT represented here"). Configured wholly in env via
+    #   :mod:`ops.billing.trc20_config`. No webhook, so
+    #   ``BILLING_PUBLIC_BASE_URL`` is irrelevant here.
+    #
+    # The pre-2026-05-01 implementation always took the EPay path,
+    # which 404'd TRC20 checkouts in production after Phase A.2 wired
+    # the env vars. Branch early to keep both paths cleanly isolated.
+    is_trc20 = body.channel_code == "trc20"
+    channel: PaymentChannel | None
+    if is_trc20:
+        if not trc20_config.BILLING_TRC20_ENABLED:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "TRC20 channel is disabled. Set "
+                    "BILLING_TRC20_ENABLED=true and configure the "
+                    "BILLING_TRC20_{RECEIVE_ADDRESS, "
+                    "RATE_FEN_PER_USDT, MEMO_SALT} env vars."
+                ),
+            )
+        channel = None
+        provider_field = "trc20"
+    else:
+        channel = db.execute(
+            select(PaymentChannel).where(
+                PaymentChannel.channel_code == body.channel_code
+            )
+        ).scalar_one_or_none()
+        if channel is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"payment channel {body.channel_code!r} not found",
+            )
+        if not channel.enabled:
+            raise HTTPException(
+                status_code=409,
+                detail=f"payment channel {body.channel_code!r} is disabled",
+            )
+        provider_field = f"epay:{body.channel_code}"
 
     # Resolve plans referenced by the cart. One query, no N+1.
     plan_ids = {line.plan_id for line in body.lines}
@@ -136,10 +170,11 @@ async def checkout(
             status_code=422, detail={"reason": exc.reason, "message": str(exc)}
         ) from exc
 
-    # Public base URL must be configured for EPay — the 码商 POSTs
+    # Public base URL is an EPay-only requirement — the 码商 POSTs
     # back to it. Without one, the generated notify_url is garbage
-    # and no webhook ever arrives. Fail-loud here so admin sees it.
-    if not billing_config.BILLING_PUBLIC_BASE_URL:
+    # and no webhook ever arrives. TRC20 is poll-only (no webhook),
+    # so this gate must NOT apply to TRC20 checkouts.
+    if not is_trc20 and not billing_config.BILLING_PUBLIC_BASE_URL:
         raise HTTPException(
             status_code=503,
             detail=(
@@ -155,7 +190,7 @@ async def checkout(
         user_id=body.user_id,
         total_cny_fen=total_fen,
         state="created",
-        provider=f"epay:{body.channel_code}",
+        provider=provider_field,
         created_at=now,
         expires_at=now + CHECKOUT_PAYMENT_WINDOW,
     )
@@ -184,11 +219,14 @@ async def checkout(
         now=now,
     )
 
-    provider = get_provider(
-        "epay",
-        channel=channel,
-        callback_base_url=billing_config.BILLING_PUBLIC_BASE_URL,
-    )
+    if is_trc20:
+        provider = get_provider("trc20")
+    else:
+        provider = get_provider(
+            "epay",
+            channel=channel,
+            callback_base_url=billing_config.BILLING_PUBLIC_BASE_URL,
+        )
 
     try:
         result = await provider.create_invoice(
@@ -225,6 +263,17 @@ async def checkout(
     invoice.payment_url = result.payment_url
     invoice.provider_invoice_id = result.provider_invoice_id
 
+    # TRC20 surfaces its memo + expected USDT amount via
+    # ``CreateInvoiceResult.extra_payload``. Persist them onto the
+    # invoice so the dashboard's TRC20 detail page (and the trc20
+    # poller) can read them straight off the row without parsing
+    # PaymentEvent payloads. EPay leaves these columns NULL.
+    if is_trc20:
+        invoice.trc20_memo = result.extra_payload.get("memo")
+        invoice.trc20_expected_amount_millis = result.extra_payload.get(
+            "expected_amount_millis"
+        )
+
     # pending → awaiting_payment
     transition(
         db,
@@ -247,6 +296,11 @@ async def checkout(
         provider_invoice_id=invoice.provider_invoice_id or "",
         state=invoice.state,
         expires_at=invoice.expires_at,
+        trc20_memo=invoice.trc20_memo,
+        trc20_expected_amount_millis=invoice.trc20_expected_amount_millis,
+        trc20_receive_address=(
+            result.extra_payload.get("receive_address") if is_trc20 else None
+        ),
     )
 
 
