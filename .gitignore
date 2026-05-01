@@ -225,4 +225,7 @@ ops/_runtime/
 !.claude/agent-logs/.gitkeep
 docs/ai-cto/.codex-quota-cooldown
 docs/ai-cto/.codex-bridge.lock
+# Codex cross-review runtime artifacts (auto-appended by hook, can grow huge)
+docs/ai-cto/REVIEW-QUEUE.md
+docs/ai-cto/CODEX-REVIEW-LOG.md
 .claude/scheduled_tasks.lock
