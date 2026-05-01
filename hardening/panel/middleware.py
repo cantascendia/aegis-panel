@@ -25,10 +25,7 @@ from hardening.iplimit.scheduler import install_iplimit_scheduler
 from hardening.panel.rate_limit import limiter
 from hardening.reality.endpoint import router as reality_router
 from hardening.sni.endpoint import router as sni_router
-from ops.audit.config import (
-    is_audit_enabled,
-    validate_startup as validate_audit_startup,
-)
+from ops.audit.config import validate_startup as validate_audit_startup
 from ops.audit.endpoint import router as audit_router
 from ops.audit.middleware import AuditMiddleware
 from ops.audit.scheduler import install_audit_scheduler
@@ -85,18 +82,13 @@ def apply_panel_hardening(app: FastAPI) -> None:
     # (status=429 → result=failure). See SPEC §How.2 ordering:
     # rate-limit → trusted-proxy → audit → router.
     #
-    # 2026-05-01 production cutover (L-034): AuditMiddleware extends
-    # starlette.BaseHTTPMiddleware, which is incompatible with FastAPI
-    # 0.115+ dependency injection — it drops `fastapi_inner_astack`
-    # from request scope, triggering AssertionError on any route that
-    # uses Depends() with an async context manager (e.g. GET /api/users
-    # → 500 "fastapi_inner_astack not found in request scope"). Only
-    # attaching when audit is actually enabled keeps the panel
-    # functional in retention=0 deployments. v0.4 rewrites this as a
-    # pure-ASGI middleware (callable taking scope/receive/send) which
-    # does not corrupt request scope.
-    if is_audit_enabled():
-        app.add_middleware(AuditMiddleware)
+    # AuditMiddleware (rewritten to pure ASGI in wave-6 PR #170 / L-034
+    # closure): always mount. The pure-ASGI form does NOT corrupt
+    # request scope, so FastAPI's DI works regardless of audit state.
+    # When AUDIT_RETENTION_DAYS=0 the middleware is a thin no-op (early
+    # return after request_id injection), so the perf cost is one
+    # function call per request — negligible.
+    app.add_middleware(AuditMiddleware)
 
     # Self-owned routers. Order matters only if prefixes overlap with
     # upstream — they don't (upstream ``app/routes/node.py`` mounts
