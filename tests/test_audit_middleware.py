@@ -692,3 +692,177 @@ def test_ip_gate_invalid_peer_ip_does_not_crash(
         headers={"X-Forwarded-For": "9.9.9.9"},
     )
     assert resp.status_code == 200  # no crash from the gate
+
+
+# ---------------------------------------------------------------------
+# Wave-6 / L-034 regressions: pure-ASGI rewrite (PR #170)
+#
+# The old AuditMiddleware was BaseHTTPMiddleware-based, which on FastAPI
+# 0.115+ drops `fastapi_inner_astack` from request scope and breaks any
+# route using Depends() with an async context manager. These tests
+# pin the wave-6 fix: pure-ASGI form keeps the inner app's scope intact
+# so FastAPI's DI works regardless of audit state.
+# ---------------------------------------------------------------------
+
+
+def test_l034_depends_async_ctx_manager_works_with_audit_mounted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Routes using Depends() with an async context manager (the
+    FastAPI 0.115+ fastapi_inner_astack path) must return 200 with
+    AuditMiddleware mounted. Pre-wave-6 BaseHTTPMiddleware-based form
+    raised AssertionError 'fastapi_inner_astack not found in request
+    scope' on every such route — that's the production bug L-034
+    documented across wave-1..5."""
+    from contextlib import asynccontextmanager
+
+    from fastapi import Depends, FastAPI
+    from fastapi.testclient import TestClient
+
+    from ops.audit import middleware as audit_mw
+
+    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "0")  # no DB writes needed
+
+    @asynccontextmanager
+    async def _async_ctx():
+        # Mimics get_db / get_admin yield patterns from app/dependencies.py
+        yield {"sentinel": True}
+
+    async def _dep():
+        async with _async_ctx() as ctx:
+            yield ctx
+
+    app = FastAPI()
+    app.add_middleware(audit_mw.AuditMiddleware)
+
+    @app.get("/with-async-dep")
+    async def _route(ctx: dict = Depends(_dep)) -> dict:
+        return {"sentinel_seen": ctx.get("sentinel", False)}
+
+    client = TestClient(app, raise_server_exceptions=True)
+    resp = client.get("/with-async-dep")
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"sentinel_seen": True}
+
+
+def test_l034_request_state_dict_not_corrupted_for_downstream(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Codex P2 on commit 0e26017: AuditMiddleware must NOT assign a
+    State object to scope['state']; Starlette expects a dict and wraps
+    it via Request.state. Other handlers/middleware indexing it as a
+    dict would TypeError. Use request.state.x = y API.
+
+    Pure ASGI unit test (no FastAPI DI) — directly drive __call__ with
+    a fake scope, capture what middleware does to scope['state']."""
+    import asyncio
+
+    from ops.audit import middleware as audit_mw
+
+    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "0")
+
+    captured: dict = {}
+
+    async def inner_app(scope, receive, send):
+        captured["scope_state_type"] = type(scope.get("state")).__name__
+        captured["scope_state_value"] = scope.get("state")
+        # Send a minimal HTTP response so middleware's __call__ completes.
+        await send(
+            {"type": "http.response.start", "status": 200, "headers": []}
+        )
+        await send({"type": "http.response.body", "body": b"ok"})
+
+    mw = audit_mw.AuditMiddleware(inner_app)
+
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/probe",
+        "headers": [(b"x-request-id", b"rid-from-test")],
+        "client": ("127.0.0.1", 12345),
+    }
+
+    async def _recv():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def _send(msg):
+        pass
+
+    asyncio.run(mw(scope, _recv, _send))
+
+    # scope[state] should be a dict (Starlette's expected shape) not a
+    # State instance directly. The audit_request_id should be readable
+    # via request.state API path (which is dict access under the hood).
+    scope_state = captured["scope_state_value"]
+    assert scope_state is not None, "AuditMiddleware never set scope[state]"
+    assert isinstance(scope_state, dict), (
+        f"scope[state] must be dict for Starlette compat; got "
+        f"{captured['scope_state_type']}"
+    )
+    assert scope_state.get("audit_request_id") == "rid-from-test"
+
+
+def test_l034_audit_disabled_zero_db_writes(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When AUDIT_RETENTION_DAYS=0 the middleware is mounted (post wave-6
+    we always mount) but must not write rows. Wave-6 changed the
+    is_audit_enabled() gate from 'condition for mounting' to 'early
+    return inside the request path'."""
+    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "0")
+    monkeypatch.setenv("AUDIT_SECRET_KEY", "x" * 44 + "=")
+    client = _make_app(monkeypatch, db_session)
+
+    # Hit several in-scope mutate routes
+    for _ in range(3):
+        resp = client.post("/api/billing/admin/plans")
+        assert resp.status_code == 200
+
+    from ops.audit.db import AuditEvent
+
+    rows = db_session.query(AuditEvent).all()
+    assert (
+        rows == []
+    )  # zero rows when retention=0 even with middleware mounted
+
+
+def test_l034_non_http_scope_passthrough(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Pure-ASGI middleware must passthrough non-http scopes (websocket,
+    lifespan) untouched — the audit-write path is HTTP-only."""
+    import asyncio
+
+    from ops.audit import middleware as audit_mw
+
+    monkeypatch.setenv("AUDIT_RETENTION_DAYS", "0")
+    seen_scopes: list[str] = []
+
+    async def inner_app(scope, receive, send):
+        seen_scopes.append(scope["type"])
+        if scope["type"] == "lifespan":
+            # Drain lifespan messages
+            msg = await receive()
+            if msg["type"] == "lifespan.startup":
+                await send({"type": "lifespan.startup.complete"})
+            return
+
+    mw = audit_mw.AuditMiddleware(inner_app)
+
+    sent: list[dict] = []
+
+    async def _send(msg):
+        sent.append(msg)
+
+    received = iter([{"type": "lifespan.startup"}])
+
+    async def _recv():
+        try:
+            return next(received)
+        except StopIteration:
+            await asyncio.sleep(0.01)
+            return {"type": "lifespan.shutdown"}
+
+    asyncio.run(mw({"type": "lifespan"}, _recv, _send))
+    assert seen_scopes == ["lifespan"]
+    assert sent == [{"type": "lifespan.startup.complete"}]
