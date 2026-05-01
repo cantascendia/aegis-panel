@@ -93,12 +93,21 @@ class MarzNodeGRPCIO(MarzNodeBase, MarzNodeDB):
             await self._channel.wait_for_state_change(state)
 
     async def _stream_user_updates(self):
-        logger.debug("opened the stream")
+        # L-036 wave-5 diagnostic: bumped DEBUG → INFO so production logs show
+        # whether the streaming task ever opens, ever consumes from queue, and
+        # what RPC errors land. Without this we have no signal — wave-2/3/4
+        # spent days debating "stream cancelled vs queue empty vs marznode
+        # rejecting" without ground truth.
+        logger.info("node %i: SyncUsers stream opening", self.id)
         stream = self._stub.SyncUsers()
+        logger.info("node %i: SyncUsers stream opened, awaiting queue", self.id)
         while True:
             user_update = await self._updates_queue.get()
-            logger.debug("got something from queue")
             user = user_update["user"]
+            logger.info(
+                "node %i: dequeued user %s (id=%s) inbounds=%s",
+                self.id, user.username, user.id, user_update["inbounds"],
+            )
             try:
                 await stream.write(
                     UserData(
@@ -110,7 +119,25 @@ class MarzNodeGRPCIO(MarzNodeBase, MarzNodeDB):
                         ],
                     )
                 )
-            except RpcError:
+                logger.info(
+                    "node %i: wrote user %s to SyncUsers stream",
+                    self.id, user.username,
+                )
+            except RpcError as e:
+                logger.error(
+                    "node %i: SyncUsers stream write failed for %s: %s",
+                    self.id, user.username, e, exc_info=True,
+                )
+                self.synced = False
+                self.set_status(NodeStatus.unhealthy)
+                return
+            except Exception as e:
+                # codex review: don't silently swallow non-RpcError. wave-3 L-035
+                # taught us `except: pass` hides root causes for months.
+                logger.error(
+                    "node %i: SyncUsers stream write unexpected exception for %s: %s",
+                    self.id, user.username, e, exc_info=True,
+                )
                 self.synced = False
                 self.set_status(NodeStatus.unhealthy)
                 return
@@ -118,7 +145,10 @@ class MarzNodeGRPCIO(MarzNodeBase, MarzNodeDB):
     async def update_user(self, user, inbounds: set[str] | None = None):
         if inbounds is None:
             inbounds = set()
-
+        logger.info(
+            "node %i: queueing update_user user=%s id=%s inbounds=%s",
+            self.id, user.username, user.id, list(inbounds),
+        )
         await self._updates_queue.put({"user": user, "inbounds": inbounds})
 
     async def _repopulate_users(self, users_data: list[dict]) -> None:
