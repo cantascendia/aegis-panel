@@ -8,7 +8,38 @@
 
 ---
 
-## L-042 | wave-9 R2 | advisory → enforce 切换不该硬定时间窗,看实际 false positive 率
+## L-043 | wave-9 R3 production self-test | docstring 自承 "Until X lands" 是 documentation drift 高发点
+
+**现象**:wave-9 R3 operator 自付测试发现 `apply_manual` endpoint state→applied 但 user grant **没应用**(data_limit / expire_date 不变)。读 `ops/billing/endpoint.py:apply_manual` docstring 自承:
+
+> "Note: this sets the invoice state to ``applied`` and writes audit rows, but does NOT mutate ``User.data_limit`` / ``User.expire_date`` — that user-side grant application is A.5 scheduler's job. When A.5 lands... Until A.5 lands, the ``applied`` state is effectively audit-only..."
+
+但 **A.5 scheduler 已 ship 于 wave-3 PR #77**,docstring 还停留在"A.5 还没 ship"的旧时代 — **代码忘了改**:scheduler 看 `state=paid` 行才处理 grant,`apply_manual` 直接跳到 `state=applied` → scheduler 永远不 reprocess → grant **永远不应用**。production 影响:admin 救济场景 = 客户拿不到流量 = 投诉 + 丢单。
+
+**根因**:docstring 写 "**Until X lands**" 模式 = 时间锁定,X 真 land 时**作者多半已切下一个任务,没回来更新本处依赖**。这是 documentation drift 的特定子类:
+- L-039(LAUNCH-week2 vs trc20 ship)是文档 → 代码方向 drift(文档超前)
+- **L-043 是反向**:代码 docstring → 实际 ship 状态 drift(代码 docstring 滞后)
+
+两种都是"docs 与 code 不对齐",但 mechanism 相反 — L-039 误导用户,L-043 误导后续维护者(自我误导)。
+
+**为什么 wave-3 ~ wave-8 没发现**:
+- A.5 scheduler ship 时(PR #77)只测 happy path(client 真转账 → trc20_poller → state=paid → scheduler apply)
+- apply_manual 是 emergency 路径,从 ship 起没真跑过一次 production
+- wave-9 R3 是**第一次** operator 真用 apply_manual → bug surface
+
+**防线**:
+1. **禁用 "Until X lands" docstring 模式**:改写"current behavior"陈述句,不带时间承诺。如必须留 forward-looking,**加 issue link** 跟踪(`# TODO: integrate with scheduler when ship — see #issue-NNN`)
+2. **A.x scheduler ship 时**必须扫一遍 codebase grep "Until A.5" / "Until A.x" 关键字,**移除/重写**所有相关 docstring(本次修在 PR #200)
+3. **emergency 路径的实测覆盖**:任何 admin bypass / fallback / manual override 类 endpoint,**ship 时必须有 production smoke test**(不是 unit test mock,是真 SSH 调一遍)。本次教训:如果 wave-3 ship A.5 时跑过 apply_manual,bug 当时就 surface
+4. **apply_invoice_grant helper 抽出**(PR #200)= 两路径(scheduler / admin)走同一逻辑,未来不再 drift
+
+**沉淀**: ✅ PR #200 修代码 + docstring 移除 "Until A.5 lands"。下次 emergency endpoint ship 走防线 #3 实测覆盖。
+
+**L-043 与 L-039 配对**:两条 LESSONS 应一起读 — docs drift 双向防御。
+
+---
+
+
 
 **现象**:eval-gate.yml(PR #146)ship advisory mode,SPEC 写 "2 周观察期" (2026-04-29 → 2026-05-13)。实际 4 天后(2026-05-02)就切 enforce — **提前 11 天**,无延迟无问题。
 
