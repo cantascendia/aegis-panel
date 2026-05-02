@@ -47,6 +47,72 @@ def test_env_template_has_marznode_version_field() -> None:
     assert "MARZNODE_VERSION=v0.5.7" in tmpl
 
 
+def test_panel_image_uses_aegis_version_variable() -> None:
+    """L-041 wave-9: panel image tag must come from AEGIS_VERSION env var,
+    not be hardcoded `:latest`. Wave-9 cutover (v0.4.0 → v0.4.1) found
+    `docker inspect aegis-panel` reporting `:latest` even though the
+    rendered .env had AEGIS_VERSION=v0.4.1 — because compose hardcoded
+    the tag, the env var was ignored.
+
+    Risks of `:latest`:
+      1. Reproducibility — rollback meaningless (compose always pulls
+         `:latest`, which is whatever GH Actions last pushed).
+      2. Silent upgrade — next `docker compose up` after a release
+         picks up the new image without operator action or audit trail.
+      3. AEGIS_VERSION (set by aegis-upgrade) silently does nothing.
+
+    Fix: image: ghcr.io/cantascendia/aegis-panel:${AEGIS_VERSION:-latest}
+    Fallback to :latest preserves backward compatibility for fresh
+    bootstraps where the var hasn't been seeded yet.
+    """
+    panel_image_pin = (
+        "ghcr.io/cantascendia/aegis-panel:${AEGIS_VERSION:-latest}"
+    )
+    for compose_path in (
+        "deploy/compose/docker-compose.prod.yml",
+        "deploy/compose/docker-compose.sqlite.yml",
+    ):
+        text = Path(compose_path).read_text(encoding="utf-8")
+        assert (
+            panel_image_pin in text
+        ), f"{compose_path}: panel image must use AEGIS_VERSION var with :latest fallback"
+
+
+def test_panel_image_never_hardcodes_latest_tag() -> None:
+    """L-041 regression guard: forbid the literal hardcoded
+    `aegis-panel:latest` tag (without ${AEGIS_VERSION} substitution).
+    Catches a future drive-by edit that re-introduces silent-upgrade
+    risk by typing `:latest` directly.
+    """
+    forbidden_literal = "ghcr.io/cantascendia/aegis-panel:latest"
+    for compose_path in (
+        "deploy/compose/docker-compose.prod.yml",
+        "deploy/compose/docker-compose.sqlite.yml",
+    ):
+        text = Path(compose_path).read_text(encoding="utf-8")
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            assert forbidden_literal not in stripped, (
+                f"{compose_path}:{lineno}: hardcoded :latest tag forbidden "
+                f"(L-041) — use ${{AEGIS_VERSION:-latest}} instead"
+            )
+
+
+def test_env_template_has_aegis_version_placeholder() -> None:
+    """L-041: Fresh installs must seed AEGIS_VERSION in the rendered .env
+    so the compose ${AEGIS_VERSION:-latest} substitution actually pins
+    the operator-installed version (instead of silently falling back to
+    `:latest`, which defeats the whole reproducibility fix).
+    install.sh writes the current stable tag in place of __AEGIS_VERSION__.
+    """
+    tmpl = Path("deploy/install/templates/env.tmpl").read_text(
+        encoding="utf-8"
+    )
+    assert "AEGIS_VERSION=__AEGIS_VERSION__" in tmpl
+
+
 def test_env_template_has_audit_secret_key_placeholder() -> None:
     """Fresh installs must seed AUDIT_SECRET_KEY (Fernet) so the panel
     boot's validate_startup() doesn't crash with AuditMisconfigured
