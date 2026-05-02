@@ -81,6 +81,8 @@
 
 **沉淀**: 未转 rule(单次发现,fix 在本批次 LESSONS PR 之后另起 PR 跟踪)。下次 wave 时观察是否复发。
 
+**update 2026-05-02 wave-9 R4**: 防线 #2 ship — `.github/workflows/package.yml` tag push 不再推 :latest。production cutover 后 docker compose 必须 pin AEGIS_VERSION (PR #194 SSOT path-detect.sh 已读 .env),无法默默升级。防线 #1 (compose `${AEGIS_VERSION}`) 由 PR #193 闭环。
+
 ---
 
 ## L-040 | wave-9 production cutover | aegis-upgrade.sh compose 路径 hardcode 错位

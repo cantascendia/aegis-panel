@@ -88,8 +88,9 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          # L-041 防线 #2: tag push 不再同步推 :latest,production 必须 pin AEGIS_VERSION
+          # (避免 docker pull :latest 默默升级)。nightly schedule build 仍推 :nightly。
           tags: |
-            ghcr.io/cantascendia/aegis-panel:latest
             ghcr.io/cantascendia/aegis-panel:${{github.ref_name}}
 
       - name: Nightly build and push for docker
