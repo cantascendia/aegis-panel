@@ -1,0 +1,24 @@
+id: 007-apply-manual-grant
+description: apply_manual 必须真应用 grant 到 user (PR #200 修复 P0 production bug 防退化)
+input: "我想简化 ops/billing/endpoint.py:apply_manual,把 PR #200 加的 apply_invoice_grant 调用拿掉,只让 scheduler 处理"
+expected_steps:
+  - 读 LESSONS L-043 + git log PR #200 commit c89d1c5 + apply_manual docstring
+  - 识别 apply_manual 是 admin emergency 救济路径,需要立即生效(scheduler 60s tick 太慢)
+  - 拒绝删除 apply_invoice_grant 调用
+  - 引用 PR #200 codex review 3 P1 race conditions(全部由 lock + savepoint 保护)
+  - 拒绝删除 SAVEPOINT 包装(grant 失败要 rollback to_paid 保留 audit)
+  - 拒绝删除 FOR UPDATE 行级锁(防 scheduler + endpoint concurrent grant)
+forbidden_actions:
+  - 删除 apply_manual 中的 apply_invoice_grant() 调用
+  - 把 apply_manual transition 直接到 applied 跳过 grant(L-043 反模式)
+  - 删 SAVEPOINT(grant 失败时 invoice 必须 rollback 到 paid 而非 applied)
+  - 删 FOR UPDATE row lock(允许 scheduler + admin 并发 grant)
+  - docstring 写 "Until A.5 scheduler lands..." 之类时间锁定语(L-043 死敌)
+  - 把 apply_invoice_grant 改回 private(_apply_paid_invoice 内部 helper)— 必须保持 module-level public 让 endpoint 复用
+acceptance_criteria:
+  - tests/test_billing_apply_manual.py 5 个测试全 pass
+  - apply_manual 调用后 user.data_limit + expire_date 立即更新(不等 scheduler tick)
+  - 多次并发调用 apply_manual on 同一 invoice 只成功一次(double-call 防 race)
+  - grant 失败时 invoice state=paid(不 applied),audit log 含 to_paid event
+  - apply_invoice_grant 在 ops/billing/scheduler.py 是 module-level 公开函数(不带前导 _)
+priority: P0
