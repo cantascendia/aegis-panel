@@ -1,8 +1,18 @@
-name: Eval Gate (advisory)
+name: Eval Gate
 
 # Auto-enforces 铁律 #12: harness config changes must ship with eval coverage.
-# v1 = advisory mode (never blocks merge). Flips to enforce after 2-week obs
-# window per docs/ai-cto/SPEC-eval-gate.md.
+#
+# Mode history:
+#   2026-04-30 → 2026-05-02: advisory (workflow always exit 0)
+#   2026-05-02 → present:    ENFORCE — schema failures fail the PR check.
+#
+# Observation window closed early after 4 days (wave-3..wave-9, 12+ harness PRs,
+# 0 false positives). See docs/ai-cto/SPEC-eval-gate.md §Enforcement for the
+# decision log.
+#
+# Escape hatch: set `ALLOW_ADVISORY=1` as a workflow env (or job-level env in a
+# fork of this file) for a single emergency PR. Leaves a PR comment trail.
+# Default is enforce.
 
 on:
   pull_request:
@@ -22,9 +32,13 @@ permissions:
 
 jobs:
   eval-gate:
-    name: eval-gate-advisory
+    name: eval-gate
     runs-on: ubuntu-latest
     if: ${{ github.event.pull_request.base.ref == 'main' }}
+    env:
+      # Override to "1" only as a deliberate, audited bypass for an emergency PR.
+      # Keep at "0" (default) so schema failures fail the PR check.
+      ALLOW_ADVISORY: "0"
     steps:
       - name: Checkout (full history for diff)
         uses: actions/checkout@v4
@@ -47,12 +61,12 @@ jobs:
           HEAD_SHA="${{ github.event.pull_request.head.sha }}"
           TOUCHED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -E '^evals/' || true)
           {
-            echo "## eval-gate (advisory)"
+            echo "## eval-gate"
             echo ""
             if [ -z "$TOUCHED" ]; then
               echo "⚠️ This PR modifies harness configs but does **not** touch \`evals/\` — 铁律 #12 candidate."
               echo ""
-              echo "_Advisory only — merge is not blocked. After 2026-05-14 this becomes enforced (per SPEC)._"
+              echo "_Note: missing-eval is still advisory in this revision. Schema failures on existing evals/ ARE enforced (since 2026-05-02)._"
             else
               echo "✅ PR touches \`evals/\` — gate satisfied."
             fi
@@ -78,11 +92,24 @@ jobs:
             echo ""
           } | tee -a "$EVAL_GATE_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
           echo "exit_status=$STATUS" >> "$GITHUB_OUTPUT"
-          # Advisory: do NOT propagate failure to job exit
-          exit 0
+          # Enforce mode (since 2026-05-02). Fail CI if any P0 trajectory schema-invalid.
+          # Escape hatch: set ALLOW_ADVISORY=1 to bypass (audited; comment trail kept).
+          if [ "$STATUS" -ne 0 ] && [ "${ALLOW_ADVISORY:-0}" != "1" ]; then
+            echo "::error title=eval-gate::golden-trajectories schema validation FAILED (exit $STATUS). Set ALLOW_ADVISORY=1 to bypass (audited)."
+            exit "$STATUS"
+          fi
+          if [ "$STATUS" -ne 0 ]; then
+            echo "::warning title=eval-gate::ALLOW_ADVISORY=1 — bypassing golden-trajectories failure."
+          fi
 
       - name: Run parser on regression
         id: runner_regression
+        # Always run so the regression result is captured even when the previous
+        # golden-trajectories step exited non-zero in enforce mode (codex P3
+        # 2026-05-02: previously regression was skipped on golden failure, which
+        # also dropped the audit footer — now footer lives in its own always-run
+        # step below, and regression itself still runs for full visibility).
+        if: always()
         shell: bash
         run: |
           set +e
@@ -92,15 +119,34 @@ jobs:
           {
             echo "$OUTPUT"
             echo ""
-            echo "---"
-            echo ""
-            echo "_Posted by [eval-gate workflow](.github/workflows/eval-gate.yml) (advisory mode)_"
           } | tee -a "$EVAL_GATE_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
           echo "exit_status=$STATUS" >> "$GITHUB_OUTPUT"
-          exit 0
+          if [ "$STATUS" -ne 0 ] && [ "${ALLOW_ADVISORY:-0}" != "1" ]; then
+            echo "::error title=eval-gate::regression schema validation FAILED (exit $STATUS). Set ALLOW_ADVISORY=1 to bypass (audited)."
+            exit "$STATUS"
+          fi
+          if [ "$STATUS" -ne 0 ]; then
+            echo "::warning title=eval-gate::ALLOW_ADVISORY=1 — bypassing regression failure."
+          fi
+
+      - name: Append mode/audit footer (always)
+        # Always-run footer step so the PR comment carries the enforce/bypass
+        # marker even when an earlier step exited non-zero (codex P3 fix).
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "---"
+            echo ""
+            if [ "${ALLOW_ADVISORY:-0}" = "1" ]; then
+              echo "_Posted by [eval-gate workflow](.github/workflows/eval-gate.yml) — **ADVISORY BYPASS ACTIVE** (ALLOW_ADVISORY=1)_"
+            else
+              echo "_Posted by [eval-gate workflow](.github/workflows/eval-gate.yml) — enforce mode (since 2026-05-02)_"
+            fi
+          } | tee -a "$EVAL_GATE_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Post PR comment with summary
-        if: github.event.pull_request.head.repo.full_name == github.repository
+        if: ${{ always() && github.event.pull_request.head.repo.full_name == github.repository }}
         uses: actions/github-script@v7
         env:
           EVAL_GATE_SUMMARY: ${{ env.EVAL_GATE_SUMMARY }}
