@@ -222,9 +222,9 @@ def test_apply_manual_applies_grant_immediately(client, billing_engine):
         assert user is not None
         # 50 GB baseline + 100 GB grant = 150 GB
         expected_bytes = (50 + 100) * _BYTES_PER_GB
-        assert user.data_limit == expected_bytes, (
-            f"data_limit not extended: {user.data_limit} != {expected_bytes}"
-        )
+        assert (
+            user.data_limit == expected_bytes
+        ), f"data_limit not extended: {user.data_limit} != {expected_bytes}"
         # Expire strategy promoted from NEVER → FIXED_DATE; date in
         # the future (~30 days from "now"). We don't pin the exact
         # timestamp because apply_manual uses _now_utc_naive().
@@ -270,7 +270,9 @@ def test_apply_manual_writes_state_applied_event_with_grant_payload(
         assert "admin_manual:to_paid" in types
         assert "state_applied" in types
 
-        applied_event = next(e for e in events if e.event_type == "state_applied")
+        applied_event = next(
+            e for e in events if e.event_type == "state_applied"
+        )
         payload = applied_event.payload_json
         assert payload["user_id"] == user_id
         assert payload["grant_gb_delta"] == 100
@@ -316,17 +318,17 @@ def test_apply_manual_terminal_invoice_returns_409(client, billing_engine):
     with Session(billing_engine) as s:
         user_after_second = s.get(User, user_id)
         assert user_after_second is not None
-        assert user_after_second.data_limit == first_data_limit, (
-            "double-apply leaked through the terminal-state guard"
-        )
+        assert (
+            user_after_second.data_limit == first_data_limit
+        ), "double-apply leaked through the terminal-state guard"
         second_event_count = (
             s.query(PaymentEvent)
             .filter(PaymentEvent.invoice_id == invoice_id)
             .count()
         )
-        assert second_event_count == first_event_count, (
-            "rejected double-apply still wrote audit rows"
-        )
+        assert (
+            second_event_count == first_event_count
+        ), "rejected double-apply still wrote audit rows"
 
 
 def test_apply_manual_failed_grant_leaves_invoice_in_paid(
