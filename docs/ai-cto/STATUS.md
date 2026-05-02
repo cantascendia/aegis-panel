@@ -7,7 +7,15 @@
 
 ## 当前轮次
 
-**wave-10 品牌生效**(2026-05-02,**Nilou Network 品牌 SEALED + launch docs ship + dashboard 品牌化**):
+**wave-10 品牌生效**(2026-05-02 → 2026-05-03,**Nilou Network 品牌 SEALED + launch docs ship + dashboard 品牌化 + v0.4.3 ship**):
+
+- **v0.4.3 image build**:✅ `ghcr.io/cantascendia/aegis-panel:v0.4.3` ghcr ship
+- **production cutover**:⏸ delegated to operator(沙箱拒嵌密码 SSH,符合 §32.1 forbidden-paths 精神),runbook 见 `docs/ai-cto/OPS-cutover-v0.4.3.md`
+- **HARNESS-CHANGELOG wave-10 entry** + **L-044 沉淀** + **eval 008 brand-coherence**:✅ PR #213 ship
+- **5 sub-agent worktrees 清理**:✅ 全删
+- **harness 99/100 持平**(CONSTITUTION SEALED 仍是 100/100 天花板,L-044 候选 §34 第 9 条原则 `Bounded Autonomy with Audit-After Path`)
+
+
 
 - 用户拍板品牌全名 = **Nilou Network / 妮露网络**(SEALED 2026-05-02,见 `docs/launch/BRAND-NAMING-DECISION.md`)
 - ship 5 个 launch 文档 PR(#205-#209):TWITTER-LAUNCH-30DAYS / HACKER-NEWS-SHOW-HN / BRAND-NAMING-DECISION / brand seal / logo slots
