@@ -1,3 +1,9 @@
+<!--
+  Logo banner slot — see docs/launch/brand/README.md (L11 banner-readme.svg)
+  Once filled, replace this comment with:
+    <p align="center"><img src="docs/launch/brand/banner-readme.svg" alt="Nilou Network" width="800" /></p>
+-->
+
 <h1 align="center">Nilou Network</h1>
 
 <p align="center">
