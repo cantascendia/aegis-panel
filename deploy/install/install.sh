@@ -38,6 +38,20 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 . "${LIB_DIR}/render.sh"
 # shellcheck source=lib/health.sh
 . "${LIB_DIR}/health.sh"
+# Shared compose path SSOT (also used by scripts/aegis-upgrade.sh).
+# REPO_ROOT/scripts/lib/path-detect.sh is the canonical location; we
+# fall back to /opt/aegis-src for unusual bootstrap layouts.
+_path_detect_lib=""
+for libdir in "${REPO_ROOT}/scripts/lib" "/opt/aegis-src/scripts/lib"; do
+  if [[ -f "${libdir}/path-detect.sh" ]]; then
+    _path_detect_lib="${libdir}/path-detect.sh"
+    break
+  fi
+done
+if [[ -n "${_path_detect_lib}" ]]; then
+  # shellcheck source=../../scripts/lib/path-detect.sh
+  . "${_path_detect_lib}"
+fi
 
 # ---------------------------------------------------------------------------
 # Defaults
@@ -402,11 +416,21 @@ step_5_render_env() {
 # Step 6 — `docker compose up -d`.
 # ---------------------------------------------------------------------------
 compose_file_for_kind() {
+  # During install we know DB_KIND directly (the operator chose it /
+  # --from-env supplied it), so we don't run the .env autodetect path
+  # of scripts/lib/path-detect.sh — we just resolve the canonical
+  # compose dir under REPO_ROOT and pick the variant by DB_KIND.
+  #
+  # The shared lib (sourced above when present) is informational here:
+  # we still write the literal REPO_ROOT path so a fresh install with
+  # no /opt/aegis-src layout yet works. aegis-upgrade.sh, which runs
+  # post-install when /opt/aegis-src DOES exist, uses the lib's full
+  # multi-candidate scan via aegis_resolve_compose.
+  local variant="prod"
   if [[ "${DB_KIND}" == "sqlite" ]]; then
-    echo "${REPO_ROOT}/deploy/compose/docker-compose.sqlite.yml"
-  else
-    echo "${REPO_ROOT}/deploy/compose/docker-compose.prod.yml"
+    variant="sqlite"
   fi
+  echo "${REPO_ROOT}/deploy/compose/docker-compose.${variant}.yml"
 }
 
 prepare_marznode_dirs() {
@@ -490,6 +514,26 @@ fetch_marznode_client_cert() {
 deploy_aegis_upgrade_script() {
   local installed=0
   local src dst
+  # Codex P2 (SSOT PR): aegis-upgrade.sh sources scripts/lib/path-detect.sh.
+  # When the helper is copied to /usr/local/bin (which has no sibling lib/),
+  # the in-script lookup falls back to /opt/aegis-src/scripts/lib — that
+  # only works if REPO_ROOT happened to be /opt/aegis-src. To make the
+  # deployment self-contained regardless of REPO_ROOT, we co-install the
+  # lib at /usr/local/lib/aegis/path-detect.sh and aegis-upgrade.sh checks
+  # that location too (via AEGIS_PATH_DETECT_LIB_DIR fallback below).
+  if [[ -r "${REPO_ROOT}/scripts/lib/path-detect.sh" ]]; then
+    if (( DRY_RUN )); then
+      log "dry-run: would install /usr/local/lib/aegis/path-detect.sh"
+    else
+      install -d -m 0755 /usr/local/lib/aegis
+      install -m 0644 "${REPO_ROOT}/scripts/lib/path-detect.sh" \
+        /usr/local/lib/aegis/path-detect.sh
+      log "installed /usr/local/lib/aegis/path-detect.sh"
+    fi
+  else
+    warn "${REPO_ROOT}/scripts/lib/path-detect.sh missing — /usr/local/bin/aegis-upgrade may fail at runtime"
+  fi
+
   for pair in \
       "${REPO_ROOT}/scripts/aegis-upgrade.sh:/usr/local/bin/aegis-upgrade" \
       "${REPO_ROOT}/scripts/aegis-sync-clients.sh:/usr/local/bin/aegis-sync-clients"; do
