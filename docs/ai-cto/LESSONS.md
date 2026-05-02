@@ -8,6 +8,30 @@
 
 ---
 
+## L-042 | wave-9 R2 | advisory → enforce 切换不该硬定时间窗,看实际 false positive 率
+
+**现象**:eval-gate.yml(PR #146)ship advisory mode,SPEC 写 "2 周观察期" (2026-04-29 → 2026-05-13)。实际 4 天后(2026-05-02)就切 enforce — **提前 11 天**,无延迟无问题。
+
+**根因**:advisory 期 SLA 设 "2 周" 是**保守 default**,不是基于实际 false positive 率。
+- wave-3 ~ wave-9 跑过 12+ harness PR(audit-log AL.1-AL.4 + launch docs + cutover + L-040 fix)
+- 0 false positive
+- 现有 5 P0 + 4 regression yaml schema 全 valid
+- → 提前切 enforce 是**信号驱动**,不是日历驱动
+
+**为什么会犯**:
+- "2 周" 是参考工业实践(canary deploy 1-2 周观察期)
+- 但 eval-gate 是 schema validator,不是 runtime feature(canary 1 周观察是因为流量峰谷),schema 当下就能验
+- SPEC 默认 wait 2 周是 over-engineered
+
+**防线**(下次 ship advisory 类工具):
+1. **SPEC 写 "0 false positive AND 12+ PR validation" 触发条件**,而非硬定 N 天
+2. 工具 ship 时 emit metrics(false positive rate / advisory-only fail count),用 `aegis-watchdog.sh` 拉到 dashboard
+3. 当满足条件就切 enforce(不再等 calendar)— 切完写 LESSONS / STATUS 留痕
+
+**沉淀**: 不转 rule(单次 lesson)。**适用范围**:advisory → enforce 类切换决策(不限 eval-gate,任何 advisory 工具)。
+
+---
+
 ## L-041 | wave-9 production cutover | docker-compose.yml hardcode :latest tag —— production image 不可重现性
 
 **现象**:cutover production v0.4.0 → v0.4.1 后,`docker inspect aegis-panel --format "{{.Config.Image}}"` 显示 `ghcr.io/cantascendia/aegis-panel:latest`,**不是** `:v0.4.1`。SHA 对(da37f2b42cce 是 v0.4.1 build),但 tag 是 `:latest`。
