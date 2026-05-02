@@ -104,6 +104,12 @@ jobs:
 
       - name: Run parser on regression
         id: runner_regression
+        # Always run so the regression result is captured even when the previous
+        # golden-trajectories step exited non-zero in enforce mode (codex P3
+        # 2026-05-02: previously regression was skipped on golden failure, which
+        # also dropped the audit footer — now footer lives in its own always-run
+        # step below, and regression itself still runs for full visibility).
+        if: always()
         shell: bash
         run: |
           set +e
@@ -113,13 +119,6 @@ jobs:
           {
             echo "$OUTPUT"
             echo ""
-            echo "---"
-            echo ""
-            if [ "${ALLOW_ADVISORY:-0}" = "1" ]; then
-              echo "_Posted by [eval-gate workflow](.github/workflows/eval-gate.yml) — **ADVISORY BYPASS ACTIVE** (ALLOW_ADVISORY=1)_"
-            else
-              echo "_Posted by [eval-gate workflow](.github/workflows/eval-gate.yml) — enforce mode (since 2026-05-02)_"
-            fi
           } | tee -a "$EVAL_GATE_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
           echo "exit_status=$STATUS" >> "$GITHUB_OUTPUT"
           if [ "$STATUS" -ne 0 ] && [ "${ALLOW_ADVISORY:-0}" != "1" ]; then
@@ -129,6 +128,22 @@ jobs:
           if [ "$STATUS" -ne 0 ]; then
             echo "::warning title=eval-gate::ALLOW_ADVISORY=1 — bypassing regression failure."
           fi
+
+      - name: Append mode/audit footer (always)
+        # Always-run footer step so the PR comment carries the enforce/bypass
+        # marker even when an earlier step exited non-zero (codex P3 fix).
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "---"
+            echo ""
+            if [ "${ALLOW_ADVISORY:-0}" = "1" ]; then
+              echo "_Posted by [eval-gate workflow](.github/workflows/eval-gate.yml) — **ADVISORY BYPASS ACTIVE** (ALLOW_ADVISORY=1)_"
+            else
+              echo "_Posted by [eval-gate workflow](.github/workflows/eval-gate.yml) — enforce mode (since 2026-05-02)_"
+            fi
+          } | tee -a "$EVAL_GATE_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Post PR comment with summary
         if: ${{ always() && github.event.pull_request.head.repo.full_name == github.repository }}
