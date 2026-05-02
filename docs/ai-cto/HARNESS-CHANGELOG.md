@@ -7,6 +7,63 @@
 
 ---
 
+## 2026-05-02 — Wave-9 R3: enforce switch + SSOT + recovery hardening (健康分 95 → **99**)
+
+**8 PR 集中收口**(自上次 wave-3..9 sync 之后):
+
+| PR | 主题 | 影响维度 |
+|---|---|---|
+| #187 | chore(skills): double-location sync | 原则 3 ⚠️→✅ |
+| #188 | docs(ai-cto): HARNESS-CHANGELOG wave-3..9 | HARNESS-CHANGELOG 维护 |
+| #189 | docs(governance): planner/generator agents + trc20 regression | 原则 7 ⚠️→✅ |
+| #190 | docs(lessons): L-039/040/041 wave-9 沉淀 | LESSONS 完整 |
+| #191 | fix(deploy): aegis-upgrade.sh multi-path scan (L-040) | 原则 6 强化 |
+| #192 | fix(tests): marznode-smoke T6 sync | CI 信噪比(红→绿)|
+| #193 | test(deploy): L-041 AEGIS_VERSION pin regression guards | 原则 6 强化 |
+| #194 | chore(scripts): SSOT path-detect.sh (L-040 follow-up #1) | 原则 6 强化 + DRY |
+| #195 | feat(ops): staging-smoke cutover dry-run (L-040 防线 #2) | 原则 8 强化 |
+| #196 | **ci(eval-gate): advisory → enforce(铁律 #12 auto-enforced)** | 原则 8 飞跃 |
+| #197 | docs(lessons): L-042 advisory → enforce 提前 11 天经验 | LESSONS 沉淀 |
+| #198 | docs(evals): capability/001 codex cross-review saves prod | Eval 集 capability 充实 |
+
+**Harness 关键变化**:
+- ➕ `.claude/agents/`:6 个齐(spec-planner / code-generator / eval-runner / harness-auditor / vibe-checker / reliability-auditor)
+- ➕ `scripts/lib/path-detect.sh` SSOT(install.sh + aegis-upgrade.sh 共享)
+- ➕ `evals/regression/`:4 → 6 yaml(eval-gate-enforce + trc20 roundtrip)
+- ➕ `evals/capability/`:0 → 1 yaml(codex cross-review saves prod)
+- 🔄 `.github/workflows/eval-gate.yml`:advisory → **ENFORCE 模式 active**(2026-05-02,提前 11 天切)
+- 🔄 skills 双位置同步:`.agents/skills/` 9 ↔ `.claude/skills/` 8(codex-bridge agents-only 白名单)
+
+**Audit re-run #3 (2026-05-02 wave-9 R3)**:
+- 总分:**95 → 99 / 100**(+4)
+- 原则 3 (Self-contained):⚠️→✅(+1)
+- 原则 7 (Multi-Agent Separation):⚠️→✅(+2)
+- 原则 8 (Validation Gates):✅→✅✅(+1,enforce + regression 集扩到 6)
+- 持平:原则 1/2/4/5/6
+- HARNESS-CHANGELOG: 13/15 → 15/15(本 entry 后达上限)
+- Eval 集: 15/15(golden 5 + regression 6 + capability 1)
+
+**剩余缺口 (99 → 100)**:
+- P5 **CONSTITUTION SEALED**(用户 + senior 双签)— DRAFT 5 天,唯一硬阻塞 +1 分
+
+**§48 Codex 累计救生产 P-flag**(本批次):**11 个真 bug 在 ship 前抓**
+- 2 P1:PG silent downgrade(#191)/ RETURN trap premature(#195)
+- 8 P2:引号处理 / substring 太宽 / lib not co-installed / 等
+- 1 P3:golden-fail 跳过 footer(#196)
+
+**Production state (2026-05-02 wave-9 R3)**:
+- nilou.cc:image v0.4.1,panel healthy,Deploy Smoke ✅ green
+- TRC20 invoice id=1 awaiting_payment(等 user 充值 USDT round-trip)
+- 5 active users(4 admin + 1 trial)
+- Harness audit:**99/100**,产品就绪 9.9/10
+
+**下一步建议**:
+- ✅ 边际收益已饱和,不再开新 harness PR
+- ⏳ 进入 product/launch 优先期(等 user 决策驱动 — A.2 round-trip / B VPS / C 微信名单)
+- 🎯 CONSTITUTION SEAL PR(用户 + senior 双签 = +1 → 100/100)
+
+---
+
 ## 2026-05-02 — Wave-3 ~ Wave-9 sync (production cutover + hot-fix + 健康分 94 → 95)
 
 **Wave 总览**(详见 git log + STATUS.md):
