@@ -1,11 +1,17 @@
 # SPEC — Eval Gate Workflow (CI Auto-Enforcement of 铁律 #12)
 
 > Issue: [#112](https://github.com/cantascendia/aegis-panel/issues/112)
-> Branch: `ci/eval-gate-workflow`
-> Status: v1 (advisory mode)
+> Branch: `ci/eval-gate-workflow` (v1) → `ci/eval-gate-advisory-to-enforce` (v1.1)
+> **Status: ENFORCEMENT MODE active 2026-05-02** (was advisory 2026-04-30 → 2026-05-02)
 > Author: CTO (delegated to CI infrastructure agent)
-> Date: 2026-04-30
+> Date: 2026-04-30 (v1) / 2026-05-02 (v1.1 enforce switch)
 > Template: D-005 (three-section SPEC for small/medium PRs)
+
+> **ENFORCEMENT MODE active 2026-05-02** — schema failures on `evals/golden-trajectories/`
+> or `evals/regression/` now FAIL the PR check (`exit $STATUS`). Escape hatch:
+> `ALLOW_ADVISORY=1` env in workflow file (deliberate, audited bypass — leaves
+> PR comment trail). The "missing-eval" warning (PR touches harness but not
+> `evals/`) remains advisory in v1.1; that gate flips in v2.
 
 ---
 
@@ -31,6 +37,10 @@ Concretely:
 - Mode: **Advisory** for first 2 weeks. Workflow always exits 0 (does not
   block merge). After observation window, flip to enforce (fail on schema
   errors / missing evals).
+  - **Update 2026-05-02 (v1.1)**: observation window closed 11 days early
+    after 4 days of zero false positives across wave-3 → wave-9 (12+ harness
+    PRs). Workflow now **enforces** schema failures on `evals/golden-trajectories/`
+    and `evals/regression/`. See §Enforcement below.
 
 This v1 ships the trigger, the parser harness, and the comment surface. It
 does **not** invoke Claude / any LLM — it only validates that yaml cases
@@ -179,9 +189,59 @@ to schema, so the parser validates itself indirectly.
 | Date | Action |
 |---|---|
 | 2026-04-30 | Ship advisory v1 (this PR) |
-| 2026-05-14 | Review false-positive rate; decide enforce vs stay-advisory |
-| 2026-05-21 (if green) | Open follow-up issue: flip workflow to enforce mode + idempotent comments + `[skip-eval-gate]` escape |
+| 2026-05-02 | **Switched to enforce mode (v1.1)** — observation closed 11 days early; 0 false positives in 4 days across wave-3..wave-9 (12+ harness PRs). |
+| 2026-05-14 | ~~Review false-positive rate; decide enforce vs stay-advisory~~ (superseded by 2026-05-02 early switch) |
+| 2026-05-21+ | v2 candidates: idempotent PR comments, `[skip-eval-gate]` commit escape, missing-eval enforce, real Claude invocation |
 
 ---
 
-_End of SPEC._
+## 8. Enforcement (added 2026-05-02, v1.1)
+
+### 8.1 Decision
+
+Observation window (originally 2 weeks: 2026-04-30 → 2026-05-14) **closed
+2026-05-02** after 4 days of operation. Justification:
+
+- 12+ harness PRs across wave-3..wave-9 (`.claude/commands/`, `.claude/agents/`,
+  `docs/launch/`, `playbook/`) triggered the workflow
+- **0 false positives** observed (every advisory comment matched a real
+  schema-touch or genuinely missing-eval situation)
+- 5 P0 + 5 regression yaml files all pass schema validation cleanly
+- Parser is bash + grep (no parser bug surface area beyond v1)
+
+### 8.2 What changed in workflow
+
+- `name: Eval Gate (advisory)` → `name: Eval Gate`
+- `name: eval-gate-advisory` (job) → `name: eval-gate`
+- `Run parser on golden-trajectories` step: `exit 0` → `exit $STATUS` (gated by `ALLOW_ADVISORY`)
+- `Run parser on regression` step: `exit 0` → `exit $STATUS` (gated by `ALLOW_ADVISORY`)
+- Added job-level `env: ALLOW_ADVISORY: "0"` (default enforce)
+- Comment step now `if: always()` so the comment posts even on enforce-failure
+- PR comment footer reflects mode (enforce vs ALLOW_ADVISORY bypass)
+
+### 8.3 Escape hatch (ALLOW_ADVISORY)
+
+For a single emergency PR where eval schema is intentionally broken (e.g.
+mid-refactor of evals/ schema itself), an engineer can edit the workflow
+in the PR's branch to set `ALLOW_ADVISORY: "1"`. This:
+
+- Allows `exit $STATUS` to be skipped
+- Logs `::warning::ALLOW_ADVISORY=1` to the action log (audit trail)
+- Footer of the PR comment marks the bypass explicitly
+
+Unlike a `[skip-eval-gate]` commit message (v2), this is intentionally
+high-friction (requires editing the workflow file in-PR) so it does not
+become the default escape route.
+
+### 8.4 What still does NOT enforce
+
+- **Missing-eval warning**: if a PR touches harness configs but not
+  `evals/`, the workflow still posts an advisory warning but does NOT
+  fail the check. Reason: defining a no-op harness change (e.g. typo fix
+  in a comment) is legitimate; v1.1 only enforces schema correctness on
+  evals that exist. The missing-eval gate is a v2 candidate (after
+  building a `[skip-eval-gate]` escape hatch first).
+
+---
+
+_End of SPEC. v1.1 (2026-05-02 enforce switch)._
