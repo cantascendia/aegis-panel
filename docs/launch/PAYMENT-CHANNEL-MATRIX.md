@@ -1,7 +1,17 @@
 # Payment Channel Matrix — Nilou Network
 
-> 状态:决策矩阵 + 风险评估
-> 更新日期:2026-05-03(v2 修订:Plan B 双通道引入)
+> ⚠️ **重要(2026-05-03)**:本文档中所有"中文聚合方"路径(YunGouOS / 虎皮椒 / payjs / 跳跳付 / Pay4Things / 彩虹自建 / 中国版微信支付 / 中国版支付宝商户)**对日本 operator 不适用,已作废**。
+>
+> 原因:operator 在日本运营,绝不绑定中国身份证 / 中国银行卡 / 中国手机号(资金被冻或类目违规无法跨国处理 + 实名记录留中国 ≥5 年)。
+>
+> **新的 final decision 见 `PAYMENT-DECISION-FINAL-JP.md`**。该 doc 列出 4 条可行路径:USDT 直收 + OTC 引导 + Cryptomus + Paddle。
+>
+> 本 doc 保留作历史研究档案(其它 operator 物理位置在中国 / 接受中国身份绑定的场景下可参考)。
+>
+> ---
+>
+> 状态:历史研究档案(部分作废,JP operator 看 PAYMENT-DECISION-FINAL-JP.md)
+> 更新日期:2026-05-03
 > 适用受众:operator(运营决策)+ tech lead(集成实现)
 
 ---
