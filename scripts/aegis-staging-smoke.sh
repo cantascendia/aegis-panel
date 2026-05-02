@@ -288,7 +288,143 @@ echo "[smoke] tear down..."
 docker compose -f "${WORKDIR}/compose.yml" down -v >/dev/null 2>&1
 
 # ---------------------------------------------------------------------
-# 4. verdict
+# 4. cutover dry-run (L-040 防线 #2)
+# ---------------------------------------------------------------------
+# Validates aegis-upgrade.sh + scripts/lib/path-detect.sh SSOT + compose
+# AEGIS_VERSION pinning end-to-end without touching real /opt/aegis-src.
+# Wave-9 saw L-040/L-041 as live production bugs because the cutover
+# automation path was never exercised pre-promotion. This section closes
+# that loop: 5 sub-tests on a /tmp staging area, no side effects.
+#
+# Sub-tests:
+#   a. SSOT detects compose dir from override (sqlite variant via .env)
+#   b. SSOT picks docker-compose.sqlite.yml file
+#   c. aegis_detect_compose_variant returns "sqlite" for sqlite:// URL
+#   d. docker compose config substitutes AEGIS_VERSION (warn-not-fail
+#      if docker absent, e.g. minimal CI runner)
+#   e. SSOT detects "prod" variant from postgresql+psycopg:// URL
+echo
+echo "[smoke] ⑥ cutover dry-run (L-040 防线 #2)"
+
+# Source SSOT once at script scope (idempotent; only sets functions and a
+# couple of vars). MUST happen before defining cutover_dry_run, because a
+# `source` of a script that ends with `return` triggers any RETURN trap
+# installed in the enclosing function — codex P1 on 9799ae7. Sourcing at
+# script scope sidesteps that interaction entirely.
+# shellcheck disable=SC1091
+source "$(dirname "$0")/lib/path-detect.sh"
+
+# Cleanup is handled by the caller (after the function returns), not by a
+# RETURN trap inside the function — codex P1 on 9799ae7.
+cutover_dry_run() {
+  local stage_root="$1"
+  local target_version="$2"   # codex P2: use real VERSION, not hardcoded.
+
+  local compose_dir="${stage_root}/deploy/compose"
+  mkdir -p "${compose_dir}"
+  cp "$(dirname "$0")/../deploy/compose/docker-compose.sqlite.yml" "${compose_dir}/"
+  cp "$(dirname "$0")/../deploy/compose/docker-compose.prod.yml"   "${compose_dir}/"
+
+  # SQLite .env first
+  cat >"${stage_root}/.env" <<EOF_DRYRUN
+AEGIS_VERSION=${target_version}
+SQLALCHEMY_DATABASE_URL=sqlite:///./data/db.sqlite3
+MARZNODE_VERSION=v0.5.7
+EOF_DRYRUN
+
+  # Sub-test (a) + (b): aegis_resolve_compose with override picks sqlite.
+  AEGIS_COMPOSE_CANDIDATES_OVERRIDE="${compose_dir}" \
+    aegis_resolve_compose "${stage_root}/.env" "[cutover-dryrun]" \
+    || { echo "  ❌ aegis_resolve_compose failed (sqlite path)" >&2; return 1; }
+  if [[ "${COMPOSE_DIR}" != "${compose_dir}" ]]; then
+    echo "  ❌ COMPOSE_DIR='${COMPOSE_DIR}' (expected '${compose_dir}')" >&2
+    return 1
+  fi
+  if [[ "${COMPOSE_FILE}" != "${compose_dir}/docker-compose.sqlite.yml" ]]; then
+    echo "  ❌ COMPOSE_FILE='${COMPOSE_FILE}' (expected sqlite variant)" >&2
+    return 1
+  fi
+  echo "  ✅ (a+b) SSOT resolved sqlite compose dir+file from override"
+
+  # Sub-test (c): variant probe directly on .env
+  local detected_variant
+  detected_variant="$(aegis_detect_compose_variant "${stage_root}/.env")"
+  if [[ "${detected_variant}" != "sqlite" ]]; then
+    echo "  ❌ aegis_detect_compose_variant returned '${detected_variant}', expected 'sqlite'" >&2
+    return 1
+  fi
+  echo "  ✅ (c) variant probe: sqlite:// → sqlite"
+
+  # Sub-test (d): docker compose config substitutes AEGIS_VERSION → image
+  # tag pinned to ${target_version}. The compose file references
+  # /opt/aegis/.env via `env_file:` (production path); dry-run sidesteps
+  # that by rendering a sanitized copy with the env_file: directive
+  # stripped, so substitution alone is exercised.
+  #
+  # Codex P2 on 9799ae7: a substitution miss MUST fail this gate — the
+  # whole point of防线 #2 is to catch a :latest hardcode regression. Only
+  # the docker-absent path stays warn-not-fail (so minimal CI without
+  # docker can still execute the rest of the dry-run).
+  if command -v docker >/dev/null 2>&1; then
+    local compose_sanitized="${stage_root}/compose-dryrun.yml"
+    # Drop the two-line `env_file:` block (directive + single hyphen-list item).
+    awk '
+      /^[[:space:]]*env_file:[[:space:]]*$/ { skip=1; next }
+      skip && /^[[:space:]]*-[[:space:]]/   { next }
+      skip                                  { skip=0 }
+      { print }
+    ' "${COMPOSE_FILE}" >"${compose_sanitized}"
+
+    local compose_out compose_rc=0
+    compose_out="$(AEGIS_VERSION="${target_version}" MARZNODE_VERSION=v0.5.7 \
+       docker compose -f "${compose_sanitized}" config 2>&1)" || compose_rc=$?
+    if (( compose_rc != 0 )); then
+      echo "  ❌ (d) docker compose config failed (rc=${compose_rc}):" >&2
+      echo "${compose_out}" | head -5 >&2
+      return 1
+    fi
+    # Use a literal-anchored grep on target_version so a regression to
+    # :latest or a different pinned tag fails the gate.
+    if echo "${compose_out}" | grep -qE "image:.*aegis-panel:${target_version//./\\.}([[:space:]]|$)"; then
+      echo "  ✅ (d) docker compose config substituted AEGIS_VERSION=${target_version}"
+    else
+      echo "  ❌ (d) AEGIS_VERSION substitution NOT visible — possible :latest hardcode regression" >&2
+      echo "       expected: image: ghcr.io/cantascendia/aegis-panel:${target_version}" >&2
+      echo "       got:" >&2
+      echo "${compose_out}" | grep -E '^[[:space:]]*image:' | head -3 >&2
+      return 1
+    fi
+  else
+    echo "  ⚠️  (d) docker absent in PATH (skipping AEGIS_VERSION substitution check)"
+  fi
+
+  # Sub-test (e): swap .env to PG URL → variant should flip to "prod".
+  cat >"${stage_root}/.env" <<'EOF_PG'
+SQLALCHEMY_DATABASE_URL=postgresql+psycopg://user:pass@db:5432/aegis
+EOF_PG
+  local pg_variant
+  pg_variant="$(aegis_detect_compose_variant "${stage_root}/.env")"
+  if [[ "${pg_variant}" != "prod" ]]; then
+    echo "  ❌ aegis_detect_compose_variant on PG URL returned '${pg_variant}', expected 'prod'" >&2
+    return 1
+  fi
+  echo "  ✅ (e) variant probe: postgresql+psycopg:// → prod"
+
+  return 0
+}
+
+DRYRUN_ROOT="$(mktemp -d /tmp/aegis-cutover-dryrun.XXXXXX)"
+if cutover_dry_run "${DRYRUN_ROOT}" "${VERSION}"; then
+  echo "  ✅ cutover dry-run (path-detect SSOT + compose AEGIS_VERSION pin)"
+  PASS=$(( PASS + 1 ))
+else
+  echo "  ❌ cutover dry-run regression (L-040 防线 #2 broken)" >&2
+  FAIL=$(( FAIL + 1 ))
+fi
+rm -rf "${DRYRUN_ROOT}"
+
+# ---------------------------------------------------------------------
+# 5. verdict
 # ---------------------------------------------------------------------
 echo
 echo "════════════════════════════════════════════"
