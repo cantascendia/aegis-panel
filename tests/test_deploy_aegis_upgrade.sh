@@ -263,5 +263,53 @@ echo "${out}" | grep -qF "must be 'sqlite' or 'prod'" \
   || fail "T11 expected validation error, got: ${out}"
 pass "AEGIS_COMPOSE_VARIANT validates input"
 
+# ---------------------------------------------------------------------------
+# T12: SQLALCHEMY_DATABASE_URL with double quotes is parsed correctly
+# (codex review P2 — quoted dotenv values are common).
+# ---------------------------------------------------------------------------
+echo "[smoke] T12: double-quoted DATABASE_URL parsed"
+T12_DIR="${TMPROOT}/t12-both/compose"
+make_compose_dir "${T12_DIR}" both
+T12_ENV="${TMPROOT}/t12.env"
+cat >"${T12_ENV}" <<'EOF'
+AEGIS_VERSION=v0.4.0
+PANEL_PORT=8443
+SQLALCHEMY_DATABASE_URL="postgresql+psycopg://u:p@127.0.0.1:5432/aegis"
+EOF
+out="$(AEGIS_ENV_FILE="${T12_ENV}" AEGIS_COMPOSE_DIR="${T12_DIR}" bash "${STUB}" v0.4.1 2>&1)"
+echo "${out}" | grep -qF "COMPOSE_FILE=${T12_DIR}/docker-compose.prod.yml" \
+  || fail "T12 expected prod variant from quoted .env, got: ${out}"
+pass "double-quoted DATABASE_URL parsed correctly"
+
+# ---------------------------------------------------------------------------
+# T13: single-quoted DATABASE_URL parsed correctly
+# ---------------------------------------------------------------------------
+echo "[smoke] T13: single-quoted DATABASE_URL parsed"
+T13_DIR="${TMPROOT}/t13-both/compose"
+make_compose_dir "${T13_DIR}" both
+T13_ENV="${TMPROOT}/t13.env"
+cat >"${T13_ENV}" <<EOF
+AEGIS_VERSION=v0.4.0
+PANEL_PORT=8443
+SQLALCHEMY_DATABASE_URL='sqlite:////var/lib/marzneshin/db.sqlite3'
+EOF
+out="$(AEGIS_ENV_FILE="${T13_ENV}" AEGIS_COMPOSE_DIR="${T13_DIR}" bash "${STUB}" v0.4.1 2>&1)"
+echo "${out}" | grep -qF "COMPOSE_FILE=${T13_DIR}/docker-compose.sqlite.yml" \
+  || fail "T13 expected sqlite variant from single-quoted .env, got: ${out}"
+pass "single-quoted DATABASE_URL parsed correctly"
+
+# ---------------------------------------------------------------------------
+# T14: trailing whitespace in DATABASE_URL is stripped
+# ---------------------------------------------------------------------------
+echo "[smoke] T14: trailing whitespace stripped"
+T14_DIR="${TMPROOT}/t14-both/compose"
+make_compose_dir "${T14_DIR}" both
+T14_ENV="${TMPROOT}/t14.env"
+printf 'AEGIS_VERSION=v0.4.0\nPANEL_PORT=8443\nSQLALCHEMY_DATABASE_URL=  postgresql+psycopg://u:p@127.0.0.1:5432/aegis  \n' >"${T14_ENV}"
+out="$(AEGIS_ENV_FILE="${T14_ENV}" AEGIS_COMPOSE_DIR="${T14_DIR}" bash "${STUB}" v0.4.1 2>&1)"
+echo "${out}" | grep -qF "COMPOSE_FILE=${T14_DIR}/docker-compose.prod.yml" \
+  || fail "T14 expected prod variant from whitespace-padded .env, got: ${out}"
+pass "trailing/leading whitespace stripped from DATABASE_URL"
+
 echo
 echo "all tests passed"

@@ -58,6 +58,16 @@ fi
 COMPOSE_VARIANT=""
 if [[ -f "${ENV_FILE}" ]]; then
   DB_URL_LINE="$(awk -F= '/^SQLALCHEMY_DATABASE_URL=/ { sub(/^SQLALCHEMY_DATABASE_URL=/, ""); print; exit }' "${ENV_FILE}" || true)"
+  # Strip optional surrounding whitespace + quotes (codex review P2,
+  # 2026-05-02). Many .env writers (compose, foreman, hand-edited)
+  # quote values like:  SQLALCHEMY_DATABASE_URL="postgresql+psycopg://..."
+  # Without stripping, the leading quote leaks into the case match and
+  # variant detection fails ambiguously.
+  DB_URL_LINE="${DB_URL_LINE#"${DB_URL_LINE%%[![:space:]]*}"}"   # ltrim
+  DB_URL_LINE="${DB_URL_LINE%"${DB_URL_LINE##*[![:space:]]}"}"   # rtrim
+  if [[ "${DB_URL_LINE}" == \"*\" || "${DB_URL_LINE}" == \'*\' ]]; then
+    DB_URL_LINE="${DB_URL_LINE:1:${#DB_URL_LINE}-2}"
+  fi
   # Match the SQLAlchemy URL scheme prefix. SQLAlchemy permits dialect
   # plus driver via "+", e.g. `postgresql+psycopg://`, `sqlite+pysqlite:`,
   # so we accept both `<scheme>:` and `<scheme>+<driver>:` forms.
