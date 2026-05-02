@@ -17,15 +17,123 @@ IFS=$'\n\t'
 
 NEW_VERSION="${1:?usage: aegis-upgrade vX.Y.Z}"
 ENV_FILE="${AEGIS_ENV_FILE:-/opt/aegis/.env}"
-COMPOSE_DIR="${AEGIS_COMPOSE_DIR:-/opt/aegis/compose}"
 
-# Auto-detect compose file: prefer sqlite (S1), fall back to prod (S2).
-if [[ -f "${COMPOSE_DIR}/docker-compose.sqlite.yml" ]]; then
-  COMPOSE_FILE="${COMPOSE_DIR}/docker-compose.sqlite.yml"
-elif [[ -f "${COMPOSE_DIR}/docker-compose.prod.yml" ]]; then
-  COMPOSE_FILE="${COMPOSE_DIR}/docker-compose.prod.yml"
+# Compose dir resolution (L-040, wave-9 cutover fix).
+#
+# install.sh (deploy/install/install.sh L405-409) runs compose from the
+# cloned repo at ${REPO_ROOT}/deploy/compose/, where REPO_ROOT defaults
+# to /opt/aegis-src/ on installer-managed VPS. Earlier versions of this
+# script hardcoded /opt/aegis/compose/, which never exists on a fresh
+# install — wave-9 v0.4.0→v0.4.1 production cutover hit
+#   "[upgrade] FATAL: no compose file found under /opt/aegis/compose"
+# and forced manual fallback. We now scan ordered candidates and
+# fail-loud (exit 2) when none match.
+#
+# Operator override: set AEGIS_COMPOSE_DIR=/path/to/compose to skip
+# autodetect. The override path is checked first; if it has no
+# docker-compose*.yml inside, we still fail-loud rather than silently
+# trying the next candidate (so a typo'd override surfaces immediately).
+#
+# SSOT cleanup (single shared path-detect lib for install.sh +
+# aegis-upgrade.sh) is tracked as a follow-up; this PR is the minimal
+# scope fix.
+declare -a COMPOSE_CANDIDATES
+if [[ -n "${AEGIS_COMPOSE_DIR:-}" ]]; then
+  COMPOSE_CANDIDATES=("${AEGIS_COMPOSE_DIR}")
 else
-  echo "[upgrade] FATAL: no compose file found under ${COMPOSE_DIR}" >&2
+  COMPOSE_CANDIDATES=(
+    "/opt/aegis-src/deploy/compose"   # installer-managed (install.sh default)
+    "/opt/aegis/compose"              # legacy / pre-PR layout
+  )
+fi
+
+# Compose variant (sqlite vs prod) MUST be derived from the install state
+# (.env's SQLALCHEMY_DATABASE_URL), not from "first matching file" — the
+# installer-managed compose dir contains BOTH variants on disk, so a
+# file-presence-first scan would silently downgrade Postgres installs to
+# SQLite topology on upgrade. Codex cross-review P1, 2026-05-02.
+#
+# DB_KIND_DETECTED ∈ {sqlite, prod}. If the .env has no DATABASE_URL we
+# stay strict and fail-loud rather than guess.
+COMPOSE_VARIANT=""
+if [[ -f "${ENV_FILE}" ]]; then
+  DB_URL_LINE="$(awk -F= '/^SQLALCHEMY_DATABASE_URL=/ { sub(/^SQLALCHEMY_DATABASE_URL=/, ""); print; exit }' "${ENV_FILE}" || true)"
+  # Strip optional surrounding whitespace + quotes (codex review P2,
+  # 2026-05-02). Many .env writers (compose, foreman, hand-edited)
+  # quote values like:  SQLALCHEMY_DATABASE_URL="postgresql+psycopg://..."
+  # Without stripping, the leading quote leaks into the case match and
+  # variant detection fails ambiguously.
+  DB_URL_LINE="${DB_URL_LINE#"${DB_URL_LINE%%[![:space:]]*}"}"   # ltrim
+  DB_URL_LINE="${DB_URL_LINE%"${DB_URL_LINE##*[![:space:]]}"}"   # rtrim
+  if [[ "${DB_URL_LINE}" == \"*\" || "${DB_URL_LINE}" == \'*\' ]]; then
+    DB_URL_LINE="${DB_URL_LINE:1:${#DB_URL_LINE}-2}"
+  fi
+  # Match the SQLAlchemy URL scheme prefix. SQLAlchemy permits dialect
+  # plus driver via "+", e.g. `postgresql+psycopg://`, `sqlite+pysqlite:`,
+  # so we accept both `<scheme>:` and `<scheme>+<driver>:` forms.
+  case "${DB_URL_LINE}" in
+    sqlite:*|sqlite+*)         COMPOSE_VARIANT="sqlite" ;;
+    postgresql:*|postgresql+*) COMPOSE_VARIANT="prod"   ;;
+    postgres:*|postgres+*)     COMPOSE_VARIANT="prod"   ;;
+    *) ;;  # unknown / empty → resolved below
+  esac
+fi
+
+# Operator override: if AEGIS_COMPOSE_VARIANT is set, it wins over
+# autodetect (lets ops force a specific compose during recovery).
+if [[ -n "${AEGIS_COMPOSE_VARIANT:-}" ]]; then
+  COMPOSE_VARIANT="${AEGIS_COMPOSE_VARIANT}"
+fi
+
+case "${COMPOSE_VARIANT}" in
+  sqlite|prod|"") ;;
+  *)
+    echo "[upgrade] FATAL: AEGIS_COMPOSE_VARIANT='${COMPOSE_VARIANT}' must be 'sqlite' or 'prod'" >&2
+    exit 2
+    ;;
+esac
+
+COMPOSE_DIR=""
+COMPOSE_FILE=""
+for candidate in "${COMPOSE_CANDIDATES[@]}"; do
+  sqlite_path="${candidate}/docker-compose.sqlite.yml"
+  prod_path="${candidate}/docker-compose.prod.yml"
+  case "${COMPOSE_VARIANT}" in
+    sqlite)
+      if [[ -f "${sqlite_path}" ]]; then
+        COMPOSE_DIR="${candidate}"; COMPOSE_FILE="${sqlite_path}"; break
+      fi
+      ;;
+    prod)
+      if [[ -f "${prod_path}" ]]; then
+        COMPOSE_DIR="${candidate}"; COMPOSE_FILE="${prod_path}"; break
+      fi
+      ;;
+    "")
+      # Variant unknown (.env missing or DATABASE_URL not recognized).
+      # Pick whichever compose file exists; if BOTH exist we cannot
+      # disambiguate safely → fail-loud below.
+      if [[ -f "${sqlite_path}" && -f "${prod_path}" ]]; then
+        echo "[upgrade] FATAL: both docker-compose.sqlite.yml and .prod.yml exist under" >&2
+        echo "[upgrade]   ${candidate}" >&2
+        echo "[upgrade] but ${ENV_FILE} has no SQLALCHEMY_DATABASE_URL we recognize." >&2
+        echo "[upgrade] hint: set AEGIS_COMPOSE_VARIANT=sqlite|prod to disambiguate" >&2
+        exit 2
+      elif [[ -f "${sqlite_path}" ]]; then
+        COMPOSE_DIR="${candidate}"; COMPOSE_FILE="${sqlite_path}"; break
+      elif [[ -f "${prod_path}" ]]; then
+        COMPOSE_DIR="${candidate}"; COMPOSE_FILE="${prod_path}"; break
+      fi
+      ;;
+  esac
+done
+
+if [[ -z "${COMPOSE_FILE}" ]]; then
+  echo "[upgrade] FATAL: no docker-compose*.yml found (variant='${COMPOSE_VARIANT:-auto}') under any of:" >&2
+  for candidate in "${COMPOSE_CANDIDATES[@]}"; do
+    echo "[upgrade]   - ${candidate}" >&2
+  done
+  echo "[upgrade] hint: set AEGIS_COMPOSE_DIR=/path/to/compose to override" >&2
   exit 2
 fi
 
