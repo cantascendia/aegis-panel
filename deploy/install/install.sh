@@ -514,6 +514,26 @@ fetch_marznode_client_cert() {
 deploy_aegis_upgrade_script() {
   local installed=0
   local src dst
+  # Codex P2 (SSOT PR): aegis-upgrade.sh sources scripts/lib/path-detect.sh.
+  # When the helper is copied to /usr/local/bin (which has no sibling lib/),
+  # the in-script lookup falls back to /opt/aegis-src/scripts/lib — that
+  # only works if REPO_ROOT happened to be /opt/aegis-src. To make the
+  # deployment self-contained regardless of REPO_ROOT, we co-install the
+  # lib at /usr/local/lib/aegis/path-detect.sh and aegis-upgrade.sh checks
+  # that location too (via AEGIS_PATH_DETECT_LIB_DIR fallback below).
+  if [[ -r "${REPO_ROOT}/scripts/lib/path-detect.sh" ]]; then
+    if (( DRY_RUN )); then
+      log "dry-run: would install /usr/local/lib/aegis/path-detect.sh"
+    else
+      install -d -m 0755 /usr/local/lib/aegis
+      install -m 0644 "${REPO_ROOT}/scripts/lib/path-detect.sh" \
+        /usr/local/lib/aegis/path-detect.sh
+      log "installed /usr/local/lib/aegis/path-detect.sh"
+    fi
+  else
+    warn "${REPO_ROOT}/scripts/lib/path-detect.sh missing — /usr/local/bin/aegis-upgrade may fail at runtime"
+  fi
+
   for pair in \
       "${REPO_ROOT}/scripts/aegis-upgrade.sh:/usr/local/bin/aegis-upgrade" \
       "${REPO_ROOT}/scripts/aegis-sync-clients.sh:/usr/local/bin/aegis-sync-clients"; do

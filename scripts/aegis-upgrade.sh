@@ -30,10 +30,13 @@ ENV_FILE="${AEGIS_ENV_FILE:-/opt/aegis/.env}"
 #   * operator overrides AEGIS_COMPOSE_DIR / AEGIS_COMPOSE_VARIANT,
 #     including typo-detection on AEGIS_COMPOSE_DIR
 #
-# Two layouts source the lib:
-#   1. installer-managed: /opt/aegis-src/scripts/aegis-upgrade.sh →
-#      sibling lib at /opt/aegis-src/scripts/lib/path-detect.sh
-#   2. /usr/local/bin shim → falls back to /opt/aegis-src/scripts/lib
+# Three layouts source the lib:
+#   1. in-tree:        /opt/aegis-src/scripts/aegis-upgrade.sh →
+#                      sibling /opt/aegis-src/scripts/lib/path-detect.sh
+#   2. /usr/local/bin: install.sh co-installs the lib at
+#                      /usr/local/lib/aegis/path-detect.sh (REPO_ROOT-independent;
+#                      codex P2 fix)
+#   3. legacy/dev:     fallback to /opt/aegis-src/scripts/lib
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _path_detect_lib=""
 # AEGIS_PATH_DETECT_LIB env var (test-only) lets harnesses point at the
@@ -41,6 +44,7 @@ _path_detect_lib=""
 for libdir in \
     "${AEGIS_PATH_DETECT_LIB_DIR:-}" \
     "${SCRIPT_DIR}/lib" \
+    "/usr/local/lib/aegis" \
     "/opt/aegis-src/scripts/lib"; do
   [[ -z "${libdir}" ]] && continue
   if [[ -f "${libdir}/path-detect.sh" ]]; then
@@ -49,7 +53,7 @@ for libdir in \
   fi
 done
 if [[ -z "${_path_detect_lib}" ]]; then
-  echo "[upgrade] FATAL: scripts/lib/path-detect.sh not found (looked in ${SCRIPT_DIR}/lib and /opt/aegis-src/scripts/lib)" >&2
+  echo "[upgrade] FATAL: path-detect.sh not found (looked in ${SCRIPT_DIR}/lib, /usr/local/lib/aegis, /opt/aegis-src/scripts/lib)" >&2
   exit 2
 fi
 # shellcheck source=lib/path-detect.sh
