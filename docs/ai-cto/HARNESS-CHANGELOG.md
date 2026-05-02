@@ -7,6 +7,33 @@
 
 ---
 
+## 2026-05-02 — Wave-3 ~ Wave-9 sync (production cutover + hot-fix + 健康分 94 → 95)
+
+**Wave 总览**(详见 git log + STATUS.md):
+- wave-3 ~ wave-7:audit-log S-AL session 全交付(AL.1-AL.4 19 PR + L-032 mTLS 三段式 SPEC/PLAN/TASKS + 4 客户文档)
+- wave-8:运维基建(aegis-watchdog / aegis-staging-smoke / aegis-upgrade / aegis-create-trial-batch + Quick Plans dashboard)
+- wave-9:production cutover (v0.4.0 → v0.4.1) + TRC20 hot-fix (PR #186 commit f2b46737) + launch 三件套(PITCH-CARDS / VPS-PROVIDER / HOW-TO-RECRUIT-FROM-WECHAT)
+
+**Harness 关键变化**:
+- ➕ `.claude/agents/`:eval-runner / harness-auditor / vibe-checker → +`reliability-auditor`(4 个)
+- ➕ `.claude/commands/`:cto-canary / cto-replay / cto-cross-review / cto-relink-all(20 个)
+- ➕ `evals/regression/`:0 → 4 yaml(L-018 / L-015 / eval-gate-trigger / migration-rollback)
+- ➕ `.github/workflows/eval-gate.yml`:advisory mode active(2 周观察期 ~ 2026-05-13)
+- ⏳ skills 双位置仍未同步(`.agents/skills/` 8 vs `.claude/skills/` 8,集合不等,差 6 个互补 — 见 PR #N skills double-location sync)
+
+**Audit re-run (2026-05-02)**:
+- 总分:**94 → 95 / 100**(+1)
+- 进步:原则 6 (Fail-Fast + Recovery) ⚠️→✅ — TRC20 hot-fix 单会话内闭环验证 recovery path
+- 持平:原则 3 (Self-contained skills 双位置)、原则 7 (planner/generator 显式分层缺)
+- 下次提升点:CONSTITUTION SEALED (+1)、planner/generator agent 文件 (+2)、eval-gate enforce (+1)
+
+**Production state (2026-05-02)**:
+- nilou.cc:image v0.4.1(SHA da37f2b42cce),panel healthy
+- TRC20 invoice id=1 awaiting_payment(operator self-test pending)
+- 5 active users(4 admin + 1 trial)
+
+---
+
 ## 2026-04-29 — Re-audit post wave-2: 78 → 94 (+16)
 
 **Audit 报告**(`/cto-harness-audit` 第二跑):

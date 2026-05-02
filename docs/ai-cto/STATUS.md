@@ -1,11 +1,25 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-01 late-8 wave-8 (客户文案 + 招募 + 监控全链路落地；B 阶段就绪度 9.8 → 9.9/10，可邀客户)(wave-8 PR #176 docs/launch CUSTOMER-FAQ.md + RECRUIT-COPY.md + CUSTOMER-ONBOARDING.md + PR #177 aegis-staging-smoke.sh 本地 docker-compose 替代第 2 台 VPS + PR #178 aegis-watchdog.sh 每小时监控 cron + 本 STATUS 收口；前置 wave-6/7：差异化 #5 audit log 真激活 + 10 项回归测试 + 2 ops runbook + GO-LIVE checklist 生产实测全过)
+> 最后更新:2026-05-02 wave-9 (production cutover v0.4.1 + TRC20 hot-fix + harness 95/100；前置 wave-8 客户文案 + 招募 + 监控全链路；wave-9 PR #186 TRC20 dashboard checkout 404 hot-fix commit f2b4673 → tag v0.4.1 + 3 launch docs (PITCH-CARDS/VPS-PROVIDER/HOW-TO-RECRUIT-FROM-WECHAT) + harness audit re-run 94 → 95；TRC20 invoice id=1 awaiting roundtrip)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
+
+**wave-9 追加同步**(2026-05-02,**production cutover v0.4.1 + TRC20 hot-fix + harness 95/100**):
+
+- **PR #186 hot-fix** TRC20 dashboard checkout 404(commit `f2b4673` → tag `v0.4.1`):checkout_endpoint.py trc20 fallback 分支 + schemas.py 扩 3 optional TRC20 字段 + 6 个新测试。Codex cross-review 3 轮 clean
+- **production cutover v0.4.1**:`docker compose pull panel + up -d` 手动切(因 `aegis-upgrade.sh` 有 path bug — L-040 follow-up)
+- **TRC20 invoice 真生成**:invoice id=1,memo `YXXURB59`,amount 4.167 USDT,等 operator 自付 round-trip
+- **Launch 文档 +3**:CUSTOMER-PITCH-CARDS(217 行)/ VPS-PROVIDER-PROCUREMENT-GUIDE(519 行)/ HOW-TO-RECRUIT-FROM-WECHAT(659 行)
+- **Strategy 调整**:to-C 直接抢翻墙终端用户(放弃"卖运营 turnkey 模板"路线)
+- **Harness audit re-run**:94 → **95/100**(+1 fail-fast/recovery 实战验证)
+- **L-039/040/041 候选**:docs vs code drift(LAUNCH-week2 超前)/ aegis-upgrade.sh path bug / compose YAML hardcode :latest(下波 LESSONS PR 沉淀)
+
+**Phase A.2 round-trip in-flight**:operator 充值 USDT + 自付 → panel 自动 detect → state applied(还在等 operator)
+
+---
 
 **Round 3 mid late-8 wave-8 —— 客户文案 + 招募 + 监控落地 (B 阶段就绪度 9.8 → 9.9/10，可邀客户)**
 
