@@ -24,6 +24,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base
+from app.db.models import User
+from app.models.user import UserDataUsageResetStrategy, UserExpireStrategy
 from ops.billing.db import (
     INVOICE_STATE_APPLIED,
     INVOICE_STATE_AWAITING_PAYMENT,
@@ -31,7 +33,9 @@ from ops.billing.db import (
     INVOICE_STATE_CREATED,
     INVOICE_STATE_PAID,
     INVOICE_STATE_PENDING,
+    PLAN_KIND_FIXED,
     Invoice,
+    InvoiceLine,
     PaymentEvent,
     Plan,
 )
@@ -52,6 +56,16 @@ def billing_engine():
             "aegis_billing_invoices",
             "aegis_billing_invoice_lines",
             "aegis_billing_payment_events",
+            # ``apply_manual`` now applies grants inline (mirrors the
+            # A.5 scheduler), so the endpoint hits ``users`` /
+            # ``services`` tables. Mirror test_billing_scheduler.py's
+            # set so the OUTER JOINs from User's lazy="joined"
+            # relationships resolve without "no such table".
+            "users",
+            "services",
+            "users_services",
+            "inbounds",
+            "inbounds_services",
         )
     ]
     # StaticPool + check_same_thread=False so the TestClient worker
@@ -110,7 +124,12 @@ def _seed_invoice(
     provider: str = "trc20",
     user_id: int = 1,
 ) -> int:
-    """Insert a minimal invoice and return its id."""
+    """Insert a minimal invoice and return its id.
+
+    No user / plan / lines — for tests that only inspect state +
+    audit rows on transitions that don't touch the grant path
+    (e.g. ``cancel``).
+    """
     now = datetime(2026, 4, 22, 12, 0, 0)
     with Session(engine) as s:
         inv = Invoice(
@@ -124,6 +143,79 @@ def _seed_invoice(
         s.add(inv)
         s.commit()
         return inv.id
+
+
+def _seed_grantable_invoice(
+    engine,
+    *,
+    state: str = INVOICE_STATE_CREATED,
+    provider: str = "trc20",
+    user_data_limit: int | None = None,
+    user_expire_strategy: UserExpireStrategy = UserExpireStrategy.NEVER,
+    plan_data_limit_gb: int | None = 50,
+    plan_duration_days: int | None = 30,
+) -> tuple[int, int, int]:
+    """Insert a User + Plan + Invoice + Line that exercises the full
+    ``apply_manual → apply_invoice_grant`` path.
+
+    Returns ``(invoice_id, user_id, plan_id)`` for the test to refetch
+    via the API or directly via the Session.
+    """
+    now = datetime(2026, 4, 22, 12, 0, 0)
+    with Session(engine) as s:
+        user = User(
+            username="grant-target",
+            key="kgrant",
+            activated=True,
+            enabled=True,
+            removed=False,
+            data_limit=user_data_limit,
+            data_limit_reset_strategy=UserDataUsageResetStrategy.no_reset,
+            expire_strategy=user_expire_strategy,
+            expire_date=None,
+            ip_limit=-1,
+            used_traffic=0,
+            lifetime_used_traffic=0,
+            created_at=now,
+        )
+        s.add(user)
+        s.flush()
+
+        plan = Plan(
+            operator_code="m1",
+            display_name_en="m1",
+            display_name_i18n={},
+            kind=PLAN_KIND_FIXED,
+            data_limit_gb=plan_data_limit_gb,
+            duration_days=plan_duration_days,
+            price_cny_fen=3000,
+            enabled=True,
+            sort_order=0,
+            created_at=now,
+        )
+        s.add(plan)
+        s.flush()
+
+        inv = Invoice(
+            user_id=user.id,
+            total_cny_fen=3000,
+            state=state,
+            provider=provider,
+            created_at=now,
+            expires_at=now + timedelta(minutes=30),
+        )
+        s.add(inv)
+        s.flush()
+        s.add(
+            InvoiceLine(
+                invoice_id=inv.id,
+                plan_id=plan.id,
+                quantity=1,
+                unit_price_fen_at_purchase=3000,
+            )
+        )
+        s.commit()
+        return inv.id, user.id, plan.id
 
 
 # ---------------------------------------------------------------------
@@ -333,27 +425,32 @@ def test_get_invoice_404(client):
 
 
 def test_apply_manual_created_to_applied_chain(client, billing_engine):
-    inv_id = _seed_invoice(billing_engine, state=INVOICE_STATE_CREATED)
+    inv_id, _user_id, _plan_id = _seed_grantable_invoice(
+        billing_engine, state=INVOICE_STATE_CREATED
+    )
     r = client.post(
         f"/api/billing/admin/invoices/{inv_id}/apply_manual",
         json={"note": "VIP granted by operator"},
     )
     assert r.status_code == 200, r.text
     assert r.json()["state"] == INVOICE_STATE_APPLIED
-    # Audit rows record the admin_manual event chain
+    # Audit rows record the admin_manual chain. The ``→ applied`` leg
+    # is now written by ``apply_invoice_grant`` as ``state_applied``
+    # (single source of truth shared with the A.5 scheduler), not the
+    # old endpoint-local ``admin_manual:to_applied``.
     events = client.get(f"/api/billing/admin/invoices/{inv_id}/events").json()
     types = [e["event_type"] for e in events]
     assert any("admin_manual:to_pending" in t for t in types)
     assert any("admin_manual:to_paid" in t for t in types)
-    assert any("admin_manual:to_applied" in t for t in types)
-    # Note is preserved on at least one event
+    assert "state_applied" in types
+    # Note is preserved on at least one admin_manual event
     assert any(e["note"] == "VIP granted by operator" for e in events)
 
 
 def test_apply_manual_from_awaiting_payment_skips_pending(
     client, billing_engine
 ):
-    inv_id = _seed_invoice(
+    inv_id, _user_id, _plan_id = _seed_grantable_invoice(
         billing_engine, state=INVOICE_STATE_AWAITING_PAYMENT
     )
     r = client.post(
@@ -402,7 +499,9 @@ def test_cancel_rejected_on_terminal(client, billing_engine):
 
 
 def test_events_endpoint_returns_chronological(client, billing_engine):
-    inv_id = _seed_invoice(billing_engine, state=INVOICE_STATE_PENDING)
+    inv_id, _user_id, _plan_id = _seed_grantable_invoice(
+        billing_engine, state=INVOICE_STATE_PENDING
+    )
     client.post(
         f"/api/billing/admin/invoices/{inv_id}/apply_manual",
         json={"note": "x"},
@@ -418,3 +517,4 @@ def test_events_endpoint_returns_chronological(client, billing_engine):
 # Silence unused-import lint
 _ = PaymentEvent
 _ = Plan
+_ = InvoiceLine
