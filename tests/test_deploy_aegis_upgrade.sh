@@ -26,10 +26,14 @@
 # replacing the docker / awk / mv stage with `exit 0` once COMPOSE_FILE
 # is printed. We assert the printed COMPOSE_FILE matches expectation.
 #
+# Default candidate paths are overridden via the
+# AEGIS_COMPOSE_CANDIDATES_OVERRIDE env var (colon-separated; provided
+# by scripts/lib/path-detect.sh for testing).
+#
 # Run:   bash tests/test_deploy_aegis_upgrade.sh
 # Pass:  exit 0 + "all tests passed" line.
 #
-# Refs: L-040, PR fix/aegis-upgrade-compose-path
+# Refs: L-040, PR fix/aegis-upgrade-compose-path, SSOT path-detect.sh
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -62,6 +66,10 @@ make_stub() {
   chmod +x "${stub}"
 }
 
+# Export AEGIS_PATH_DETECT_LIB_DIR so the stub (which lives under TMPROOT
+# and therefore has no sibling lib/ dir) finds the SSOT lib in the repo.
+export AEGIS_PATH_DETECT_LIB_DIR="${REPO_ROOT}/scripts/lib"
+
 make_compose_dir() {
   # $1 = dir, $2 = which file ("sqlite" | "prod" | "both" | "none")
   local dir="$1" kind="$2"
@@ -89,13 +97,18 @@ EOF
 
 VARIANT_STUB() {
   # $1 = first-candidate-dir, $2 = second-candidate-dir, $3 = output stub path
+  #
+  # The new SSOT lib (scripts/lib/path-detect.sh) exposes
+  # AEGIS_COMPOSE_CANDIDATES_OVERRIDE (colon-separated) so we no longer
+  # need to patch the script's candidate paths inline. The stub becomes
+  # a thin wrapper that exports the override before sourcing the real
+  # script, then aborts after compose resolution.
   local first="$1" second="$2" out="$3"
-  awk -v first="${first}" -v second="${second}" '
-    /^    "\/opt\/aegis-src\/deploy\/compose"/ { print "    \"" first "\""; next }
-    /^    "\/opt\/aegis\/compose"/             { print "    \"" second "\""; next }
-    /^# Backup \.env/                          { print "echo \"COMPOSE_FILE=${COMPOSE_FILE}\""; print "exit 0"; exit }
-    { print }
-  ' "${SCRIPT}" >"${out}"
+  cat >"${out}" <<EOF
+#!/usr/bin/env bash
+export AEGIS_COMPOSE_CANDIDATES_OVERRIDE="${first}:${second}"
+exec bash "${STUB}" "\$@"
+EOF
   chmod +x "${out}"
 }
 
