@@ -8,6 +8,71 @@
 
 ---
 
+## L-041 | wave-9 production cutover | docker-compose.yml hardcode :latest tag —— production image 不可重现性
+
+**现象**:cutover production v0.4.0 → v0.4.1 后,`docker inspect aegis-panel --format "{{.Config.Image}}"` 显示 `ghcr.io/cantascendia/aegis-panel:latest`,**不是** `:v0.4.1`。SHA 对(da37f2b42cce 是 v0.4.1 build),但 tag 是 `:latest`。
+
+**根因**:`deploy/compose/docker-compose.sqlite.yml` 的 panel service 用 `image: ghcr.io/cantascendia/aegis-panel:latest`(hardcode `:latest`),没用 `${AEGIS_VERSION}` 变量。`.env` 里的 `AEGIS_VERSION=v0.4.1` 没生效到 compose pull/run 阶段。
+
+**为什么是 bug**:
+1. **不可重现性**:回滚时 `aegis-upgrade rollback v0.4.0` 没意义,因为 compose 永远拉 `:latest`
+2. **意外升级**:GH Actions push v0.5.0 → `:latest` tag 自动 update → 下次 panel 重启拉新版,无声升级
+3. **L-040 链反应**:aegis-upgrade.sh 改 .env 的 AEGIS_VERSION 也无效,因为 compose 没读
+
+**防线**:
+1. **修 compose**:`image: ghcr.io/cantascendia/aegis-panel:${AEGIS_VERSION:-latest}`(env 变量驱动,fallback 仍 :latest)
+2. **修 GH Actions**:tag push 触发只 push 该 tag,**不**同时 push :latest(避免无声升级)
+3. **加 production check**:aegis-watchdog.sh 加一条 — image tag 不应是 :latest(否则告警)
+
+**沉淀**: 未转 rule(单次发现,fix 在本批次 LESSONS PR 之后另起 PR 跟踪)。下次 wave 时观察是否复发。
+
+---
+
+## L-040 | wave-9 production cutover | aegis-upgrade.sh compose 路径 hardcode 错位
+
+**现象**:nilou.cc cutover v0.4.0 → v0.4.1 时执行 `aegis-upgrade v0.4.1` 报:
+```
+[upgrade] FATAL: no compose file found under /opt/aegis/compose
+```
+被迫绕过自动化,手动跑 `docker compose -f /opt/aegis-src/deploy/compose/docker-compose.sqlite.yml pull panel && up -d`。
+
+**根因**:`scripts/aegis-upgrade.sh` 在 PR #160 (v0.3.6) 设计时假设 compose 文件在 `/opt/aegis/compose/`,但 `deploy/install/install.sh` 实际把仓库 clone 到 `/opt/aegis-src/`,compose 文件路径是 `/opt/aegis-src/deploy/compose/`。两个脚本对"compose 在哪"假设不一致 → cutover 工具链断了。
+
+**为什么 wave-3-7 没发现**:
+- wave-1 cutover 是 manual 跑(install + 手动 pull 第一次 fork image)
+- wave-3-7 没真做过 image tag 切换(L-035-037 都是改 marznode v0.5.7,不动 panel image)
+- wave-9 是**第一次** panel image tag 切换 (v0.4.0 → v0.4.1) 的 production cutover → bug surface
+
+**防线**:
+1. **修 aegis-upgrade.sh**:扫描多个候选路径 `/opt/aegis/compose` / `/opt/aegis-src/deploy/compose` / 用 systemd unit 读 compose 路径
+2. **加 staging-smoke 覆盖**:`scripts/aegis-staging-smoke.sh` 加一段 cutover dry-run,在本地 docker-compose 测 aegis-upgrade.sh 是否能找到文件
+3. **install.sh + aegis-upgrade.sh 共享 SSOT**:一个 `scripts/lib/path-detect.sh` 统一 export `COMPOSE_PATH` env,两边 source 它
+
+**沉淀**: ✅ fix PR 跟本批次 LESSONS 同时进行(下个 PR 修 aegis-upgrade.sh)。
+
+---
+
+## L-039 | wave-9 trc20 dashboard checkout | LAUNCH-week2 文档超前于 v0.4.0 ship 状态(documentation drift)
+
+**现象**:operator 按 `docs/ai-cto/LAUNCH-week2-trc20-only.md` Phase 4.2 跑 `POST /api/billing/cart/checkout`(channel_code=trc20),返 **404 "payment channel 'trc20' not found"**。文档说"周末上线",但代码根本没 trc20 fallback path。
+
+**根因**(详见 PR #186 commit f2b46737):
+1. `ops/billing/checkout_endpoint.py:96` 强制查 `PaymentChannel` 表 — 但 `db.py:PaymentChannel` docstring 明说 "TRC20 is NOT represented here, it's a singleton via env vars"
+2. `:175` hardcode `provider=f"epay:{channel_code}"` — 即使 channel 存在,trc20 invoice 也被打成 epay prefix
+3. `:152` 强制 `BILLING_PUBLIC_BASE_URL`(EPay 码商 webhook 才用)— trc20 不该卡这步
+4. **TRC20 在 v0.4.0 的 ship 状态 = "数据面已 ready,接入面没接通"**
+
+文档(`LAUNCH-week2-trc20-only.md`)写得像"产品级 ready",实际是"代码级 spec",没区分。**operator 按文档跑必踩 404**。
+
+**防线**:
+1. **文档前置 disclaimer**:LAUNCH 类文档顶部必须写 "**最低代码版本要求** v0.X.Y 之后",且与 git tag 联动
+2. **真机 staging 验证**:LAUNCH 类 checklist 上线前必须由非 author 真机跑一次,verify 每条 curl 真返 200(目前缺 staging-smoke 覆盖 launch checklist)
+3. **add 005-trc20-hot-fix-roundtrip.yaml regression**(已在 PR #189 ship,防 fallback 退化)
+
+**沉淀**: ✅ PR #186 hot-fix 修代码 + PR #189 regression yaml 防退。文档 disclaimer 落地是 follow-up(LAUNCH-week2 加版本要求)。
+
+---
+
 ## L-037 | Round 3 mid late-8 wave-5 | RPC 一直在工作；误导的诊断 endpoint 让我们 wave-2/3/4 都误判
 
 **结论**：panel↔marznode 增量 SyncUsers 流式 RPC **从 wave-4 开始就完全工作**。我们 wave-2/3/4 全部"看 xray_config.json file 没新增用户 → 推断 RPC 失败"的诊断方法**错了**。
