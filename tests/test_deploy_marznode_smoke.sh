@@ -197,11 +197,14 @@ pass "argument validation correctly accepts/rejects each flag combo"
 # ---------------------------------------------------------------------------
 # 6. compose file references the env vars install-node.sh writes.
 # ---------------------------------------------------------------------------
-echo "[smoke] T6: docker-compose.yml references AEGIS_VERSION + GRPC_PORT + NODE_NAME"
+echo "[smoke] T6: docker-compose.yml references MARZNODE_VERSION + GRPC_PORT + NODE_NAME"
 [[ -r "${COMPOSE_YML}" ]] || fail "docker-compose.yml not readable"
-grep -q 'AEGIS_VERSION' "${COMPOSE_YML}" || fail "compose missing AEGIS_VERSION reference"
-grep -q 'GRPC_PORT'     "${COMPOSE_YML}" || fail "compose missing GRPC_PORT reference"
-grep -q 'NODE_NAME'     "${COMPOSE_YML}" || fail "compose missing NODE_NAME reference"
+# L-035 wave-4 (commit 5d020b1) decoupled marznode image tag from AEGIS_VERSION:
+# the compose now uses ${MARZNODE_VERSION} (independent pin, default v0.5.7)
+# because panel and marznode follow different release cadences.
+grep -q 'MARZNODE_VERSION' "${COMPOSE_YML}" || fail "compose missing MARZNODE_VERSION reference"
+grep -q 'GRPC_PORT'        "${COMPOSE_YML}" || fail "compose missing GRPC_PORT reference"
+grep -q 'NODE_NAME'        "${COMPOSE_YML}" || fail "compose missing NODE_NAME reference"
 pass "compose references the rendered env vars"
 
 # ---------------------------------------------------------------------------
