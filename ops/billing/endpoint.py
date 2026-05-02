@@ -36,7 +36,6 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.dependencies import DBDep, SudoAdminDep
 from ops.billing.db import (
-    INVOICE_STATE_APPLIED,
     INVOICE_STATE_AWAITING_PAYMENT,
     INVOICE_STATE_CANCELLED,
     INVOICE_STATE_CREATED,
@@ -335,20 +334,41 @@ def apply_manual(
     db: DBDep,
     admin: SudoAdminDep,
 ) -> Invoice:
-    """Emergency bypass of normal payment flow. Transitions the
-    invoice through paid → applied in one admin action.
+    """Emergency bypass of normal payment flow.
 
-    Note: this sets the invoice state to ``applied`` and writes
-    audit rows, but does NOT mutate ``User.data_limit`` /
-    ``User.expire_date`` — that user-side grant application is
-    A.5 scheduler's job. When A.5 lands, it picks up any
-    ``state=paid`` rows; the admin bypass uses the same state
-    machine so it'll be consistent.
+    Transitions the invoice through ``paid`` and then calls
+    :func:`ops.billing.scheduler.apply_invoice_grant` to mutate
+    ``User.data_limit`` / ``User.expire_date`` and land
+    ``state=applied`` in one synchronous request — the admin doesn't
+    have to wait for the A.5 scheduler tick (~30s) for the user to
+    actually receive their grant.
 
-    Until A.5 lands, the ``applied`` state is effectively
-    audit-only; admins must still manually edit user quota if
-    immediate access is required.
+    This mirrors the scheduler's own ``apply_paid_invoices`` path, so
+    EPay-webhook / TRC20-poller / admin-manual all converge on a
+    single grant-application code path. Channel-agnostic by design;
+    do not branch on ``invoice.provider`` here.
+
+    Audit rows written (in order):
+    - ``admin_manual:to_pending`` (if invoice was ``created``)
+    - ``admin_manual:to_paid``    (the admin override leg)
+    - ``state_applied``           (written by ``apply_invoice_grant``;
+      payload includes user_id + before/after data_limit/expire deltas)
+
+    Failure modes:
+    - 409 when invoice is already terminal (``applied``, ``cancelled``,
+      ``expired``, ``failed``).
+    - 409 when the grant cannot be applied (user hard-deleted, plan
+      removed, cart no longer valid). The invoice remains in
+      ``paid`` for operator follow-up; ``apply_paid_invoices``
+      scheduler will continue retrying on each tick if the
+      underlying state is fixable, otherwise an operator must cancel
+      and refund.
     """
+    # Local import to avoid an endpoint↔scheduler import cycle at
+    # module load (scheduler imports trc20_poller which imports the
+    # FastAPI router lifespan code path).
+    from ops.billing.scheduler import ApplierSkip, apply_invoice_grant
+
     invoice = _require_invoice(db, invoice_id)
     if is_terminal(invoice.state):
         raise HTTPException(
@@ -360,10 +380,10 @@ def apply_manual(
         )
 
     try:
-        # Route: <any non-terminal> → paid → applied. The state
-        # machine allows pending→paid as an admin emergency path
-        # (see ops.billing.states.ALLOWED_TRANSITIONS). For
-        # created/awaiting_payment we hop through pending first.
+        # Route: <any non-terminal> → paid → (apply grant) → applied.
+        # The state machine allows pending→paid as an admin emergency
+        # path (see ops.billing.states.ALLOWED_TRANSITIONS). For
+        # ``created`` we hop through ``pending`` first.
         if invoice.state == INVOICE_STATE_CREATED:
             transition(
                 db,
@@ -385,18 +405,33 @@ def apply_manual(
                 payload={"admin_username": admin.username},
                 note=body.note,
             )
-        if invoice.state == INVOICE_STATE_PAID:
-            transition(
-                db,
-                invoice,
-                INVOICE_STATE_APPLIED,
-                event_type="admin_manual:to_applied",
-                payload={"admin_username": admin.username},
-                note=body.note,
+        # invoice.state should now be ``paid``; defensive guard so a
+        # future state-machine change that diverts the path produces
+        # a clear 409 instead of a confusing helper-internal error.
+        if invoice.state != INVOICE_STATE_PAID:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"invoice in unexpected state {invoice.state!r} "
+                    "after admin_manual transition chain; cannot apply"
+                ),
             )
+
+        # Single source of truth for the grant + paid→applied flip.
+        # Same helper the A.5 scheduler uses for paid invoices.
+        apply_invoice_grant(db, invoice, now=None)
     except InvoiceStateError as e:
         db.rollback()
         raise HTTPException(status_code=409, detail=str(e)) from e
+    except ApplierSkip as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"cannot apply grant for invoice {invoice_id}: "
+                f"{e.reason}: {e}"
+            ),
+        ) from e
 
     db.commit()
     db.refresh(invoice)

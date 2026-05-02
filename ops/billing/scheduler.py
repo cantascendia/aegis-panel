@@ -60,6 +60,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -214,7 +215,7 @@ def _apply_paid_invoices_inner(db: Session, *, now=None) -> int:
     applied_count = 0
     for invoice in candidates:
         try:
-            _apply_one_invoice(db, invoice, now=now)
+            apply_invoice_grant(db, invoice, now=now)
             db.commit()
             applied_count += 1
         except InvoiceStateError as exc:
@@ -224,7 +225,7 @@ def _apply_paid_invoices_inner(db: Session, *, now=None) -> int:
                 invoice.id,
                 exc.reason,
             )
-        except _ApplierSkip as exc:
+        except ApplierSkip as exc:
             db.rollback()
             logger.warning(
                 "applier: invoice %s skipped (%s): %s",
@@ -241,13 +242,17 @@ def _apply_paid_invoices_inner(db: Session, *, now=None) -> int:
     return applied_count
 
 
-class _ApplierSkip(RuntimeError):
+class ApplierSkip(RuntimeError):
     """Raised when an individual invoice can't be applied for a
     business reason (e.g. user deleted, plan removed). Caller logs +
     rolls back; the invoice stays in ``paid`` for an operator to
     investigate via the audit log.
 
     Carries ``.reason`` for log-grep ergonomics.
+
+    Public (was ``_ApplierSkip``): ``apply_invoice_grant`` is now also
+    called from the admin ``apply_manual`` endpoint, which needs to
+    catch this to translate into an HTTP 409.
     """
 
     def __init__(self, reason: str, message: str) -> None:
@@ -255,20 +260,44 @@ class _ApplierSkip(RuntimeError):
         self.reason = reason
 
 
-def _apply_one_invoice(db: Session, invoice: Invoice, *, now) -> None:
-    """Apply one invoice's grant to its user, then transition to
+# Backwards-compat alias for any callers (tests, ad-hoc scripts) that
+# imported the private name from before A.5 → apply_manual integration.
+_ApplierSkip = ApplierSkip
+
+
+def apply_invoice_grant(
+    db: Session, invoice: Invoice, *, now: datetime | None = None
+) -> None:
+    """Apply one paid invoice's grant to its user, then transition to
     ``applied``. Caller owns commit/rollback.
 
+    This is the **single source of truth** for "paid invoice → user
+    quota mutation + state=applied". Used by:
+
+    - ``_apply_paid_invoices_inner`` — the A.5 scheduler tick
+      (``state=paid`` → grant → ``state=applied``).
+    - ``apply_manual`` admin endpoint — synchronous emergency flow
+      after the admin has just transitioned ``→ paid``.
+
+    Channel-agnostic: only the ``paid → applied`` leg lives here, so
+    EPay (webhook → paid) and TRC20 (poller → paid) and admin manual
+    all share one code path. Don't add channel-specific branches.
+
+    Pre-condition: ``invoice.state == 'paid'``. Caller is responsible
+    for getting it there via :func:`ops.billing.states.transition`.
+
     Raises:
-        _ApplierSkip: business-level skip reasons (user gone, plan
-            gone). The invoice remains in ``paid`` for operator
-            attention.
-        InvoiceStateError: state changed under us mid-flight (race).
+        ApplierSkip: business-level skip reasons (user gone, plan
+            gone, cart no longer valid). The invoice remains in
+            ``paid`` for operator attention.
+        InvoiceStateError: state changed under us mid-flight (race),
+            or pre-condition violated (caller passed a non-paid row).
     """
+    now = now or _now_utc_naive()
     # Resolve user.
     user = db.query(User).filter(User.id == invoice.user_id).one_or_none()
     if user is None:
-        raise _ApplierSkip(
+        raise ApplierSkip(
             "user_missing",
             f"Invoice {invoice.id} references user {invoice.user_id} "
             f"which is missing. Did the admin hard-delete?",
@@ -279,7 +308,7 @@ def _apply_one_invoice(db: Session, invoice: Invoice, *, now) -> None:
     # pricing.py keeps pricing.py I/O-free.
     line_rows: list[InvoiceLine] = list(invoice.lines)
     if not line_rows:
-        raise _ApplierSkip(
+        raise ApplierSkip(
             "no_lines",
             f"Invoice {invoice.id} has no lines; cannot derive grant",
         )
@@ -289,7 +318,7 @@ def _apply_one_invoice(db: Session, invoice: Invoice, *, now) -> None:
     plans = {p.id: p for p in plans_rows}
     missing = plan_ids - plans.keys()
     if missing:
-        raise _ApplierSkip(
+        raise ApplierSkip(
             "plan_missing",
             f"Invoice {invoice.id} references plans {sorted(missing)} "
             f"that no longer exist; operator must reissue or refund",
@@ -302,7 +331,7 @@ def _apply_one_invoice(db: Session, invoice: Invoice, *, now) -> None:
     try:
         grant = compute_user_grant(cart_lines, plans)
     except InvalidCart as exc:
-        raise _ApplierSkip(
+        raise ApplierSkip(
             f"invalid_cart:{exc.reason}",
             f"Invoice {invoice.id} cart no longer valid: {exc}",
         ) from exc
@@ -441,6 +470,8 @@ def install_billing_scheduler(app: FastAPI) -> None:
 __all__ = [
     "BILLING_APPLY_INTERVAL",
     "BILLING_REAP_INTERVAL",
+    "ApplierSkip",
+    "apply_invoice_grant",
     "install_billing_scheduler",
     "run_apply_paid_invoices",
     "run_reap_expired_invoices",
