@@ -442,37 +442,51 @@ def apply_manual(
         db.rollback()
         raise HTTPException(status_code=409, detail=str(e)) from e
 
-    # Commit the ``→ paid`` leg BEFORE attempting the grant. Rationale:
-    # the operator has manually confirmed the payment was received;
-    # if grant application later fails (user deleted, plan removed,
-    # bad cart), we don't want that failure to roll back the verified
-    # payment record. The invoice stays in ``paid`` and the A.5
-    # scheduler retries on each tick once the underlying issue is
-    # fixed. Reaper ignores ``paid`` rows so this can't auto-expire.
-    db.commit()
-    db.refresh(invoice)
-
+    # Apply the grant inside a SAVEPOINT (nested transaction) so:
+    #   1. The row-level FOR UPDATE lock acquired above is held all
+    #      the way through grant application — no other apply_manual
+    #      call or A.5 scheduler tick can claim the same row in the
+    #      gap between ``→ paid`` and ``→ applied`` (codex R2 P1).
+    #   2. A grant failure (ApplierSkip: user deleted, plan removed,
+    #      cart invalid) only rolls back the SAVEPOINT; the outer
+    #      ``→ paid`` transition + audit row are still committed
+    #      below. The invoice lands in ``paid`` for scheduler retry.
+    #
+    # SQLAlchemy's ``begin_nested`` opens a SAVEPOINT on the current
+    # transaction. ``except`` releases / rolls back the savepoint
+    # only; the outer transaction (and our row lock) survive.
+    grant_failed: tuple[str, str] | None = None  # (reason, str(exc))
     try:
-        # Single source of truth for the grant + paid→applied flip.
-        # Same helper the A.5 scheduler uses for paid invoices.
-        apply_invoice_grant(db, invoice, now=None)
-        db.commit()
+        with db.begin_nested():
+            # Single source of truth for the grant + paid→applied
+            # flip. Same helper the A.5 scheduler uses for paid
+            # invoices.
+            apply_invoice_grant(db, invoice, now=None)
     except InvoiceStateError as e:
         db.rollback()
         raise HTTPException(status_code=409, detail=str(e)) from e
     except ApplierSkip as e:
-        db.rollback()
+        # SAVEPOINT already rolled back by the context manager; the
+        # outer ``→ paid`` transition + admin_manual:to_paid event
+        # are still pending in the outer transaction. Commit them so
+        # the operator's payment confirmation survives.
+        grant_failed = (e.reason, str(e))
+
+    db.commit()
+    db.refresh(invoice)
+
+    if grant_failed is not None:
+        reason, message = grant_failed
         raise HTTPException(
             status_code=409,
             detail=(
                 f"invoice {invoice_id} marked paid but grant could not "
-                f"be applied ({e.reason}): {e}. Invoice remains in "
-                "'paid' state; A.5 scheduler will retry once the "
+                f"be applied ({reason}): {message}. Invoice remains "
+                "in 'paid' state; A.5 scheduler will retry once the "
                 "underlying issue is resolved."
             ),
-        ) from e
+        )
 
-    db.refresh(invoice)
     return invoice
 
 
