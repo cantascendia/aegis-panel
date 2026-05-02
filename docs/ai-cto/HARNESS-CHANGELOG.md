@@ -7,6 +7,48 @@
 
 ---
 
+## 2026-05-02 — Wave-9 R4: P0 production bug fix + Phase A.2 闭环(harness 99 持平)
+
+**2 PR ship**(自 R3 之后):
+
+| PR | 主题 |
+|---|---|
+| #200 | fix(billing): apply_manual triggers grant (P0 production bug)|
+| #201 | docs(lessons): L-043 docstring "Until X lands" drift |
+
+**Hot-fix 战果**:
+- apply_invoice_grant helper extracted(scheduler + endpoint 共用 = 防 docstring drift L-043)
+- apply_manual 现在:transition→paid + apply_invoice_grant + transition→applied(同步,SAVEPOINT + FOR UPDATE lock)
+- Codex 4 轮 review 抓 **3 P1 race conditions**:
+  - concurrent double-grant via stale state
+  - commit released FOR UPDATE lock between to_paid and grant
+  - scheduler still lock-free on paid rows
+- + 1 P2(failed grant rollback to_paid)
+- 5 个新测试(grant immediate / event payload / 409 terminal / 409 failed leaves paid / double-call exactly-once)
+- 105 billing 测试全 pass
+
+**Production validation (Phase A.2 完整闭环)**:
+- v0.4.2 cutover(SHA e76d5a5d96d7)
+- Backfill stranded invoice id=2 → user nilou_trial01:
+  - data_limit: 53.7 GB → 150 GB(+100 GB ✓)
+  - expire: 2026-05-04 → 2026-06-03(+30 天 ✓)
+- 全链路: cart/checkout(PR #186)+ apply_manual(PR #200)+ grant(PR #200 helper)三段通
+
+**LESSONS 沉淀**:
+- L-043 (PR #201): docstring "Until X lands" = documentation drift 高发点。L-043 + L-039 配对防 docs drift 双向。
+
+**Audit re-run**:**99/100 持平**(R4 是 hot-fix 不是 harness 改进,不加分);剩 1 分仍是 CONSTITUTION SEALED(用户双签)
+
+**§48 Codex 累计救生产 P-flag(本会话):27+ 真 bug**:
+- 6 P1 (production critical) — payment / migration / SSH / billing race
+- 18+ P2 / 3 P3
+
+**Production state (2026-05-02 wave-9 R4)**:
+- nilou.cc v0.4.2 alive,5 active users,Phase A.2 完整闭环验证
+- 代码 + 数据 + 流程三层均验证通过,**真 production-ready**
+
+---
+
 ## 2026-05-02 — Wave-9 R3: enforce switch + SSOT + recovery hardening (健康分 95 → **99**)
 
 **8 PR 集中收口**(自上次 wave-3..9 sync 之后):

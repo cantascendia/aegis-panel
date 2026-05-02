@@ -7,6 +7,32 @@
 
 ## 当前轮次
 
+**wave-9 R4 追加同步**(2026-05-02,**Phase A.2 完整闭环 + apply_manual P0 fix + L-043 沉淀**):
+
+- **PR #200 hot-fix** apply_manual triggers grant (commit `c89d1c5` → tag `v0.4.2`):
+  - 抽 `apply_invoice_grant` helper(scheduler + endpoint 共用)
+  - apply_manual 真应用 grant + 加 SAVEPOINT + FOR UPDATE lock(防 race)
+  - codex 4 轮抓 3 P1 race conditions(double-grant / lock release / scheduler lock-free)+ 1 P2
+  - 5 个新测试 + 105 billing 测试全 pass
+- **production cutover v0.4.2**(operator backfill stranded invoice id=2 → user nilou_trial01 grant 应用)
+- **PR #201 L-043 LESSONS**:docstring "Until X lands" 模式 = documentation drift 高发点。L-043 + L-039 配对(docs drift 双向防御)
+- **Phase A.2 完整闭环验证**:
+  - 用户 nilou_trial01 实测 data_limit 53.7→150 GB,expire 5/4→6/3
+  - 全链路 cart/checkout(PR #186)+ apply_manual(PR #200)+ grant 应用(PR #200 helper)三段通
+
+**§48 codex 累计救生产 P-flag(本会话)**:6 P1 + 18+ P2 + 3 P3 = 27+ 真 bug ship 前抓
+- payment / migration / SSH / billing race 全是真砸钱面
+
+**Production state (2026-05-02 wave-9 R4)**:
+- nilou.cc:image v0.4.2(SHA `e76d5a5d96d7`),panel healthy
+- 5 active users(4 admin + 1 trial nilou_trial01 with full m1 grant)
+- TRC20 invoice id=2 applied + grant backfilled
+- Deploy Smoke ✅ green / eval-gate ENFORCE / harness 99/100
+
+**真 production-ready 时刻**:代码 + 数据 + 流程三层均验证通过,可邀真客户。
+
+---
+
 **wave-9 追加同步**(2026-05-02,**production cutover v0.4.1 + TRC20 hot-fix + harness 95/100**):
 
 - **PR #186 hot-fix** TRC20 dashboard checkout 404(commit `f2b4673` → tag `v0.4.1`):checkout_endpoint.py trc20 fallback 分支 + schemas.py 扩 3 optional TRC20 字段 + 6 个新测试。Codex cross-review 3 轮 clean

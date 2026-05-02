@@ -41,6 +41,12 @@ _Updated: 2026-04-29 late-7 wave-3 post-harness-audit(S-O batch 刷新:harness 7
 
 ---
 
+## Wave-9 进度(production cutover & Phase A.2 闭环)
+
+- **wave-9 R4(Phase A.2 完整闭环 + production v0.4.2)**:operator self-test 触发 P0 bug discovery (apply_manual 不真应用 grant) → hot-fix PR #200(codex 4 轮 3 P1)→ v0.4.2 cutover + backfill → user nilou_trial01 grant 应用成功 → 链路三段通 → 真 production-ready
+
+---
+
 ## 每个会话的 Charter
 
 ### S-B — 商业化后端
