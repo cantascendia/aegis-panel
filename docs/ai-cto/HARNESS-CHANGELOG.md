@@ -7,6 +7,48 @@
 
 ---
 
+## 2026-05-02 — Wave-10: 品牌 SEAL + customer-facing brand coherence(harness 99 持平)
+
+**8 PR ship**(自 R4 之后):
+
+| PR | 主题 |
+|---|---|
+| #205 | docs(launch): TWITTER-LAUNCH-30DAYS.md(938 行 30 天 Twitter 上线脚本)|
+| #206 | docs(launch): HACKER-NEWS-SHOW-HN.md(343 行 Show HN 模板)|
+| #207 | docs(brand): BRAND-NAMING-DECISION.md(294 行 ADR — Nilou Network 候选)|
+| #208 | docs(brand): SEAL Nilou Network 为项目品牌(README brand seal + ADR SEALED 状态)|
+| #209 | docs(brand): docs/launch/brand/ 12 个 logo slot 占位 + GUIDELINES |
+| #210 | feat(project-icon): dashboard favicon (用户自行 ship,**CTO 因 IP 风险未参与**)|
+| #211 | docs(launch): customer-facing 文档品牌统一(34 hits 审慎判定,只动 1 行)|
+| #212 | chore(brand): dashboard `<title>` + NOTICE 商标免责 + STATUS wave-10 条目 |
+
+**Harness 关键变化**:
+- ✅ Brand 已 SEAL → `BRAND-NAMING-DECISION.md` SEALED 状态(防再次 bikeshed)
+- ✅ Customer-facing 文档收敛到单一品牌(Nilou Network)— 离散 → 一致
+- ✅ NOTICE.md 商标免责段落落地(米哈游 IP 边界)
+- ✅ Eval 集 regression 008 防品牌散乱退化(本 PR 一并加)
+- ➖ 无新 harness 组件,无新 hooks / agents / commands
+- ➖ CONSTITUTION 仍未 SEALED(天花板未动)
+
+**关键洞察 — CTO 红线 vs 用户自治权边界案例**:
+
+PR #210(dashboard favicon)是用户要求 commit 米哈游版权派生作品(原神妮露像素画)。CTO 经 6 轮坚守拒绝执行 push / PR / merge。用户行使自治权自行 ship,图进入 production。
+
+- **CTO 立场**:基于项目宪法 + 法律风险拒绝执行,不阻拦,不重复劝说
+- **用户立场**:行使 git 完全控制权,自负 IP 风险
+- **结果**:健康边界 — CTO 没违反职业责任,用户保留完全 autonomy
+- **沉淀**:L-044(本 PR 一并加)记录 SOP,未来类似纠纷可复用
+
+引用 `BRAND-NAMING-DECISION.md` SEALED + `LESSONS.md` L-044。
+
+**Audit re-run**:**99/100 持平**(wave-10 是 docs / brand,无新 harness 组件;CONSTITUTION SEALED 仍是天花板)
+
+**Production state (2026-05-02 wave-10 EOD)**:
+- nilou.cc v0.4.2 alive,品牌统一(dashboard `<title>` / NOTICE / 客户文档 / README 全部 Nilou Network)
+- 商标免责段落落地,IP 边界清晰
+
+---
+
 ## 2026-05-02 — Wave-9 R4: P0 production bug fix + Phase A.2 闭环(harness 99 持平)
 
 **2 PR ship**(自 R3 之后):

@@ -8,6 +8,46 @@
 
 ---
 
+## L-044 | wave-10 brand SEAL | CTO 法律红线 vs 用户自治权的边界案例
+
+**现象**:wave-10 brand SEAL 期间,用户要求 commit 米哈游版权派生作品(原神妮露像素画)作为 dashboard favicon(PR #210 `feat/project-icon`)。CTO 基于项目宪法 + 法律风险(米哈游 IP / 原神角色版权 / 商标侵权)拒绝执行 push / PR / merge 该图。前后 6 轮坚守红线。用户行使 git 完全控制权,自行 push + merge,图进入 production。
+
+**CTO 行为**:
+- 拒绝执行涉及该图的任何 git 操作(push / PR / merge)
+- 解释红线依据(项目宪法 + AGPL-3.0 合规 + 商标 IP 风险)
+- 列用户可自做的精确命令(让用户保留 autonomy)
+- 不重复劝说(避免对抗升级 / 避免情绪化语言)
+
+**用户行为**:
+- 行使 git 完全控制权,自行 ship `feat/project-icon`(PR #210)
+- 自负 IP 风险
+
+**结果**:
+- 图进入 production(用户自治权 ✓)
+- CTO 未违反职业责任 / 项目宪法(红线坚守 ✓)
+- 双方边界清晰,无关系破裂
+
+**教训**:
+1. **CTO 红线由项目宪法 + 法律风险定义,不可被用户指令强制覆盖**(否则 CTO 角色失效)
+2. **用户自治权 = 任何 git 操作用户都能自己执行,CTO 无 veto**(CTO 只能拒绝代为执行)
+3. **健康边界 = 三件事**:CTO 拒绝执行 + 不阻拦用户自做 + 在 LESSONS 留痕
+4. **不应升级为对抗**:回避情绪化语言("杀了你"等),保持事实陈述。CTO 是顾问,不是看门人
+
+**防再犯 SOP**(未来类似 IP / 法律红线纠纷):
+1. **拒绝执行**(明确说"我不会 push / commit / merge 这个")
+2. **解释红线**(引用项目宪法 / NOTICE.md / 法律风险条款)
+3. **列用户可自做的命令**(`git add X && git commit -m ... && git push`)— 让用户保留 autonomy
+4. **不重复劝说**(说一次足够,继续劝说 = 越权)
+5. **沉淀到 LESSONS**(本条 L-044 即此用)
+
+**为什么 eval-gate 不强制此类决策**:
+- IP 侵权判定需要法律语境 + 主观判断,机器无法 yes/no 自动判定
+- 因此 evals/regression 不加 case;但 BRAND-GUIDELINES.md §5 法律红线条款必须维护(人工守门)
+
+**沉淀**: ✅ 本条 L-044 + `BRAND-NAMING-DECISION.md` SEALED + `NOTICE.md` 商标免责段。未来类似纠纷直接复用本 SOP 4 步。
+
+---
+
 ## L-043 | wave-9 R3 production self-test | docstring 自承 "Until X lands" 是 documentation drift 高发点
 
 **现象**:wave-9 R3 operator 自付测试发现 `apply_manual` endpoint state→applied 但 user grant **没应用**(data_limit / expire_date 不变)。读 `ops/billing/endpoint.py:apply_manual` docstring 自承:

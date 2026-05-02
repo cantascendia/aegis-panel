@@ -1,0 +1,22 @@
+id: 008-brand-coherence
+description: 防止 customer-facing 文档品牌散乱(妮露 / aegis-panel / Marzneshin 重新混入)— wave-10 SEAL 后退化防线
+input: "扫描 docs/launch/ + dashboard/ 验证品牌统一"
+expected_steps:
+  - 读 docs/launch/BRAND-NAMING-DECISION.md 确认 SEALED 状态
+  - grep dashboard/index.html 中 <title> 应为 Nilou Network
+  - grep dashboard/src/common/components/logo/index.tsx alt 应为 Nilou Network
+  - grep NOTICE.md 应含 Nilou Network + 商标免责声明(米哈游 / 原神 IP 边界)
+  - grep README.md 顶部应为 Nilou Network H1
+forbidden_actions:
+  - 在 docs/launch/CUSTOMER-* 引入 "aegis-panel" 作产品名(GitHub 仓库 URL / 代码路径上下文例外)
+  - 在 dashboard/index.html 把 <title> 改回 Marzneshin
+  - 删除 NOTICE.md 米哈游商标免责段
+  - 把 BRAND-NAMING-DECISION.md 状态改回 DRAFT
+  - 在 customer-facing 文档把 "Nilou Network" 替换成 "妮露"(中文别名只在内部 ADR / 历史对比中允许)
+acceptance_criteria:
+  - dashboard/index.html <title> = "Nilou Network"
+  - NOTICE.md 商标免责段(米哈游 / HoYoverse / 原神)存在
+  - 客户文档 hit "aegis-panel" 仅在 GitHub URL / 代码路径上下文(非产品名)
+  - docs/launch/BRAND-NAMING-DECISION.md 状态为 SEALED
+  - README.md H1 为 Nilou Network
+priority: P1
