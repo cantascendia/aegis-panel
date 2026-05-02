@@ -17,15 +17,56 @@ IFS=$'\n\t'
 
 NEW_VERSION="${1:?usage: aegis-upgrade vX.Y.Z}"
 ENV_FILE="${AEGIS_ENV_FILE:-/opt/aegis/.env}"
-COMPOSE_DIR="${AEGIS_COMPOSE_DIR:-/opt/aegis/compose}"
 
-# Auto-detect compose file: prefer sqlite (S1), fall back to prod (S2).
-if [[ -f "${COMPOSE_DIR}/docker-compose.sqlite.yml" ]]; then
-  COMPOSE_FILE="${COMPOSE_DIR}/docker-compose.sqlite.yml"
-elif [[ -f "${COMPOSE_DIR}/docker-compose.prod.yml" ]]; then
-  COMPOSE_FILE="${COMPOSE_DIR}/docker-compose.prod.yml"
+# Compose dir resolution (L-040, wave-9 cutover fix).
+#
+# install.sh (deploy/install/install.sh L405-409) runs compose from the
+# cloned repo at ${REPO_ROOT}/deploy/compose/, where REPO_ROOT defaults
+# to /opt/aegis-src/ on installer-managed VPS. Earlier versions of this
+# script hardcoded /opt/aegis/compose/, which never exists on a fresh
+# install — wave-9 v0.4.0→v0.4.1 production cutover hit
+#   "[upgrade] FATAL: no compose file found under /opt/aegis/compose"
+# and forced manual fallback. We now scan ordered candidates and
+# fail-loud (exit 2) when none match.
+#
+# Operator override: set AEGIS_COMPOSE_DIR=/path/to/compose to skip
+# autodetect. The override path is checked first; if it has no
+# docker-compose*.yml inside, we still fail-loud rather than silently
+# trying the next candidate (so a typo'd override surfaces immediately).
+#
+# SSOT cleanup (single shared path-detect lib for install.sh +
+# aegis-upgrade.sh) is tracked as a follow-up; this PR is the minimal
+# scope fix.
+declare -a COMPOSE_CANDIDATES
+if [[ -n "${AEGIS_COMPOSE_DIR:-}" ]]; then
+  COMPOSE_CANDIDATES=("${AEGIS_COMPOSE_DIR}")
 else
-  echo "[upgrade] FATAL: no compose file found under ${COMPOSE_DIR}" >&2
+  COMPOSE_CANDIDATES=(
+    "/opt/aegis-src/deploy/compose"   # installer-managed (install.sh default)
+    "/opt/aegis/compose"              # legacy / pre-PR layout
+  )
+fi
+
+COMPOSE_DIR=""
+COMPOSE_FILE=""
+for candidate in "${COMPOSE_CANDIDATES[@]}"; do
+  if [[ -f "${candidate}/docker-compose.sqlite.yml" ]]; then
+    COMPOSE_DIR="${candidate}"
+    COMPOSE_FILE="${candidate}/docker-compose.sqlite.yml"
+    break
+  elif [[ -f "${candidate}/docker-compose.prod.yml" ]]; then
+    COMPOSE_DIR="${candidate}"
+    COMPOSE_FILE="${candidate}/docker-compose.prod.yml"
+    break
+  fi
+done
+
+if [[ -z "${COMPOSE_FILE}" ]]; then
+  echo "[upgrade] FATAL: no docker-compose*.yml found under any of:" >&2
+  for candidate in "${COMPOSE_CANDIDATES[@]}"; do
+    echo "[upgrade]   - ${candidate}" >&2
+  done
+  echo "[upgrade] hint: set AEGIS_COMPOSE_DIR=/path/to/compose to override" >&2
   exit 2
 fi
 
