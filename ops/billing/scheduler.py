@@ -65,6 +65,7 @@ from typing import TYPE_CHECKING
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from decouple import config
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import GetDB
@@ -204,8 +205,11 @@ def _apply_paid_invoices_inner(db: Session, *, now=None) -> int:
     number of invoices successfully applied."""
     now = now or _now_utc_naive()
 
-    candidates = (
-        db.query(Invoice)
+    # Identify candidate IDs first (cheap, lock-free). We lock each
+    # row individually inside the loop so a long-running grant
+    # application doesn't hold a lock across the whole batch.
+    candidate_ids = (
+        db.query(Invoice.id)
         .filter(Invoice.state == INVOICE_STATE_PAID)
         .order_by(Invoice.id.asc())
         .limit(_BATCH_LIMIT)
@@ -213,7 +217,28 @@ def _apply_paid_invoices_inner(db: Session, *, now=None) -> int:
     )
 
     applied_count = 0
-    for invoice in candidates:
+    for (invoice_id,) in candidate_ids:
+        # Re-fetch with row-level lock + ``SKIP LOCKED`` so:
+        #   - ``apply_manual`` holding a FOR UPDATE on the same row
+        #     causes us to skip it this tick (it'll move to applied
+        #     before the next tick, and we won't see it again).
+        #   - Two scheduler instances (e.g. blue/green deploy) don't
+        #     contend on the same row.
+        # SQLite's pool ignores the lock clauses but serialises
+        # writes anyway; PostgreSQL (production) honours them.
+        invoice = db.execute(
+            select(Invoice)
+            .where(
+                Invoice.id == invoice_id,
+                Invoice.state == INVOICE_STATE_PAID,
+            )
+            .with_for_update(skip_locked=True)
+        ).scalar_one_or_none()
+        if invoice is None:
+            # Either another worker / apply_manual claimed it, or its
+            # state changed between the candidate scan and the lock
+            # attempt. Either way, not ours to apply this tick.
+            continue
         try:
             apply_invoice_grant(db, invoice, now=now)
             db.commit()
