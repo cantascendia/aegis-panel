@@ -78,13 +78,11 @@ def test_panel_image_uses_aegis_version_variable() -> None:
         "deploy/compose/docker-compose.prod.yml",
         "deploy/compose/docker-compose.sqlite.yml",
     ):
-        spec = yaml.safe_load(
-            Path(compose_path).read_text(encoding="utf-8")
-        )
+        spec = yaml.safe_load(Path(compose_path).read_text(encoding="utf-8"))
         services = spec.get("services", {})
-        assert "panel" in services, (
-            f"{compose_path}: missing required `panel` service"
-        )
+        assert (
+            "panel" in services
+        ), f"{compose_path}: missing required `panel` service"
         panel_image = services["panel"].get("image")
         assert panel_image == expected, (
             f"{compose_path}: panel.image must be {expected!r}, "
@@ -114,9 +112,7 @@ def test_panel_image_never_hardcodes_latest_tag() -> None:
         "deploy/compose/docker-compose.prod.yml",
         "deploy/compose/docker-compose.sqlite.yml",
     ):
-        spec = yaml.safe_load(
-            Path(compose_path).read_text(encoding="utf-8")
-        )
+        spec = yaml.safe_load(Path(compose_path).read_text(encoding="utf-8"))
         services = spec.get("services", {})
         for svc_name, svc in services.items():
             image = (svc or {}).get("image")
