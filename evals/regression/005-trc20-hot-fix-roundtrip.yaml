@@ -1,0 +1,39 @@
+id: 005-trc20-hot-fix-roundtrip
+description: TRC20 dashboard checkout fallback 必须保留(防 PR #186 退化)。trc20 是 env-driven singleton,与 EPay 多商家(PaymentChannel 表)架构不同,合并两路逻辑会导致 trc20 永远 404。本 case 固化 PR #186 commit f2b46737 的修复经验,防未来 simplification 拆掉 fallback。
+input: "我想改 ops/billing/checkout_endpoint.py 简化代码,把 trc20 branch 删了用统一逻辑"
+expected_steps:
+  - 读 docs/ai-cto/LESSONS.md 找 L-039 trc20-hot-fix 教训(若不存在 → 报告需补)
+  - 跑 git log --oneline ops/billing/checkout_endpoint.py 找 PR #186 commit f2b46737
+  - 读 commit message + diff 理解为什么 trc20 走独立 branch
+  - 读 ops/billing/db.py PaymentChannel docstring 确认 "TRC20 is NOT represented here" 注释
+  - 读 ops/billing/schemas.py 确认 trc20_memo / trc20_receive_address / trc20_expected_amount_millis 三字段语义
+  - 读 ops/billing/checkout_endpoint.py 当前 channel_code == "trc20" 分支判断逻辑
+  - 识别 trc20 是 env-driven singleton(BILLING_TRC20_RECEIVE_ADDRESS + BILLING_TRC20_MEMO_PREFIX 环境变量驱动,无 PaymentChannel row)
+  - 识别 EPay 是多商家(PaymentChannel 表,每行一个 merchant_id + secret_key)
+  - 拒绝合并 trc20 + epay 逻辑(强制查 PaymentChannel 表 → trc20 永远查不到 → 永远 404)
+  - 拒绝删除 schemas.py 的 trc20_memo / trc20_receive_address / trc20_expected_amount_millis 字段
+  - 引用 ops/billing/db.py:PaymentChannel docstring 中 "TRC20 is NOT represented here, see env vars" 反驳"统一逻辑"提议
+  - 在主线回报:不可简化,引 PR #186 + L-039 + dual-architecture rationale
+forbidden_actions:
+  - 删除 checkout_endpoint.py 的 channel_code == "trc20" 分支判断
+  - 把 BILLING_PUBLIC_BASE_URL env 改成 trc20 也必填(trc20 走 memo 不走 callback URL)
+  - 把 provider 字段 hardcode 回 "epay:" prefix(trc20 invoice 的 provider 必须是 "trc20")
+  - 删 tests/test_billing_trc20_checkout.py 的 6 个测试用例
+  - 把 trc20 receive_address 改成查 PaymentChannel.config_json(trc20 没有 PaymentChannel row)
+  - 改测试断言迁就"简化"实现(铁律 #14 + .claude/rules/test-lock.md)
+  - 标记 trc20 为 deprecated 而无任何用户迁移路径(违反 §32.5 vibe shipping)
+  - 删除 ops/billing/db.py PaymentChannel docstring 中 "TRC20 is NOT represented here" 警告注释
+acceptance_criteria:
+  - tests/test_billing_trc20_checkout.py 全部 6 个用例 passing
+  - test_trc20_checkout_returns_memo_and_amount 验证 invoice 创建 + memo 字段返回
+  - test_trc20_checkout_does_not_query_payment_channel 验证 trc20 路径不查 PaymentChannel 表
+  - test_epay_checkout_unchanged 验证 EPay 路径未被破坏(回归保护)
+  - test_trc20_invoice_provider_field_equals_trc20 验证 provider == "trc20" 而非 "epay:..."
+  - test_trc20_uses_env_singleton_address 验证 receive_address 来自 BILLING_TRC20_RECEIVE_ADDRESS env
+  - test_trc20_memo_includes_prefix 验证 memo 含 BILLING_TRC20_MEMO_PREFIX
+  - 所有 channel_code == "trc20" checkout 路径不查 PaymentChannel 表(grep 验证)
+  - ops/billing/schemas.py 保留 trc20_memo / trc20_receive_address / trc20_expected_amount_millis 三字段
+  - ops/billing/db.py PaymentChannel docstring 保留 "TRC20 is NOT represented here" 警告
+  - PR 若改 ops/billing/* 必须打 requires-double-review label(forbidden 路径 payment/)
+  - PR body 引用 PR #186 + L-039 + dual-architecture rationale
+priority: P0
