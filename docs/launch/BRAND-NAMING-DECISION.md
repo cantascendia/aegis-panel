@@ -1,8 +1,9 @@
 # 品牌命名决策(ADR)— Nilou Network / 妮露网络
 
-> **状态**: 推荐方案待双签生效
-> **日期**: 2026-05-02
-> **作者**: CTO + Tech Lead(Claude)
+> **状态**: ✅ **SEALED**(用户拍板,品牌正式生效)
+> **生效日期**: 2026-05-02
+> **签字**: 用户(Owner)+ CTO/Tech Lead(Claude)
+> **历史**: 2026-05-02 起草 → 2026-05-02 用户回复 "Nilou Network" 即拍板
 > **决策类型**: ADR(Architectural Decision Record)— 品牌资产层
 > **影响范围**: 域名 / 商标 / Logo / 对外文案 / 法律风险面
 > **关联文档**: `docs/ai-cto/CONSTITUTION.md`、`docs/launch/CUSTOMER-PITCH-CARDS.md`、`docs/launch/RECRUIT-COPY.md`

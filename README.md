@@ -1,4 +1,25 @@
-<h1 align="center"/>Marzneshin</h1>
+<h1 align="center">Nilou Network</h1>
+
+<p align="center">
+    <strong>Open-source. Audit-able. Won't disappear.</strong><br/>
+    A hardened fork of Marzneshin for the 2026 censorship era — anti-block SNI selection,
+    Reality config audit, IP-share guard, billing/subscription, one-shot deploy.
+</p>
+
+<p align="center">
+    <a href="https://nilou.cc">nilou.cc</a> ·
+    <a href="docs/launch/BRAND-NAMING-DECISION.md">Brand</a> ·
+    <a href="docs/launch/CUSTOMER-PITCH-CARDS.md">Pitch</a> ·
+    <a href="NOTICE.md">License (AGPL-3.0)</a>
+</p>
+
+> **Trademark notice**: "Nilou" here is used as a generic word (Persian for *blue lotus*).
+> This project is not affiliated with, endorsed by, or sponsored by miHoYo / HoYoverse
+> or the *Genshin Impact* franchise. We do not use any miHoYo copyrighted assets.
+
+---
+
+<h2 align="center">Upstream: Marzneshin</h2>
 
 <p align="center">
     A Scalable and Comprehensive Proxy Engine management panel.
