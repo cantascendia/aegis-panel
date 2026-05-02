@@ -358,18 +358,40 @@ def apply_manual(
     - 409 when invoice is already terminal (``applied``, ``cancelled``,
       ``expired``, ``failed``).
     - 409 when the grant cannot be applied (user hard-deleted, plan
-      removed, cart no longer valid). The invoice remains in
-      ``paid`` for operator follow-up; ``apply_paid_invoices``
-      scheduler will continue retrying on each tick if the
-      underlying state is fixable, otherwise an operator must cancel
-      and refund.
+      removed, cart no longer valid). The invoice is left in
+      ``paid`` (the ``→ paid`` transition is committed BEFORE the
+      grant attempt, so a failing apply doesn't roll back the
+      operator's payment confirmation) — the A.5 scheduler will
+      retry on each tick once the underlying data is fixed; the
+      reaper does NOT touch ``paid`` rows so there's no risk of
+      auto-expiry of a verified payment.
+
+    Concurrency
+    -----------
+    Two admins racing this endpoint for the same invoice could
+    otherwise double-apply the (non-idempotent) grant. We defend
+    with a row-level lock: ``SELECT … FOR UPDATE`` on the invoice
+    row claims it for the duration of the transition, so the second
+    request blocks until the first commits, then sees ``state=applied``
+    and 409s out via the terminal-state guard. SQLite's pool ignores
+    ``FOR UPDATE`` clauses but serialises writes anyway; PostgreSQL
+    (production) honours it.
     """
     # Local import to avoid an endpoint↔scheduler import cycle at
     # module load (scheduler imports trc20_poller which imports the
     # FastAPI router lifespan code path).
     from ops.billing.scheduler import ApplierSkip, apply_invoice_grant
 
-    invoice = _require_invoice(db, invoice_id)
+    # Row-level lock the invoice for the duration of the transition.
+    # Without this, two concurrent admin clicks both observe
+    # state=awaiting_payment, both transition to paid, and both
+    # commit independent grants — user gets +200GB instead of +100GB.
+    locked = db.execute(
+        select(Invoice).where(Invoice.id == invoice_id).with_for_update()
+    ).scalar_one_or_none()
+    if locked is None:
+        raise HTTPException(status_code=404, detail="invoice not found")
+    invoice = locked
     if is_terminal(invoice.state):
         raise HTTPException(
             status_code=409,
@@ -416,10 +438,25 @@ def apply_manual(
                     "after admin_manual transition chain; cannot apply"
                 ),
             )
+    except InvoiceStateError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(e)) from e
 
+    # Commit the ``→ paid`` leg BEFORE attempting the grant. Rationale:
+    # the operator has manually confirmed the payment was received;
+    # if grant application later fails (user deleted, plan removed,
+    # bad cart), we don't want that failure to roll back the verified
+    # payment record. The invoice stays in ``paid`` and the A.5
+    # scheduler retries on each tick once the underlying issue is
+    # fixed. Reaper ignores ``paid`` rows so this can't auto-expire.
+    db.commit()
+    db.refresh(invoice)
+
+    try:
         # Single source of truth for the grant + paid→applied flip.
         # Same helper the A.5 scheduler uses for paid invoices.
         apply_invoice_grant(db, invoice, now=None)
+        db.commit()
     except InvoiceStateError as e:
         db.rollback()
         raise HTTPException(status_code=409, detail=str(e)) from e
@@ -428,12 +465,13 @@ def apply_manual(
         raise HTTPException(
             status_code=409,
             detail=(
-                f"cannot apply grant for invoice {invoice_id}: "
-                f"{e.reason}: {e}"
+                f"invoice {invoice_id} marked paid but grant could not "
+                f"be applied ({e.reason}): {e}. Invoice remains in "
+                "'paid' state; A.5 scheduler will retry once the "
+                "underlying issue is resolved."
             ),
         ) from e
 
-    db.commit()
     db.refresh(invoice)
     return invoice
 

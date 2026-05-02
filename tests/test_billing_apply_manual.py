@@ -79,6 +79,10 @@ def billing_engine():
             "users_services",
             "inbounds",
             "inbounds_services",
+            # Needed when a test deletes a User to force ApplierSkip;
+            # SQLAlchemy cascades through node_user_usages.
+            "node_user_usages",
+            "nodes",
         )
     ]
     engine = create_engine(
@@ -323,6 +327,51 @@ def test_apply_manual_terminal_invoice_returns_409(client, billing_engine):
         assert second_event_count == first_event_count, (
             "rejected double-apply still wrote audit rows"
         )
+
+
+def test_apply_manual_failed_grant_leaves_invoice_in_paid(
+    client, billing_engine
+):
+    """When the operator confirms payment but the grant cannot be
+    applied (e.g. user was hard-deleted between checkout and admin
+    intervention), the invoice MUST land in ``paid`` — not be rolled
+    back to ``awaiting_payment``. Otherwise the A.5 scheduler won't
+    retry once the underlying issue is fixed, and the reaper might
+    auto-expire a payment that the operator manually verified.
+
+    P2 finding from codex cross-review on the initial fix.
+    """
+    invoice_id, user_id = _seed(billing_engine)
+
+    # Hard-delete the user to force ApplierSkip("user_missing").
+    with Session(billing_engine) as s:
+        user = s.get(User, user_id)
+        s.delete(user)
+        s.commit()
+
+    r = client.post(
+        f"/api/billing/admin/invoices/{invoice_id}/apply_manual",
+        json={"note": "operator confirmed payment, user race"},
+    )
+    assert r.status_code == 409, r.text
+    assert "user_missing" in r.json()["detail"]
+
+    # Critical: invoice is in ``paid``, NOT rolled back to
+    # awaiting_payment. The ``admin_manual:to_paid`` event survives.
+    with Session(billing_engine) as s:
+        inv = s.get(Invoice, invoice_id)
+        assert inv is not None
+        assert inv.state == "paid", (
+            f"invoice rolled back to {inv.state!r}; operator's payment "
+            "confirmation lost"
+        )
+        types = [
+            e.event_type
+            for e in s.query(PaymentEvent)
+            .filter(PaymentEvent.invoice_id == invoice_id)
+            .all()
+        ]
+        assert "admin_manual:to_paid" in types
 
 
 def test_apply_manual_idempotent_against_double_call(client, billing_engine):
