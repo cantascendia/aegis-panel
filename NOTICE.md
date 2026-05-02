@@ -1,8 +1,15 @@
 # NOTICE
 
-This project is a hard fork (detached source copy) of **Marzneshin** by the
+This project, operated under the brand **Nilou Network** (中文:妮露网络),
+is a hard fork (detached source copy) of **Marzneshin** by the
 [Marzneshin organization](https://github.com/marzneshin/marzneshin), licensed
 under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+> **Trademark notice**: "Nilou" is used here as a generic word
+> (Persian for *blue lotus*). This project is **not affiliated with,
+> endorsed by, or sponsored by** miHoYo / HoYoverse or the
+> *Genshin Impact* franchise. Brand decision recorded in
+> `docs/launch/BRAND-NAMING-DECISION.md` (SEALED 2026-05-02).
 
 Marzneshin is itself the official successor to Gozargah/Marzban and shares
 lineage with the upstream Marzban codebase. All copyright notices from both

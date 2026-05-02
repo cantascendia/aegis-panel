@@ -7,6 +7,16 @@
 
 ## 当前轮次
 
+**wave-10 品牌生效**(2026-05-02,**Nilou Network 品牌 SEALED + launch docs ship + dashboard 品牌化**):
+
+- 用户拍板品牌全名 = **Nilou Network / 妮露网络**(SEALED 2026-05-02,见 `docs/launch/BRAND-NAMING-DECISION.md`)
+- ship 5 个 launch 文档 PR(#205-#209):TWITTER-LAUNCH-30DAYS / HACKER-NEWS-SHOW-HN / BRAND-NAMING-DECISION / brand seal / logo slots
+- ship dashboard 品牌化 PR(本批):`<title>` Marzneshin → Nilou Network / NOTICE.md 顶部加品牌段 + 商标免责 / logo alt 改 Nilou Network
+- `docs/launch/brand/` 12 个 logo slot 占位 + BRAND-GUIDELINES + 法律红线
+- **logo 资产**:用户自行 push + merge `feat/project-icon`(PR #210),CTO 因法律风险未参与该 PR;todo 项保留待后续合法原创图替换
+
+---
+
 **wave-9 R4 追加同步**(2026-05-02,**Phase A.2 完整闭环 + apply_manual P0 fix + L-043 沉淀**):
 
 - **PR #200 hot-fix** apply_manual triggers grant (commit `c89d1c5` → tag `v0.4.2`):
