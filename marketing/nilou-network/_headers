@@ -19,3 +19,20 @@
 # HTML pages: short cache, revalidate
 /*.html
   Cache-Control: public, max-age=300, must-revalidate
+
+# Lazy-loadable image assets — long cache + immutable
+/assets/*.png
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*.svg
+  Cache-Control: public, max-age=31536000, immutable
+
+# Preload hint for hero (served on landing pages)
+/en/
+  Link: </assets/hero-dashboard.png>; rel=preload; as=image; fetchpriority=high
+
+/ja/
+  Link: </assets/hero-dashboard.png>; rel=preload; as=image; fetchpriority=high
+
+/zh/
+  Link: </assets/hero-dashboard.png>; rel=preload; as=image; fetchpriority=high

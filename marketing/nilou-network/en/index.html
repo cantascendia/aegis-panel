@@ -14,11 +14,15 @@
   <meta property="og:locale" content="en_US" />
   <meta property="og:locale:alternate" content="ja_JP" />
   <meta property="og:locale:alternate" content="zh_CN" />
-  <meta name="twitter:card" content="summary" />
+  <meta property="og:image" content="https://nilou.network/assets/og-card.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="../assets/hero-dashboard.png" fetchpriority="high" />
   <link rel="stylesheet" href="../styles.css" />
   <link rel="icon" href="../assets/lotus.svg" type="image/svg+xml" />
   <link rel="canonical" href="https://nilou.network/en/" />
@@ -41,6 +45,7 @@
       <nav class="nav" aria-label="Primary">
         <a href="#features">Features</a>
         <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
         <a href="#about">About</a>
         <span class="lang-switch" aria-label="Language">
           <a href="/en/" aria-current="page">EN</a>
@@ -48,45 +53,89 @@
           <a href="/zh/" lang="zh">中文</a>
         </span>
         <a class="cta-btn" href="#pricing">Subscribe</a>
+        <button class="hamburger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-drawer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
       </nav>
     </div>
   </header>
+
+  <div id="mobile-drawer" class="mobile-drawer" aria-label="Mobile menu">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+    <span class="lang-switch" aria-label="Language">
+      <a href="/en/" aria-current="page">EN</a>
+      <a href="/ja/" lang="ja">日本語</a>
+      <a href="/zh/" lang="zh">中文</a>
+    </span>
+  </div>
+
+  <div class="topbar-sentinel" aria-hidden="true" style="position:absolute;top:80px;height:1px;width:1px;"></div>
 
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
       <svg class="ripple ripple-1" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="40" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4"/><circle cx="100" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/><circle cx="100" cy="100" r="80" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"/></svg>
       <svg class="ripple ripple-2" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="30" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/><circle cx="100" cy="100" r="50" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"/><circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" stroke-width="1" opacity="0.1"/></svg>
 
-      <div class="container hero-inner">
-        <svg class="hero-mark" viewBox="0 0 200 200" aria-hidden="true">
-          <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <g stroke-opacity="0.92"><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(45 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(90 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(135 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(180 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(225 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(270 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(315 100 100)"/></g>
-            <circle cx="100" cy="100" r="6"/><circle cx="100" cy="100" r="2.5" fill="currentColor"/>
-          </g>
-        </svg>
+      <div class="container hero-inner hero-grid">
+        <div class="hero-text">
+          <svg class="hero-mark" viewBox="0 0 200 200" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <g stroke-opacity="0.92"><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(45 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(90 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(135 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(180 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(225 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(270 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(315 100 100)"/></g>
+              <circle cx="100" cy="100" r="6"/><circle cx="100" cy="100" r="2.5" fill="currentColor"/>
+            </g>
+          </svg>
 
-        <p class="eyebrow">Managed hosting</p>
+          <p class="eyebrow">Managed hosting</p>
 
-        <h1 id="hero-title">
-          <span class="display">Self-hosted apps,</span>
-          <span class="display accent">without the self-hosting.</span>
-        </h1>
+          <h1 id="hero-title">
+            <span class="display">Self-hosted apps,</span>
+            <span class="display accent">without the self-hosting.</span>
+          </h1>
 
-        <p class="lead">
-          We run open-source applications on cloud infrastructure on your behalf —
-          dashboards, monitoring tools, productivity apps. You subscribe; we handle
-          servers, upgrades, backups, and uptime so you can focus on the work itself.
-        </p>
+          <p class="lead">
+            We run open-source applications on cloud infrastructure on your behalf —
+            dashboards, monitoring tools, productivity apps. You subscribe; we handle
+            servers, upgrades, backups, and uptime so you can focus on the work itself.
+          </p>
 
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="#pricing">View plans</a>
-          <a class="btn btn-secondary" href="#contact">Talk to us</a>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#pricing">View plans</a>
+            <a class="btn btn-secondary" href="#contact">Talk to us</a>
+          </div>
+
+          <ul class="hero-trust">
+            <li>Operated from Japan</li>
+            <li>Open-source software</li>
+            <li>Cancel any time</li>
+            <li>No tracking</li>
+          </ul>
         </div>
 
-        <ul class="hero-meta">
-          <li>Operated from Japan</li>
-          <li>Multi-region hosting</li>
-          <li>Open-source friendly</li>
+        <div class="hero-mockup scroll-reveal" aria-hidden="true">
+          <img src="../assets/hero-dashboard.png" alt="" width="1600" height="1100" loading="eager" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" />
+          <div class="hero-mockup-fallback" style="display:none;">
+            <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+              <g stroke-opacity="0.9"><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(45 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(90 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(135 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(180 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(225 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(270 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(315 100 100)"/></g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="logo-strip-section" aria-labelledby="logos-title">
+      <div class="container">
+        <p id="logos-title" class="logo-strip-eyebrow">Powering open-source apps you trust</p>
+        <ul class="logo-strip">
+          <li class="oss-logo">Grafana</li>
+          <li class="oss-logo">Uptime Kuma</li>
+          <li class="oss-logo">Vaultwarden</li>
+          <li class="oss-logo">Plausible</li>
+          <li class="oss-logo">Gitea</li>
+          <li class="oss-logo">Wallabag</li>
         </ul>
       </div>
     </section>
@@ -96,36 +145,42 @@
     <section id="features" class="section features" aria-labelledby="features-title">
       <div class="container">
         <div class="section-head">
-          <h2 id="features-title">What you get</h2>
+          <h2 id="features-title">Operational details</h2>
           <p class="section-lead">Six things, kept simple.</p>
         </div>
         <div class="feature-grid">
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg></div>
             <div class="feature-num">01</div>
             <h3>Managed instance</h3>
             <p>A dedicated cloud-hosted instance maintained by us. Patches, upgrades, and dependency hygiene are handled in the background.</p>
           </article>
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5C3 6.4 3.9 5.5 5 5.5h14c1.1 0 2 0.9 2 2v8.5c0 1.1-0.9 2-2 2H5c-1.1 0-2-0.9-2-2z"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></div>
             <div class="feature-num">02</div>
             <h3>Operator support</h3>
             <p>Real-person support for configuration questions, integration help, and incident response — usually within a single business day.</p>
           </article>
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5L4 6v6c0 4.5 3.4 8.6 8 9.5 4.6-0.9 8-5 8-9.5V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div>
             <div class="feature-num">03</div>
             <h3>Infrastructure care</h3>
             <p>SSL certificates, backups, upgrade windows, and monitoring kept current. Your service stays audit-friendly without your effort.</p>
           </article>
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M16 12v3.5"/><path d="M19.5 12v2"/><circle cx="8" cy="12" r="1.2" fill="currentColor"/></svg></div>
             <div class="feature-num">04</div>
             <h3>Open-source friendly</h3>
             <p>The software we operate is open-source. You can self-host the same application at any time — there is no proprietary lock-in.</p>
           </article>
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.8 3 4.2 6 4.2 9s-1.4 6-4.2 9c-2.8-3-4.2-6-4.2-9s1.4-6 4.2-9z"/></svg></div>
             <div class="feature-num">05</div>
             <h3>Multi-region</h3>
             <p>Hosting available across Asia-Pacific regions, so you can pick a location that matches your latency budget.</p>
           </article>
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l3-3.5h12l3 3.5-9 12.5z"/><path d="M3 8h18"/><path d="M9 8l3 12.5L15 8"/></svg></div>
             <div class="feature-num">06</div>
             <h3>Transparent pricing</h3>
             <p>Flat subscription tiers in CNY. No hidden fees, no usage surprises. Cancel any time from the dashboard.</p>
@@ -143,7 +198,7 @@
           <p class="section-lead">Four tiers, all running the same managed software. Choose by billing cadence.</p>
         </div>
         <div class="plan-grid">
-          <div class="plan">
+          <div class="plan scroll-reveal">
             <span class="plan-tag">Trial</span>
             <h3>Trial</h3>
             <p class="plan-price">Free<small>3 days</small></p>
@@ -154,7 +209,7 @@
             </ul>
             <a class="btn btn-secondary" href="#contact">Start trial</a>
           </div>
-          <div class="plan">
+          <div class="plan scroll-reveal">
             <span class="plan-tag">Monthly</span>
             <h3>Monthly</h3>
             <p class="plan-price">¥30<small>per month</small></p>
@@ -165,7 +220,7 @@
             </ul>
             <a class="btn btn-primary" href="#contact">Subscribe</a>
           </div>
-          <div class="plan plan-highlight">
+          <div class="plan plan-highlight scroll-reveal">
             <span class="plan-tag">Quarterly · ~11% off</span>
             <h3>Quarterly</h3>
             <p class="plan-price">¥80<small>per 3 months</small></p>
@@ -176,7 +231,7 @@
             </ul>
             <a class="btn btn-primary" href="#contact">Subscribe</a>
           </div>
-          <div class="plan plan-highlight">
+          <div class="plan plan-highlight scroll-reveal">
             <span class="plan-tag">Annual · ~33% off</span>
             <h3>Annual</h3>
             <p class="plan-price">¥240<small>per year</small></p>
@@ -189,6 +244,51 @@
           </div>
         </div>
         <p class="pricing-meta">Payment methods: Alipay, WeChat Pay, USDT (TRC20), major credit cards. Subscription billing is processed by our payment partner.</p>
+      </div>
+    </section>
+
+    <div class="divider" aria-hidden="true"></div>
+
+    <section id="faq" class="section about" aria-labelledby="faq-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="faq-title">Frequently asked</h2>
+          <p class="section-lead">Honest answers to the questions we hear most.</p>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>How is this different from a basic VPS?</summary>
+            <div class="faq-body"><p>A VPS gives you a blank Linux box — you install, patch, monitor, and back up everything yourself. Nilou Network gives you a managed instance of an open-source application that's already configured, kept current, and backed by a real person you can email when something goes sideways.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>Can I migrate to self-hosting later?</summary>
+            <div class="faq-body"><p>Yes. The software we operate is open-source — you can stand up the same application on your own hardware whenever you like. We will export your data and configuration on request, in standard formats, free of charge.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>What's your refund policy?</summary>
+            <div class="faq-body"><p>Subscriptions can be cancelled any time from your dashboard. Refunds for unused service time are processed within 7 business days of an approved request. See our <a href="../legal.html#refund">legal page</a> for the full text.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>How do you handle backups and data export?</summary>
+            <div class="faq-body"><p>Daily snapshots are retained for 14 days; weekly snapshots for 60 days. You can request a full data export at any time — we deliver in standard formats (SQL dump, JSON, configuration files) within 3 business days.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>What payment methods do you accept?</summary>
+            <div class="faq-body"><p>Alipay, WeChat Pay, USDT (TRC20), and major credit cards via our payment partner. Subscriptions auto-renew until cancelled; one-off payments are also supported on request.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>What's your uptime target?</summary>
+            <div class="faq-body"><p>We target 99.9% monthly uptime for managed instances. We do not offer a contractual SLA at the current scale — we'd rather be honest about being a small operation than promise enterprise guarantees we can't keep.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>Can I run a custom open-source application not in your default catalog?</summary>
+            <div class="faq-body"><p>Often, yes. Email <a href="mailto:support@nilou.network">support@nilou.network</a> with the project URL and what you're trying to do. We'll evaluate and quote a one-off setup fee if it's a fit.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>Are you affiliated with miHoYo or <em>Genshin Impact</em>?</summary>
+            <div class="faq-body"><p>No. The name <em>Nilou</em> is used here as a generic word — Persian for <em>blue lotus</em>. Nilou Network is independent and not affiliated with, endorsed by, or sponsored by miHoYo / HoYoverse or the <em>Genshin Impact</em> franchise.</p></div>
+          </details>
+        </div>
       </div>
     </section>
 
@@ -219,22 +319,56 @@
           <li><strong>Support</strong><a href="mailto:support@nilou.network">support@nilou.network</a></li>
           <li><strong>Billing</strong><a href="mailto:billing@nilou.network">billing@nilou.network</a></li>
           <li><strong>Response time</strong><span>Usually within 1 business day</span></li>
-          <li><strong>Status</strong><span>Coming soon</span></li>
+          <li><strong>Status</strong><span><span class="status-dot" aria-hidden="true"></span>Coming soon</span></li>
         </ul>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="container footer-inner">
-      <p class="footer-brand">Nilou Network</p>
-      <p class="footer-tagline">Self-hosted apps, without the self-hosting.</p>
-      <p class="footer-meta">
-        Operated by an independent <em>個人事業主</em> in Japan ·
-        <a href="../legal.html">Legal &amp; 特商法表記</a>
-      </p>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><span class="is-soon">Status (soon)</span></li>
+            <li><span class="is-soon">Changelog (soon)</span></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="../legal.html">Legal &amp; 特商法表記</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="../legal.html#open-source">Open-source notice</a></li>
+            <li><a href="../legal.html#trademark">Trademark notice</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Languages</h4>
+          <ul>
+            <li><a href="/en/" aria-current="page">English</a></li>
+            <li><a href="/ja/" lang="ja">日本語</a></li>
+            <li><a href="/zh/" lang="zh">中文</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        © 2025 Nilou Network · <em>個人事業主</em> in Japan · AGPL-3.0 source-disclosure compliant
+      </div>
     </div>
   </footer>
+
+  <script src="../script.js" defer></script>
 
   <script type="application/ld+json">
   {
