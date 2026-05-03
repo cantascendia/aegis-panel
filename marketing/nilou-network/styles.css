@@ -858,10 +858,13 @@ img, svg { display: block; max-width: 100%; }
 }
 .hero-mockup {
   position: relative;
-  background: var(--surface-alt);
-  border: 1px solid var(--border-soft);
+  background: #fff;
+  border: 1px solid var(--border);
   border-radius: var(--r-xl);
-  box-shadow: var(--shadow-lg);
+  box-shadow:
+    0 1px 3px rgba(20, 41, 64, 0.08),
+    0 12px 32px rgba(20, 41, 64, 0.10),
+    0 32px 64px rgba(58, 145, 136, 0.08);
   overflow: hidden;
   aspect-ratio: 16 / 11;
   width: 100%;
