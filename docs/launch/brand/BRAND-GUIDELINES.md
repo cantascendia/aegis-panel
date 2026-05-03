@@ -95,9 +95,9 @@ not based on any existing IP. 1024x1024 square.
    - 不直接 commit / 嵌入官方角色立绘、3D 模型、官方插画、CG 截图、官方周边的原始文件
    - 视觉相似 / 画风致敬 / 角色灵感不再受限(详见「✅ 允许」)
 
-2. **不得在 Logo / 资产 metadata 中出现组合商标词**:
-   - `Genshin Impact`、`miHoYo`、`HoYoverse` 等组合商标(避免商标淡化主张被坐实)
-   - 通用词 `Nilou` / `妮露` / `原神`(单字)在 prompt 与文档中可使用
+2. **不得在 Logo / 资产 metadata 中出现组合商标 / 注册商标词**:
+   - `Genshin Impact`、`miHoYo`、`HoYoverse`、`原神`(米哈游中文注册商标)、`Teyvat`、`Sumeru` 等
+   - 通用词 `Nilou`(波斯语「蓝睡莲」)/ `妮露`(品牌名「妮露网络」组成部分)在 prompt 与文档中可使用,但不作 asset metadata 单独 tag(避免被解读为对照官方角色)
 
 ### ✅ 允许
 
