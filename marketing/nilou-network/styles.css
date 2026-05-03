@@ -98,6 +98,42 @@ a:hover { color: var(--brand-teal-deep); text-decoration: underline; }
   font-weight: 600;
   box-shadow: var(--shadow-sm);
 }
+
+/* Language switcher */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+.lang-switch a {
+  color: var(--text-muted);
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+.lang-switch a:hover {
+  color: var(--brand-teal);
+  text-decoration: none;
+  background: rgba(91, 192, 190, 0.08);
+}
+.lang-switch a.active {
+  color: var(--brand-navy);
+  background: var(--surface);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Lang-specific font stacks */
+.lang-ja { font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif; }
+.lang-ja h1, .lang-ja .section h2 { font-family: 'Cormorant Garamond', 'Noto Serif JP', 'Yu Mincho', serif; }
+.lang-zh { font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+.lang-zh h1, .lang-zh .section h2 { font-family: 'Cormorant Garamond', 'Noto Serif SC', 'Songti SC', serif; }
 .nav .cta:hover { background: var(--brand-teal-deep); text-decoration: none; }
 
 /* ===== Hero ===== */
