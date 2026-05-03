@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Original geometric lotus — Nilou Network brand mark
+  AGPL-3.0, no third-party IP
+  Symbol: blue lotus (Persian "nilou"), public domain cultural motif
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- Outer petals (8-fold symmetry) -->
+  <g stroke-opacity="0.9">
+    <path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z"/>
+    <path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(45 100 100)"/>
+    <path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(90 100 100)"/>
+    <path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(135 100 100)"/>
+    <path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(180 100 100)"/>
+    <path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(225 100 100)"/>
+    <path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(270 100 100)"/>
+    <path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(315 100 100)"/>
+  </g>
+
+  <!-- Inner petals (smaller, offset) -->
+  <g stroke-opacity="0.6" stroke-width="1.2">
+    <path d="M100 50 C 118 70, 118 90, 100 100 C 82 90, 82 70, 100 50 Z" transform="rotate(22.5 100 100)"/>
+    <path d="M100 50 C 118 70, 118 90, 100 100 C 82 90, 82 70, 100 50 Z" transform="rotate(67.5 100 100)"/>
+    <path d="M100 50 C 118 70, 118 90, 100 100 C 82 90, 82 70, 100 50 Z" transform="rotate(112.5 100 100)"/>
+    <path d="M100 50 C 118 70, 118 90, 100 100 C 82 90, 82 70, 100 50 Z" transform="rotate(157.5 100 100)"/>
+    <path d="M100 50 C 118 70, 118 90, 100 100 C 82 90, 82 70, 100 50 Z" transform="rotate(202.5 100 100)"/>
+    <path d="M100 50 C 118 70, 118 90, 100 100 C 82 90, 82 70, 100 50 Z" transform="rotate(247.5 100 100)"/>
+    <path d="M100 50 C 118 70, 118 90, 100 100 C 82 90, 82 70, 100 50 Z" transform="rotate(292.5 100 100)"/>
+    <path d="M100 50 C 118 70, 118 90, 100 100 C 82 90, 82 70, 100 50 Z" transform="rotate(337.5 100 100)"/>
+  </g>
+
+  <!-- Center -->
+  <circle cx="100" cy="100" r="6" stroke-width="1.2"/>
+  <circle cx="100" cy="100" r="2" fill="currentColor" stroke="none"/>
+</svg>
