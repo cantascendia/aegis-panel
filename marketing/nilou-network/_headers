@@ -30,10 +30,10 @@
 
 # Preload hint for hero (served on landing pages)
 /en/
-  Link: </assets/hero-dashboard.png?v=3>; rel=preload; as=image; fetchpriority=high
+  Link: </assets/hero-dashboard-v3.png>; rel=preload; as=image; fetchpriority=high
 
 /ja/
-  Link: </assets/hero-dashboard.png?v=3>; rel=preload; as=image; fetchpriority=high
+  Link: </assets/hero-dashboard-v3.png>; rel=preload; as=image; fetchpriority=high
 
 /zh/
-  Link: </assets/hero-dashboard.png?v=3>; rel=preload; as=image; fetchpriority=high
+  Link: </assets/hero-dashboard-v3.png>; rel=preload; as=image; fetchpriority=high
