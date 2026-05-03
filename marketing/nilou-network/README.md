@@ -8,14 +8,48 @@
 
 ## 部署
 
-### 选项 A:Cloudflare Pages(推荐)
+### 选项 A:Cloudflare Pages(推荐 + 详细步骤)
 
-```bash
-# 1. 注册 nilou.network 域名(Cloudflare Registrar / Namecheap / Porkbun)
-# 2. 把 marketing/nilou-network/ 推到 GitHub
-# 3. 在 Cloudflare Pages 连接 repo,build dir = marketing/nilou-network
-# 4. 自定义域名 nilou.network → Cloudflare 自动配 SSL
-```
+#### A.1 域名 DNS 接 Cloudflare(10 分钟,如未做)
+
+1. `dash.cloudflare.com` → "Add a Site" → 输入 `nilou.network`
+2. Cloudflare 给 2 个 nameserver(如 `xxx.ns.cloudflare.com`)
+3. 去你的域名注册商(Namecheap / Porkbun / Cloudflare Registrar 等)改 NS
+4. 等 24-48 小时 DNS propagation(通常 1-2 小时)
+
+如果**直接在 Cloudflare Registrar 注册**域名 → 跳过这步,DNS 已对接。
+
+#### A.2 创建 Cloudflare Pages 项目(5 分钟)
+
+1. `dash.cloudflare.com` → 左栏 "Workers & Pages" → "Create" → "Pages" tab
+2. "Connect to Git" → 授权 GitHub → 选 repo `cantascendia/aegis-panel`
+3. 项目名:`nilou-network`
+4. Build configuration:
+   - **Production branch**: `main`
+   - **Framework preset**: None
+   - **Build command**: 留空(纯静态)
+   - **Build output directory**: `marketing/nilou-network`
+   - **Root directory**: 留空
+5. "Save and Deploy"
+6. 1-2 分钟后:`https://nilou-network.pages.dev` 上线(Cloudflare 默认子域)
+
+#### A.3 绑定自定义域名(5 分钟)
+
+1. Pages 项目 → "Custom domains" tab → "Set up a custom domain"
+2. 输入 `nilou.network` → 添加
+3. Cloudflare 自动配 SSL(Let's Encrypt 等价)+ DNS CNAME
+4. 1-2 分钟后:`https://nilou.network` 上线
+
+#### A.4 自动部署(已配)
+
+每次 push 到 main + `marketing/nilou-network/` 有改动 → Cloudflare Pages 自动 rebuild + 部署。无需 GitHub Actions。
+
+#### A.5 验证
+
+- [ ] `https://nilou.network` 返回 200,显示 hero
+- [ ] `https://nilou.network/legal.html` 返回 200(等填实际住所后)
+- [ ] HTTPS 证书有效(Cloudflare 自动)
+- [ ] `_headers` 文件生效(curl -I 看 X-Frame-Options 等 header)
 
 ### 选项 B:Vercel / Netlify
 
