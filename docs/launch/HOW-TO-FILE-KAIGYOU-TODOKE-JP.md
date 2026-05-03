@@ -3,6 +3,7 @@
 > 状态:Step 4 of payment merchant application playbook
 > 适用:在日本提交開業届(個人事業主届出書),为申请 Paddle / Lemon Squeezy / 屋号付き口座做准备
 > 预计耗时:在线生成 30 分钟 + 提交 5 分钟
+> ⚠️ **前置 Step 4.0**:必须先办虚拟办公室 + 050 番号(否则個人住址 + 私人手机会因特商法被永久公开)— 见 `HOW-TO-RENT-VIRTUAL-OFFICE-JP.md`
 > 关联:`docs/launch/PAYMENT-DECISION-FINAL-JP.md` §2.0、`PAYMENT-REALITY-CHECK.md` §7
 
 ---
@@ -62,7 +63,9 @@
 | マイナンバーカード | 实体卡(用于 e-Tax 电子提交) | 没有可走邮寄,但慢 |
 | 開業日 | 自定 | 推荐填**今天或近期某天**,1 个月内提交即可 |
 | 屋号 | `Nilou Network` | 与 `docs/launch/BRAND-NAMING-DECISION.md` 一致 |
-| 事業所所在地 | 你的住所 | 日本住址(住民票上的) |
+| 事業所所在地 | **虚拟办公室住所**(GMO 等) | ⚠️ **不要填個人住址**(特商法会公开)— 见 `HOW-TO-RENT-VIRTUAL-OFFICE-JP.md` |
+| 自宅住所(別欄) | 個人住址(住民票上的) | 税务署内部档案,**不公开** |
+| 電話番号(事業用) | **050 番号**(SMARTalk) | ⚠️ **不要填個人手机**(特商法会公开) |
 | 事業の概要 | 见 §4 业务说明 | 关键!不能写 VPN |
 | 業種 | 见 §4 業種选择 | 关键!ソフトウェア業 |
 | 銀行口座 | 后续屋号付き口座(Step 5)| 開業届 不强制要,但建议先开 |
