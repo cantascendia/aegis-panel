@@ -289,6 +289,40 @@ a:hover { text-decoration: underline; }
   margin: 0 8px;
 }
 
+/* Legal table (legal.html) */
+.legal-table {
+  width: 100%;
+  margin: 24px 0 40px;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.legal-table th,
+.legal-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.legal-table th {
+  background: var(--surface-alt);
+  color: var(--brand-navy);
+  font-weight: 600;
+  width: 30%;
+  white-space: nowrap;
+}
+.legal-table tr:last-child th,
+.legal-table tr:last-child td { border-bottom: none; }
+.legal-table code {
+  background: var(--brand-cream);
+  color: var(--brand-navy);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.85rem;
+}
+
 /* Responsive */
 @media (max-width: 720px) {
   .nav { gap: 12px; font-size: 0.9rem; }
