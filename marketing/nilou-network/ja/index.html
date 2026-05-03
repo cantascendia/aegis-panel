@@ -14,11 +14,15 @@
   <meta property="og:locale" content="ja_JP" />
   <meta property="og:locale:alternate" content="en_US" />
   <meta property="og:locale:alternate" content="zh_CN" />
-  <meta name="twitter:card" content="summary" />
+  <meta property="og:image" content="https://nilou.network/assets/og-card.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="../assets/hero-dashboard.png" fetchpriority="high" />
   <link rel="stylesheet" href="../styles.css" />
   <link rel="icon" href="../assets/lotus.svg" type="image/svg+xml" />
   <link rel="canonical" href="https://nilou.network/ja/" />
@@ -41,6 +45,7 @@
       <nav class="nav" aria-label="主要メニュー">
         <a href="#features">特徴</a>
         <a href="#pricing">料金</a>
+        <a href="#faq">FAQ</a>
         <a href="#about">事業者情報</a>
         <span class="lang-switch" aria-label="言語選択">
           <a href="/en/" lang="en">EN</a>
@@ -48,45 +53,89 @@
           <a href="/zh/" lang="zh">中文</a>
         </span>
         <a class="cta-btn" href="#pricing">申し込む</a>
+        <button class="hamburger" type="button" aria-label="メニューを開く" aria-expanded="false" aria-controls="mobile-drawer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
       </nav>
     </div>
   </header>
+
+  <div id="mobile-drawer" class="mobile-drawer" aria-label="モバイルメニュー">
+    <a href="#features">特徴</a>
+    <a href="#pricing">料金</a>
+    <a href="#faq">FAQ</a>
+    <a href="#about">事業者情報</a>
+    <a href="#contact">お問い合わせ</a>
+    <span class="lang-switch" aria-label="言語選択">
+      <a href="/en/" lang="en">EN</a>
+      <a href="/ja/" aria-current="page">日本語</a>
+      <a href="/zh/" lang="zh">中文</a>
+    </span>
+  </div>
+
+  <div class="topbar-sentinel" aria-hidden="true" style="position:absolute;top:80px;height:1px;width:1px;"></div>
 
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
       <svg class="ripple ripple-1" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="40" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4"/><circle cx="100" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/><circle cx="100" cy="100" r="80" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"/></svg>
       <svg class="ripple ripple-2" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="30" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/><circle cx="100" cy="100" r="50" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"/><circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" stroke-width="1" opacity="0.1"/></svg>
 
-      <div class="container hero-inner">
-        <svg class="hero-mark" viewBox="0 0 200 200" aria-hidden="true">
-          <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <g stroke-opacity="0.92"><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(45 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(90 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(135 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(180 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(225 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(270 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(315 100 100)"/></g>
-            <circle cx="100" cy="100" r="6"/><circle cx="100" cy="100" r="2.5" fill="currentColor"/>
-          </g>
-        </svg>
+      <div class="container hero-inner hero-grid">
+        <div class="hero-text">
+          <svg class="hero-mark" viewBox="0 0 200 200" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <g stroke-opacity="0.92"><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(45 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(90 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(135 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(180 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(225 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(270 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(315 100 100)"/></g>
+              <circle cx="100" cy="100" r="6"/><circle cx="100" cy="100" r="2.5" fill="currentColor"/>
+            </g>
+          </svg>
 
-        <p class="eyebrow">マネージドホスティング</p>
+          <p class="eyebrow">マネージドホスティング</p>
 
-        <h1 id="hero-title">
-          <span class="display">セルフホスト、</span>
-          <span class="display accent">しなくていい。</span>
-        </h1>
+          <h1 id="hero-title">
+            <span class="display">セルフホスト、</span>
+            <span class="display accent">しなくていい。</span>
+          </h1>
 
-        <p class="lead">
-          ダッシュボード、監視ツール、業務アプリ — オープンソースのアプリケーションを、
-          私たちがクラウド上で運用します。お客様はサブスクリプションするだけ。
-          サーバーの面倒、アップグレード、バックアップ、稼働監視は当方にお任せください。
-        </p>
+          <p class="lead">
+            ダッシュボード、監視ツール、業務アプリ — オープンソースのアプリケーションを、
+            私たちがクラウド上で運用します。お客様はサブスクリプションするだけ。
+            サーバーの面倒、アップグレード、バックアップ、稼働監視は当方にお任せください。
+          </p>
 
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="#pricing">プランを見る</a>
-          <a class="btn btn-secondary" href="#contact">お問い合わせ</a>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#pricing">プランを見る</a>
+            <a class="btn btn-secondary" href="#contact">お問い合わせ</a>
+          </div>
+
+          <ul class="hero-trust">
+            <li>日本運営</li>
+            <li>オープンソース</li>
+            <li>いつでも解約</li>
+            <li>トラッキングなし</li>
+          </ul>
         </div>
 
-        <ul class="hero-meta">
-          <li>日本の個人事業主が運営</li>
-          <li>アジア太平洋複数リージョン</li>
-          <li>オープンソース志向</li>
+        <div class="hero-mockup scroll-reveal" aria-hidden="true">
+          <img src="../assets/hero-dashboard.png" alt="" width="1600" height="1100" loading="eager" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" />
+          <div class="hero-mockup-fallback" style="display:none;">
+            <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+              <g stroke-opacity="0.9"><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(45 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(90 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(135 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(180 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(225 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(270 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(315 100 100)"/></g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="logo-strip-section" aria-labelledby="logos-title">
+      <div class="container">
+        <p id="logos-title" class="logo-strip-eyebrow">信頼されるOSSを運用</p>
+        <ul class="logo-strip">
+          <li class="oss-logo">Grafana</li>
+          <li class="oss-logo">Uptime Kuma</li>
+          <li class="oss-logo">Vaultwarden</li>
+          <li class="oss-logo">Plausible</li>
+          <li class="oss-logo">Gitea</li>
+          <li class="oss-logo">Wallabag</li>
         </ul>
       </div>
     </section>
@@ -100,32 +149,38 @@
           <p class="section-lead">余計なものは省いて、6 つだけ。</p>
         </div>
         <div class="feature-grid">
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg></div>
             <div class="feature-num">01</div>
             <h3>マネージドインスタンス</h3>
             <p>お客様専用のクラウドインスタンスを当方が運用。パッチ適用、バージョンアップ、依存関係の整理は背景で進めます。</p>
           </article>
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5C3 6.4 3.9 5.5 5 5.5h14c1.1 0 2 0.9 2 2v8.5c0 1.1-0.9 2-2 2H5c-1.1 0-2-0.9-2-2z"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></div>
             <div class="feature-num">02</div>
             <h3>担当者によるサポート</h3>
             <p>設定のご相談、連携のご質問、障害対応まで、担当者が直接お返事します。原則 1 営業日以内に。</p>
           </article>
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5L4 6v6c0 4.5 3.4 8.6 8 9.5 4.6-0.9 8-5 8-9.5V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div>
             <div class="feature-num">03</div>
             <h3>インフラのお守り</h3>
             <p>SSL 証明書、バックアップ、アップグレード窓、稼働監視。常に最新で、監査にも耐える状態を保ちます。</p>
           </article>
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M16 12v3.5"/><path d="M19.5 12v2"/><circle cx="8" cy="12" r="1.2" fill="currentColor"/></svg></div>
             <div class="feature-num">04</div>
             <h3>オープンソース志向</h3>
             <p>当方が運用するソフトウェアはオープンソース。いつでもご自身でセルフホストに移行できます。ロックインはありません。</p>
           </article>
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.8 3 4.2 6 4.2 9s-1.4 6-4.2 9c-2.8-3-4.2-6-4.2-9s1.4-6 4.2-9z"/></svg></div>
             <div class="feature-num">05</div>
             <h3>マルチリージョン</h3>
             <p>アジア太平洋の複数リージョンに対応。レイテンシ要件に合わせて配置を選べます。</p>
           </article>
-          <article class="feature">
+          <article class="feature scroll-reveal">
+            <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l3-3.5h12l3 3.5-9 12.5z"/><path d="M3 8h18"/><path d="M9 8l3 12.5L15 8"/></svg></div>
             <div class="feature-num">06</div>
             <h3>明朗な料金</h3>
             <p>定額のサブスクリプション、CNY 建て。隠れた費用や従量課金はなし。ダッシュボードからいつでも解約できます。</p>
@@ -143,7 +198,7 @@
           <p class="section-lead">4 つのプラン。中身は同じ、お支払い周期だけ選んでください。</p>
         </div>
         <div class="plan-grid">
-          <div class="plan">
+          <div class="plan scroll-reveal">
             <span class="plan-tag">トライアル</span>
             <h3>Trial</h3>
             <p class="plan-price">無料<small>3 日間</small></p>
@@ -154,7 +209,7 @@
             </ul>
             <a class="btn btn-secondary" href="#contact">試してみる</a>
           </div>
-          <div class="plan">
+          <div class="plan scroll-reveal">
             <span class="plan-tag">月額</span>
             <h3>Monthly</h3>
             <p class="plan-price">¥30<small>毎月</small></p>
@@ -165,7 +220,7 @@
             </ul>
             <a class="btn btn-primary" href="#contact">申し込む</a>
           </div>
-          <div class="plan plan-highlight">
+          <div class="plan plan-highlight scroll-reveal">
             <span class="plan-tag">3 ヶ月 · 約 11% 割引</span>
             <h3>Quarterly</h3>
             <p class="plan-price">¥80<small>3 ヶ月ごと</small></p>
@@ -176,7 +231,7 @@
             </ul>
             <a class="btn btn-primary" href="#contact">申し込む</a>
           </div>
-          <div class="plan plan-highlight">
+          <div class="plan plan-highlight scroll-reveal">
             <span class="plan-tag">年額 · 約 33% 割引</span>
             <h3>Annual</h3>
             <p class="plan-price">¥240<small>年額</small></p>
@@ -189,6 +244,51 @@
           </div>
         </div>
         <p class="pricing-meta">お支払い方法:Alipay、WeChat Pay、USDT (TRC20)、主要クレジットカード。決済代行を通じて処理しています。</p>
+      </div>
+    </section>
+
+    <div class="divider" aria-hidden="true"></div>
+
+    <section id="faq" class="section about" aria-labelledby="faq-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="faq-title">よくある質問</h2>
+          <p class="section-lead">ご検討の際によくいただくご質問にお答えします。</p>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>VPS とは何が違いますか?</summary>
+            <div class="faq-body"><p>VPS は素の Linux サーバーがお手元に届くだけで、インストール、パッチ適用、監視、バックアップは全てご自身で行う必要があります。Nilou Network は、構成済みのオープンソースアプリケーションを、メンテナンスとサポート付きでマネージド・インスタンスとしてご提供します。何かあった時にメールで連絡できる担当者がいます。</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>後でセルフホストに移行できますか?</summary>
+            <div class="faq-body"><p>はい。当方が運用しているソフトウェアはオープンソースですので、ご自身のハードウェアでも同じアプリケーションを構築できます。ご請求に応じて、データと設定を標準フォーマットで無償でエクスポートいたします。</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>返金ポリシーを教えてください</summary>
+            <div class="faq-body"><p>サブスクリプションはダッシュボードからいつでもキャンセルできます。未使用期間の返金は、ご承認後 7 営業日以内に処理いたします。詳細は<a href="../legal.html#refund">特定商取引法に基づく表記</a>をご確認ください。</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>バックアップとデータエクスポートはどう扱われますか?</summary>
+            <div class="faq-body"><p>日次スナップショットを 14 日間、週次スナップショットを 60 日間保持します。フルデータのエクスポートはいつでもご請求いただけ、標準フォーマット(SQL ダンプ、JSON、設定ファイル)で 3 営業日以内にお届けします。</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>どんな支払方法に対応していますか?</summary>
+            <div class="faq-body"><p>Alipay、WeChat Pay、USDT (TRC20)、主要クレジットカード(決済代行経由)。サブスクリプションはキャンセルされるまで自動更新されます。単発決済もご相談に応じます。</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>稼働率の目標はどのくらいですか?</summary>
+            <div class="faq-body"><p>マネージドインスタンスは月間 99.9% の稼働率を目標としています。現在の規模では契約上の SLA は提供していません — 守れない約束をするより、小さな事業であることを正直にお伝えする方を選びました。</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>標準カタログにないオープンソースアプリも運用できますか?</summary>
+            <div class="faq-body"><p>多くの場合、可能です。<a href="mailto:support@nilou.network">support@nilou.network</a> まで、プロジェクトの URL とご利用目的をお知らせください。検討のうえ、適合する場合は初回セットアップ費用をお見積りします。</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>miHoYo や『原神』との関係はありますか?</summary>
+            <div class="faq-body"><p>ありません。ブランド名「Nilou」はペルシャ語で「青蓮」を意味する一般的な単語として使用しています。Nilou Network は独立した事業であり、miHoYo / HoYoverse 及び『原神』フランチャイズとは関係ありません。</p></div>
+          </details>
+        </div>
       </div>
     </section>
 
@@ -219,22 +319,56 @@
           <li><strong>サポート</strong><a href="mailto:support@nilou.network">support@nilou.network</a></li>
           <li><strong>お支払い関連</strong><a href="mailto:billing@nilou.network">billing@nilou.network</a></li>
           <li><strong>返信目安</strong><span>原則 1 営業日以内</span></li>
-          <li><strong>稼働状況</strong><span>近日公開</span></li>
+          <li><strong>稼働状況</strong><span><span class="status-dot" aria-hidden="true"></span>近日公開</span></li>
         </ul>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="container footer-inner">
-      <p class="footer-brand">Nilou Network</p>
-      <p class="footer-tagline">セルフホスト、しなくていい。</p>
-      <p class="footer-meta">
-        日本の個人事業主が独立して運営 ·
-        <a href="../legal.html">特定商取引法に基づく表記</a>
-      </p>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>プロダクト</h4>
+          <ul>
+            <li><a href="#features">特徴</a></li>
+            <li><a href="#pricing">料金</a></li>
+            <li><span class="is-soon">ステータス(近日)</span></li>
+            <li><span class="is-soon">変更履歴(近日)</span></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>会社情報</h4>
+          <ul>
+            <li><a href="#about">事業者について</a></li>
+            <li><a href="#contact">お問い合わせ</a></li>
+            <li><a href="../legal.html">特定商取引法に基づく表記</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>リソース</h4>
+          <ul>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="../legal.html#open-source">オープンソース表示</a></li>
+            <li><a href="../legal.html#trademark">商標について</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>言語</h4>
+          <ul>
+            <li><a href="/en/" lang="en">English</a></li>
+            <li><a href="/ja/" aria-current="page">日本語</a></li>
+            <li><a href="/zh/" lang="zh">中文</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        © 2025 Nilou Network · 日本の<em>個人事業主</em>として運営 · AGPL-3.0 ソース開示遵守
+      </div>
     </div>
   </footer>
+
+  <script src="../script.js" defer></script>
 
   <script type="application/ld+json">
   {
