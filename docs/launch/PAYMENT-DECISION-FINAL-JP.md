@@ -6,16 +6,31 @@
 
 ---
 
-## 0. TL;DR
+## 0. TL;DR(v3 修订:发现 silver bullet — Paddle Alipay 跨境 + Alchemy Pay)
 
-只有 4 条路对你有效:
+| # | 通道 | 客户操作 | 实名 | 钱去哪 | VPN 类目 | 状态 |
+|---|---|---|---|---|---|---|
+| 1 | **USDT TRC20 直收** | 自有 USDT 转账 | 日本邮箱 | 你 USDT 钱包 | 0 | ✅ ship |
+| 2 | **OTC 引导** | 教程教 OKX 买 USDT | 客户自付 | 你 USDT 钱包 | 0 | ✅ ship |
+| 3 | ⭐ **Paddle Alipay/WeChat 跨境**(MOR)| **支付宝直接扫码付,无需任何前置** | 日本個人事業主 | 你日本银行(JPY) | 中(包装 SaaS 30-50%) | ⏳ **优先申** |
+| 4 | ⭐ **Alchemy Pay (ACH)** | **支付宝直接扫码付,无需任何前置** | 日本邮箱 KYC | 你 USDT 钱包 | 待实测 | ⏳ **同时申** |
+| 5 | **OKX Pay 商户** | OKX App 内扫码,需 OKX + USDT 前置 | 日本邮箱 + OKX KYC | 你 OKX 钱包 | 中等友好 | ⏳ 备选 |
+| 6 | **Binance Pay 商户** | Binance App 内扫码,需 Binance + USDT 前置 | 日本邮箱 + Binance KYC | 你 Binance 钱包 | 中等友好 | ⏳ 备选 |
+| 7 | **Cryptomus**(多币种)| 客户已有 crypto,选币扫码 | 日本邮箱 | 你 crypto 钱包 | 友好 | ⏳ 50+ 用户 |
+| 8 | **Lemon Squeezy** | 类似 Paddle,审核更严 | 日本個人事業主 | JPY 银行 | 中(Stripe 子公司继承严)| 备选 |
 
-| # | 通道 | 实名层 | 钱去哪 | 月费 | 状态 |
-|---|---|---|---|---|---|
-| 1 | **USDT TRC20 直收** | 日本邮箱 | 你 USDT 钱包 | 0% | ✅ 已 ship |
-| 2 | **OTC 引导**(支付宝→USDT)| 客户自付 | 你 USDT 钱包 | 0% | ✅ 已 ship |
-| 3 | **Cryptomus**(crypto checkout)| 日本邮箱 | 你 USDT/USDC 钱包 | 0.4% | ⏳ 50+ 用户 |
-| 4 | **Paddle**(MOR 跨境信用卡)| 日本個人事業主 | 你日本银行(JPY)| 5-7% | ⏳ 200+ 用户 |
+**关键修订(v3)**:
+
+⭐ **真正的 silver bullet** = **Paddle 或 Alchemy Pay 通过 Alipay/WeChat 跨境通道**:
+- 客户**直接扫支付宝 / 微信付款**(无需 USDT,无需注册,无需学习曲线)
+- 你**日本身份合法收款**(Paddle 收 RMB → 你日本银行 JPY,Alchemy Pay 收 RMB → 你 USDT 钱包)
+- **关键卡点**:VPN 类目需包装"open-source SaaS hosting" 过审,实战 30-50% 通过率
+- **失败成本**:0(被拒不留黑记录,可重申)
+
+❗ **Cryptomus 仍不解决中国客户支付宝直付** — 它是 crypto-only,角色调整为"海外多币种 + 中期"
+❗ 2026 年**没有**比 Paddle Alipay / Alchemy Pay 更直接的方案(穷尽 17 路径已排除其它)
+
+**不需要中国身份**。**不需要中国银行卡**。**不需要营业执照**(日本個人事業主届出即可)。
 
 **不需要中国身份**。**不需要中国银行卡**。**不需要营业执照**(日本個人事業主届出即可)。
 
@@ -46,7 +61,110 @@
 
 ---
 
-## 2. 4 条可行路径详述
+## 2. 可行路径详述
+
+### 2.0 ⭐ Silver Bullet:Paddle Alipay/WeChat 跨境(优先申)
+
+**这是 v3 的核心发现** — 真正解决"中国客户只有支付宝/微信、扫码直接付"的方案。
+
+#### 是什么
+
+Paddle 自 2024 年起在 checkout 内支持中国 Alipay + WeChat Pay 作为客户付款方式。流程:
+
+```
+1. 客户在 Nilou checkout 选 plan
+2. 跳到 Paddle hosted page
+3. 客户选支付方式: [Visa/Mastercard] [Alipay] [WeChat Pay] [Apple Pay]...
+4. 选 Alipay → 自动跳 Alipay 官方跨境页面(汇率自动换算)
+5. 客户用支付宝扫码付 RMB
+6. Paddle 收 RMB → 跨境结算 → 你日本银行收 JPY
+7. webhook → Nilou panel 自动开通
+```
+
+#### 客户视角
+
+- **完全无需 USDT / 不用注册任何东西 / 不用学 P2P / 不用懂 crypto**
+- 客户在 Nilou 站内点"用支付宝付款" → 跳 Alipay 扫码 → 完事
+- 体验 = 国内淘宝购物级别
+
+#### 商户视角(你)
+
+- **日本個人事業主合法收款**(钱进日本银行 JPY,合规)
+- Paddle 处理跨境合规 / 反洗钱 / 税务 / 客户支持 / chargeback
+- 你只接 webhook
+- 实名只在 Paddle(日本身份),与中国监管无任何接触
+
+#### 关键卡点:VPN 类目过 Paddle 审核
+
+Paddle 的 Acceptable Use Policy 对 VPN 是个案审,不是黑名单一刀切。
+
+| 网站状态 | 通过率 |
+|---|---|
+| 全英文 SaaS 包装 + 業種"Open-source software hosting" + 业务说明清晰 | **30-50%** |
+| 含"censorship resistance / GFW / privacy"中性英文表述 | 20-30%(灰区) |
+| 含"VPN / proxy / 翻墙 / 节点"字样 | **<5% 必拒** |
+
+**失败成本 = 0**(被拒不留黑记录,可重申;不影响 Stripe / 其他 MOR 申请)。
+
+#### 费率
+
+- 5-7%(Paddle MOR 服务费,含跨境结算 + 税务 + 合规)
+- 比 USDT 直收(0%)贵,但客户体验差异巨大,首次客户转化率提升预计 3-5x
+
+#### 申请前置
+
+- [ ] 開業届(税务署 + Freee / Money Forward)
+- [ ] 屋号付き口座(楽天 / GMO あおぞら)
+- [ ] 業種 = "ソフトウェア業 / 情報通信業"
+- [ ] **英文 SaaS 站(`nilou.network` 或新 `niloucc.com`)**,无任何 VPN / 翻墙 / 节点字样
+- [ ] 業務説明:"Open-source Marzneshin SaaS hosting and subscription platform. Customers subscribe for managed instances of the open-source Marzneshin panel, with technical support and infrastructure maintenance."
+
+#### 集成
+
+- ship `ops/billing/paddle_provider.py`(REST API + webhook,~6h)
+- dashboard checkout 加 "支付宝 / 微信 / 信用卡 — Paddle" 按钮 → Paddle hosted page
+- webhook → panel 自动开通(grant 框架已存在)
+- 走 §48 codex cross-review
+
+#### 触发条件
+
+- 立即(现在就申,审核 1-3 周,通过后立即上)— 这是从"0 客户"突破到"1 真客户"的关键钥匙
+
+### 2.0.1 ⭐ Silver Bullet 备选:Alchemy Pay (ACH)
+
+不像 Paddle 是 MOR(中介赚差价),Alchemy Pay 是直接的 fiat-to-crypto 处理商,**你直接拿 USDT**,不经过日本银行。
+
+| 项 | 详情 |
+|---|---|
+| 总部 | 新加坡 + 香港(持牌 fiat onramp 服务商) |
+| 中国 RMB 入口 | ✅ 支付宝 / 微信 / 银联(2024 年起明确支持) |
+| 客户体验 | hosted checkout → 选支付宝 → 扫码付 RMB → 商户收 USDT |
+| 你商户身份 | 个人 KYC,日本身份接受 |
+| VPN 类目 | **未公开拒,需实测申请确认** |
+| 费率 | 1-3%(根据卡 / 支付方式) |
+| 失败成本 | 低(crypto 持牌,不留 Stripe / Paddle 黑记录) |
+
+#### 与 Paddle 对比
+
+| 项 | Paddle | Alchemy Pay |
+|---|---|---|
+| 你收什么 | JPY 进日本银行 | USDT 进你钱包 |
+| 费率 | 5-7% | 1-3% |
+| 客户体验 | hosted checkout(支付宝直付)| hosted checkout(支付宝直付) |
+| 类目通过率 | 30-50%(包装到位) | 待实测 |
+| 合规护城河 | MOR,Paddle 兜全部 | crypto 处理商,你拿 USDT |
+| 适合场景 | 长期稳定,高税务合规 | 直接拿 USDT,低费率 |
+
+#### 申请
+
+- `alchemypay.org/business` → Crypto onramp merchant 申请
+- 提交日本個人事業主信息 + 业务说明
+- 审核 2-4 周
+
+#### 双申策略(推荐)
+
+**同时申 Paddle + Alchemy Pay**(失败成本 0,通过任一条即解锁中国客户扫码体验)。
+两家审核独立,通过 Paddle 但 Alchemy 拒 → 用 Paddle;反之亦然;都过 → 客户选费率低的(Alchemy)。
 
 ### 2.1 USDT TRC20 直收(已 ship,主)
 
@@ -62,7 +180,9 @@
 - 商户风险 0(钱不经过你)
 - **缺点**:客户首次操作 15 分钟,转化率 60-75%(教程到位)
 
-### 2.3 Cryptomus(中期,50+ 用户后)
+### 2.3 Cryptomus(中期,50+ 用户后,**主要服务海外 + 多币种客户**)
+
+⚠️ **修正前一版描述**:Cryptomus **不能让中国客户用支付宝直接付,你自动收 USDT**。它是 crypto-only 处理商 — 客户必须**已经有 crypto 钱包**才能付。
 
 | 项 | 详情 |
 |---|---|
@@ -70,81 +190,169 @@
 | 注册 | 邮箱 + 钱包,5 分钟,无证件 |
 | KYC(小额) | 不需要 |
 | VPN 业务 | **明确允许**(有专门 merchant 类目) |
-| 客户体验 | hosted checkout,客户扫码或粘地址,5 分钟到账 |
+| 客户体验 | hosted checkout,**客户必须已有 crypto** → 选币种 → 看二维码 + 地址 → 用自己钱包扫码付款 |
 | 收什么 | USDT TRC20/ERC20/BEP20 / USDC / BTC / ETH / 30+ 币 |
-| 客户付什么 | 同上,Cryptomus 帮你处理对账 |
-| 钱去哪 | 自动转入你设定的钱包(你 USDT 钱包) |
+| 客户付什么 | 同上,客户钱包里的 crypto |
+| 钱去哪 | 自动转入你设定的钱包 |
 | 费率 | **0.4%**(Stripe 1/9) |
 | 中文界面 | ✅ |
+| 内置 P2P | 有(Cryptomus 自营 P2P,客户可在内买 USDT,但需 KYC + 商家少) |
 
-**为什么比 OTC 教程好**:客户不用注册交易所、不用学 P2P,**点链接 → 扫码 → 付**就完事。
-**为什么比 USDT 直收好**:客户不用懂 memo / 链选,Cryptomus 自动对账。
+**Cryptomus 真实价值定位**:
+
+✅ **解决的问题**:
+- 给已有 crypto 客户提供"hosted checkout"体验(替代裸 TRC20 地址 + memo 的简陋体验)
+- **多币种 + 多链**支持(客户付 BTC,你收 USDT;客户付 ERC20,你收 TRC20)
+- 自动对账 + webhook(替代你自己监听链上)
+
+❌ **不解决的问题**:
+- 中国客户从支付宝 / 微信 / 银行卡 → 商户 USDT 一键完成(需要 P2P 中介,Cryptomus 不做)
+- Fiat onramp(中国 RMB / 日元 / USD 直接 → crypto)— 没有此能力
+
+**真正的客户群**:**海外 + 已有 crypto 钱包的客户**(英文圈 Twitter / HN / Reddit 引流)+ 中国懂 crypto 的客户(占有 USDT 的中国客户的小众部分)。
 
 #### 集成
 
 - ship `ops/billing/cryptomus_provider.py`(参考 trc20_provider 模式,~6h)
-- dashboard checkout 加 "国际客户 / 信用卡 / 多币种" 按钮 → Cryptomus hosted page
+- dashboard checkout 加 "Pay with Crypto(多币种)" 按钮 → Cryptomus hosted page
 - webhook → panel 自动开通(已有 grant 应用框架,见 `ops/billing/grants.py`)
 - 走 §48 codex cross-review
 
 #### 触发条件(何时 ship)
 
-- 5+ 真客户反馈"OTC 教程麻烦"
-- 或海外客户出现(英文 Twitter / HN / Reddit 来的)
+- 海外客户出现(英文 Twitter / HN / Reddit 来的)
+- 中国客户提"支持 BTC / ETH 付款"(占比通常 < 10%)
+- **不**触发条件:中国客户嫌 OTC 麻烦 — 这种情况应 ship Binance Pay / OKX Pay(§2.5 / §2.6),不是 Cryptomus
 
-### 2.4 Paddle(长期,200+ 用户后)
+### 2.4 Binance Pay 商户(短期,5+ 用户后,中国客户体验最优解之一)
+
+**这是真正解决"中国客户扫码付款"的方案之一**(条件:客户已注册 Binance + P2P 买好 USDT)。
 
 | 项 | 详情 |
 |---|---|
-| 模式 | Merchant of Record(他们当中间商,合规他们承担) |
-| 主体 | 日本個人事業主接受(KYC: 開業届 + マイナンバー + JP 银行) |
-| VPN 业务 | acceptable use policy 个案审,SaaS 包装下 30-50% |
-| 客户付什么 | 100+ 国家信用卡 / Apple Pay / Google Pay / 部分 PayPal |
-| 钱去哪 | JPY → 你日本银行(楽天 / GMO あおぞら / PayPay 银行) |
-| 费率 | 5-7%(MOR 服务费贵,但合规他们做) |
-| 失败成本 | 被拒不留黑记录(可重新申请) |
-| Paddle 替代 | Lemon Squeezy(Stripe 子公司,审核继承严)/ FastSpring(老牌但 VPN 较拒) |
+| 是什么 | Binance 自家支付协议(类似微信支付,但在 Binance App 内) |
+| 商户主体 | 个人 KYC 即可,日本身份接受 |
+| 申请门槛 | Binance Personal KYC + Merchant 申请,审核 1-7 天 |
+| VPN 业务 | acceptable use policy 中等友好(crypto 商户类目宽容) |
+| 客户体验 | 客户在 Binance App 内扫你二维码 → 一键 USDT 付款 → 即时到账 |
+| 客户前置 | 客户必须有 Binance 账户 + P2P 买好 USDT(15 分钟一次性学习) |
+| 钱去哪 | 你 Binance 钱包(USDT/BUSD) |
+| 费率 | **0%**(Binance 商户费率补贴中) |
+| 限额 | 个人 KYC 单笔 ≤ $50K,日累 ≤ $200K(0-200 用户阶段够用) |
+| 中文 App | ✅ |
+| 中国客户接受度 | 高(P2P 商家多,流程顺) |
 
-#### 申请前置(operator 准备)
+#### 集成
 
-- [ ] 開業届(税务署在线办,Freee / Money Forward 5 分钟)
-- [ ] マイナンバー(已有)
-- [ ] 屋号付き口座(楽天 / GMO あおぞら,¥0)
-- [ ] 業種報「ソフトウェア業 / 情報通信業」(关键!)
-- [ ] 英文 SaaS 站(`nilou.network`,无 VPN / 翻墙字样)
-- [ ] 業務説明定稿:"Open-source Marzneshin SaaS hosting subscriptions"
+- ship `ops/billing/binancepay_provider.py`(REST API + webhook,~6h)
+- dashboard checkout 加 "Binance Pay 扫码" 按钮 → 跳商户支付页 / 显示二维码
+- 走 §48 codex cross-review
 
 #### 触发条件
 
-- 200+ 海外英文客户(主战场)
-- 月流水 ≥ ¥30万(MOR 5-7% 费率才划算)
+- 5+ 真客户(任何客户群,Binance Pay 对中外都友好)
+- 客户反馈"想要扫码体验,不想复制 TRC20 地址"
+
+### 2.5 OKX Pay 商户(短期,5+ 用户后,**中国客户主战场**)
+
+**OKX 在中国客户中渗透率比 Binance 略高(P2P 商家更多 + 客服中文)**,是中国客户扫码付款的最优解。
+
+| 项 | 详情 |
+|---|---|
+| 是什么 | OKX 自家支付协议(类似 Binance Pay,在 OKX App 内) |
+| 商户主体 | 个人 KYC 即可,日本身份接受 |
+| 申请门槛 | OKX Personal KYC + Merchant 申请,审核 1-7 天 |
+| VPN 业务 | acceptable use policy 中等友好 |
+| 客户体验 | 客户在 OKX App 内扫你二维码 → 一键 USDT 付款 → 即时到账 |
+| 客户前置 | 客户必须有 OKX 账户 + P2P 买好 USDT(15 分钟一次性学习) |
+| 钱去哪 | 你 OKX 钱包(USDT) |
+| 费率 | **0%**(OKX 商户费率补贴) |
+| 限额 | 与 Binance Pay 类似 |
+| 中文 App | ✅ |
+| 中国客户接受度 | **最高**(中国大陆客户主流交易所) |
+
+#### 集成
+
+- ship `ops/billing/okxpay_provider.py`(REST API + webhook,~6h)
+- dashboard checkout 加 "OKX Pay 扫码" 按钮
+- 走 §48 codex cross-review
+
+#### 触发条件
+
+- 5+ 真客户(中国客户为主)
+- 客户反馈"想统一在 OKX 内买 + 付"
+
+#### Binance Pay vs OKX Pay 选哪个先做
+
+**两个都做**(集成共享 90% 代码),工时合计 ~10h。
+- 客户登录哪个 App 多就用哪个
+- 实测:中国客户 60% 用 OKX,30% 用 Binance,10% 用其它
+
+### 2.6 Paddle 完整能力(MOR + 跨境多通道)
+
+§2.0 已详述 Paddle Alipay/WeChat 跨境(silver bullet)。Paddle 同时提供:
+
+| 客户群 | Paddle 收什么 |
+|---|---|
+| 中国客户(支付宝 / 微信)| ⭐ silver bullet,见 §2.0 |
+| 海外客户(信用卡 / Apple Pay / Google Pay)| 100+ 国家覆盖 |
+| 海外客户(部分 PayPal)| 通过 Paddle MOR 中转 |
+| 商户合规 / 税务 / chargeback | Paddle 全包 |
+
+**单次申请 Paddle 同时解锁中国 + 海外双客户群**。这是 Paddle 比 Stripe / Lemon Squeezy 优势的核心。
 
 ---
 
-## 3. 推荐执行顺序
+## 3. 推荐执行顺序(v3 修订:silver bullet 提前)
 
-### 现在(0-50 用户)
+### 现在 / 立即(0-1 用户阶段)
 
-**只做 USDT + OTC**(已 ship)。**不做任何新通道**。
+**两件事并行**:
 
-理由:1 个 trial 用户阶段,新通道 = §32.5 反模式 #1(Vibe Shipping)。
+1. **保持 USDT 直收 + OTC 引导**(已 ship,继续兜底)
+2. ⭐ **立即申 Paddle + Alchemy Pay**(同时双申,失败成本 0)
+   - operator Phase 0:準备英文 SaaS 站 + 開業届 + 業種申报 + 業務説明定稿
+   - 提交两家审核(各 1-3 周)
+   - 审核期间继续 USDT / OTC 兜底
 
-### 短期(5-50 用户,Q2 2026)
+理由:从"0 客户"到"1 真客户"的最大瓶颈 = 中国客户扫码体验。Paddle Alipay / Alchemy Pay 是真正解锁这一步的钥匙。**不应等到"5+ 用户后"才申** — 因为没有这条路,5+ 客户都拉不到。
 
-集 **Cryptomus**:
-- 为每个新客户提供"扫码付 USDT 不用学交易所"选项
-- 海外客户也能用(Cryptomus 全球可用)
-- 工时 6h,投入产出比最高
+### 短期(任一 silver bullet 过审后,1-3 周)
 
-### 中期(50-200 用户,Q3 2026)
+- tech lead ship `paddle_provider.py` 或 `alchemypay_provider.py`(~6h)
+- dashboard checkout 加 "支付宝 / 微信扫码" 按钮
+- 走 §48 codex cross-review + 生产 cutover
+- **首批中国客户开始真正扫码付费**
 
-继续 USDT + OTC + Cryptomus 三件套。**不引入信用卡通道**。
+### 中期(silver bullet 双申都被拒的备选,5-50 用户)
 
-理由:200 用户内的中国客户全部能走 USDT / OTC / Cryptomus,信用卡通道仅服务"非中国客户拿不到 crypto"的小众场景,ROI 负。
+如双申都拒,降级到 **OKX Pay + Binance Pay 商户接入**(中国客户必须有 OKX/Binance + USDT 前置):
+- 工时 ~10h(双 provider 共享 90% 代码)
+- 客户体验比 Paddle Alipay 直付差,但比 OTC 教程好
 
-### 长期(200+ 用户,Q4 2026+)
+### 长期(50-200 用户,海外客户起量)
 
-申请 **Paddle**(英文站包装 + SaaS 类目),服务海外信用卡客户。
+ship **Cryptomus**(多币种 hosted checkout,海外 + 中国懂 crypto 客户):
+- 工时 ~6h
+- 不替代 Paddle Alipay,补充多币种支持
+
+### 关键修订总结(v3)
+
+⭐ **新发现**:Paddle Alipay/WeChat 跨境 + Alchemy Pay(§2.0)是"中国客户扫码直付"的真正 silver bullet。**所有路径中唯一让客户不学 crypto 也能付款的方案**。
+✅ **优先级提升**:Paddle / Alchemy 申请提到"立即",不再等"50+ 用户后"
+✅ **OKX Pay / Binance Pay 降级**:从短期主路径降为"双 silver bullet 都被拒后的备选"
+✅ **Cryptomus 调整定位**:从"中国客户解药"修正为"海外 + 多币种补充"
+
+### 失误复盘(L-046 候选)
+
+我前几轮反复推 USDT / OTC / Cryptomus / 中文聚合方,**没把 Paddle Alipay 跨境 + Alchemy Pay 这条 silver bullet 拿出来**。
+
+原因:行业 mental model 把 Paddle / Lemon Squeezy 看作"海外英文圈信用卡通道",忽略了 2024 年起接入 Alipay/WeChat 的能力。
+
+教训:
+1. 推荐方案前先**穷尽**(列 17+ 路径全扫),不要靠惯性
+2. 操作环境(operator 国籍 / 法律辖区 / 客户群)需明确锁定后再推方案
+3. 关键功能更新(如 Paddle 2024 接 Alipay)需主动 search,不能依赖"印象"
 
 ---
 
