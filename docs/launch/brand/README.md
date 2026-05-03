@@ -36,12 +36,11 @@
 
 详见 `BRAND-GUIDELINES.md` §法律红线。简版:
 
-- ❌ 不得使用 miHoYo / HoYoverse 任何受版权保护的素材
-- ❌ 不得 image-to-image 参考《原神》角色立绘
-- ❌ 不得让 logo 视觉特征点对点匹配特定二游角色
+- ❌ 不得直接复用 miHoYo / HoYoverse 受版权保护的素材文件(立绘 / 3D / CG 截图)
+- ✅ 视觉相似 / 画风致敬 / 角色灵感 OK(包括与原神角色相似的发型 / 服装风格 / 姿态)
+- ✅ AI 生图 OK(包括 image-to-image,但不以官方素材文件作为输入)
 - ✅ 通用元素 OK(荷花 / 舞者剪影 / 波斯纹样 / 任意配色)
 - ✅ 二次元画风 OK(画风不受版权保护)
-- ✅ 原创角色 OK(prompt 中明确 "Original character, not based on any existing IP")
 
 ## 引用方
 
