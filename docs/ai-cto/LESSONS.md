@@ -8,6 +8,40 @@
 
 ---
 
+## L-045 | 2026-05-03 brand 设计自由度放开 | 撤销「视觉相似」禁令,L-044 SOP 复用边界收窄
+
+**现象**:用户决策放开品牌「与原神 / 米哈游视觉相似」的设计禁令(2026-05-03)。CTO 经 AskUserQuestion 拆 scope 后执行:仅删内部 brand guideline 中「视觉相似禁止 / 不得用角色专名作 prompt」类条款;trademark disclaimer / LESSONS L-044 / HARNESS-CHANGELOG / eval regression 008 / 资产政策(不直接 commit 米哈游版权素材)全部保留。
+
+**政策变更对比**:
+
+| 维度 | 旧政策(L-044 时) | 新政策(L-045 起) |
+|---|---|---|
+| 视觉相似 | ❌ 严禁(ordinary observer test) | ✅ 允许 |
+| 画风致敬 | ❌ 严禁 | ✅ 允许 |
+| AI 生图(image-to-image) | ❌ 严禁 | ✅ 允许(不以官方素材文件作输入) |
+| Prompt 用角色专名(`Nilou` / `妮露`) | ❌ 严禁 | ✅ 允许(单字 / 通用词) |
+| 直接 commit 官方素材文件 | ❌ 严禁 | ❌ 严禁(底线不变) |
+| 主张「官方授权」/「官方合作」 | ❌ 严禁 | ❌ 严禁(底线不变) |
+| 组合商标作 metadata(`Genshin Impact` 等) | ❌ 严禁 | ❌ 严禁(底线不变) |
+| trademark disclaimer(NOTICE / README / marketing) | 保留 | 保留(法律护盾) |
+
+**对 L-044 SOP 的影响**:
+- L-044 SOP 4 步**仍适用**于「直接 commit 米哈游官方原始素材文件」 / 「主张官方授权」类场景
+- L-044 SOP **不再适用**于「视觉相似 / 画风致敬 / AI 生成相似角色」场景 — 此类已放开
+- PR #210 同类 case(像素画 favicon)**新政策下不再触发 CTO 拒绝执行**(只要不直接复用官方素材文件)
+
+**保留 L-044 原因**:§44 决策可追溯;L-044 记录的是「红线 vs 自治权边界」方法论,即使具体红线收窄,SOP 框架仍有价值。
+
+**沉淀**:
+- ✅ `docs/launch/brand/BRAND-GUIDELINES.md` §5 重写
+- ✅ `docs/launch/brand/README.md` 法律红线段重写
+- ✅ `docs/launch/BRAND-NAMING-DECISION.md` §1 / §4.2 / §4.3 / §5 重写
+- ✅ trademark disclaimer 全部保留(NOTICE.md / README.md / marketing/{en,ja,zh}/legal.html)
+- ✅ eval regression 008 不变
+- ✅ L-044 不删
+
+---
+
 ## L-044 | wave-10 brand SEAL | CTO 法律红线 vs 用户自治权的边界案例
 
 **现象**:wave-10 brand SEAL 期间,用户要求 commit 米哈游版权派生作品(原神妮露像素画)作为 dashboard favicon(PR #210 `feat/project-icon`)。CTO 基于项目宪法 + 法律风险(米哈游 IP / 原神角色版权 / 商标侵权)拒绝执行 push / PR / merge 该图。前后 6 轮坚守红线。用户行使 git 完全控制权,自行 push + merge,图进入 production。

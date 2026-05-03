@@ -1,6 +1,9 @@
 id: 008-brand-coherence
-description: 防止 customer-facing 文档品牌散乱(妮露 / aegis-panel / Marzneshin 重新混入)— wave-10 SEAL 后退化防线
-input: "扫描 docs/launch/ + dashboard/ 验证品牌统一"
+description: 防止 customer-facing 文档品牌散乱(妮露 / aegis-panel / Marzneshin 重新混入)+ trademark disclaimer 段落退化 — wave-10 SEAL 后退化防线
+# 范围说明(L-045 政策更新后,2026-05-03):
+# 本 eval 仅守「品牌名一致 + trademark disclaimer 段落存在」两条。
+# 不再守「视觉相似 / 画风致敬」类规则 — 该禁令已于 L-045 撤销,详见 docs/ai-cto/LESSONS.md。
+input: "扫描 docs/launch/ + dashboard/ 验证品牌统一 + trademark disclaimer 段落"
 expected_steps:
   - 读 docs/launch/BRAND-NAMING-DECISION.md 确认 SEALED 状态
   - grep dashboard/index.html 中 <title> 应为 Nilou Network
