@@ -858,18 +858,27 @@ img, svg { display: block; max-width: 100%; }
 }
 .hero-mockup {
   position: relative;
-  background: #fff;
+  /* Match image's outer pale-teal padding so window pops; image bg blends seamlessly */
+  background: #e8f0ee;
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow:
     0 1px 3px rgba(20, 41, 64, 0.08),
     0 12px 32px rgba(20, 41, 64, 0.10),
-    0 32px 64px rgba(58, 145, 136, 0.08);
+    0 32px 64px rgba(58, 145, 136, 0.10);
   overflow: hidden;
   aspect-ratio: 16 / 11;
   width: 100%;
   max-width: 560px;
   justify-self: center;
+}
+.hero-mockup img {
+  /* Crop pale-teal padding so dashboard window fills more of card */
+  width: 115%;
+  height: 115%;
+  object-fit: cover;
+  object-position: center;
+  margin: -7.5% 0 0 -7.5%;
 }
 .hero-mockup img {
   width: 100%;
