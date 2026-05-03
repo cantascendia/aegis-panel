@@ -3,132 +3,222 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Nilou Network は、アプリケーション運用を小さなチーム向けに管理するクラウド運用サービスです。" />
-  <meta name="theme-color" content="#047c7a" />
-  <title>Nilou Network - 管理型クラウド運用</title>
-  <link rel="icon" href="../assets/lotus.svg" type="image/svg+xml" />
+  <meta name="description" content="Nilou Network — オープンソースアプリのマネージドホスティング・サブスクリプション。日本の個人事業主が運営する、ダッシュボードや監視ツールなどの運用代行サービスです。" />
+  <meta name="theme-color" content="#3a9188" />
+  <title>Nilou Network — セルフホスト型アプリのマネージドホスティング</title>
+
+  <meta property="og:title" content="Nilou Network" />
+  <meta property="og:description" content="セルフホスト、しなくていい。日本の個人事業主が、オープンソースアプリの運用を代行します。" />
+  <meta property="og:url" content="https://nilou.network/ja/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="ja_JP" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:locale:alternate" content="zh_CN" />
+  <meta name="twitter:card" content="summary" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../styles.css" />
-  <link rel="alternate" hreflang="en" href="/en/" />
-  <link rel="alternate" hreflang="ja" href="/ja/" />
-  <link rel="alternate" hreflang="zh" href="/zh/" />
-  <link rel="alternate" hreflang="x-default" href="/" />
+  <link rel="icon" href="../assets/lotus.svg" type="image/svg+xml" />
+  <link rel="canonical" href="https://nilou.network/ja/" />
+  <link rel="alternate" hreflang="en" href="https://nilou.network/en/" />
+  <link rel="alternate" hreflang="ja" href="https://nilou.network/ja/" />
+  <link rel="alternate" hreflang="zh" href="https://nilou.network/zh/" />
+  <link rel="alternate" hreflang="x-default" href="https://nilou.network/" />
 </head>
 <body class="lang-ja">
-  <a class="skip-link" href="#main">本文へ移動</a>
+  <a class="skip-link" href="#main">本文へスキップ</a>
+
   <header class="topbar">
     <div class="container topbar-inner">
       <a class="brand" href="/ja/" aria-label="Nilou Network ホーム">
-        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 8c8 8 8 20 0 24-8-4-8-16 0-24Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M32 8c8 8 8 20 0 24-8-4-8-16 0-24Z" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(60 32 32)"/><path d="M32 8c8 8 8 20 0 24-8-4-8-16 0-24Z" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(120 32 32)"/><circle cx="32" cy="32" r="3" fill="currentColor"/></svg></span>
+        <svg class="brand-icon" viewBox="0 0 200 200" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z"/><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z" transform="rotate(60 100 100)"/><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z" transform="rotate(120 100 100)"/><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z" transform="rotate(180 100 100)"/><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z" transform="rotate(240 100 100)"/><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z" transform="rotate(300 100 100)"/><circle cx="100" cy="100" r="4" fill="currentColor"/></g>
+        </svg>
         <span>Nilou Network</span>
       </a>
-      <nav class="nav" aria-label="主要ナビゲーション">
-        <a href="#features">機能</a>
-        <a href="#workflow">流れ</a>
+      <nav class="nav" aria-label="主要メニュー">
+        <a href="#features">特徴</a>
         <a href="#pricing">料金</a>
+        <a href="#about">事業者情報</a>
         <span class="lang-switch" aria-label="言語選択">
           <a href="/en/" lang="en">EN</a>
           <a href="/ja/" aria-current="page">日本語</a>
-          <a href="/zh/" lang="zh-CN">中文</a>
+          <a href="/zh/" lang="zh">中文</a>
         </span>
-        <a class="btn btn-primary" href="#contact">相談する</a>
+        <a class="cta-btn" href="#pricing">申し込む</a>
       </nav>
     </div>
   </header>
 
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
-      <div class="container hero-grid">
-        <div>
-          <p class="eyebrow">管理型クラウド運用</p>
-          <h1 id="hero-title">アプリ運用を、静かな舞台のように。</h1>
-          <p class="lead">Nilou Network は、小さなチームの本番アプリケーション運用を支える SaaS 型の運用レイヤーです。導入支援、更新、バックアップ、監視、障害時の対応まで、責任範囲を明確にして引き受けます。</p>
-          <div class="hero-actions">
-            <a class="btn btn-primary" href="#pricing">料金を見る</a>
-            <a class="btn btn-secondary" href="#features">内容を見る</a>
-          </div>
-          <ul class="hero-proof" aria-label="サービスの特徴">
-            <li>日本拠点の運営</li>
-            <li>オープンソースに配慮</li>
-            <li>外部解析なし</li>
-          </ul>
+      <svg class="ripple ripple-1" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="40" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4"/><circle cx="100" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/><circle cx="100" cy="100" r="80" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"/></svg>
+      <svg class="ripple ripple-2" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="30" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/><circle cx="100" cy="100" r="50" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"/><circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" stroke-width="1" opacity="0.1"/></svg>
+
+      <div class="container hero-inner">
+        <svg class="hero-mark" viewBox="0 0 200 200" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <g stroke-opacity="0.92"><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(45 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(90 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(135 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(180 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(225 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(270 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(315 100 100)"/></g>
+            <circle cx="100" cy="100" r="6"/><circle cx="100" cy="100" r="2.5" fill="currentColor"/>
+          </g>
+        </svg>
+
+        <p class="eyebrow">マネージドホスティング</p>
+
+        <h1 id="hero-title">
+          <span class="display">セルフホスト、</span>
+          <span class="display accent">しなくていい。</span>
+        </h1>
+
+        <p class="lead">
+          ダッシュボード、監視ツール、業務アプリ — オープンソースのアプリケーションを、
+          私たちがクラウド上で運用します。お客様はサブスクリプションするだけ。
+          サーバーの面倒、アップグレード、バックアップ、稼働監視は当方にお任せください。
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#pricing">プランを見る</a>
+          <a class="btn btn-secondary" href="#contact">お問い合わせ</a>
         </div>
-        <div class="stage" aria-label="青い蓮と水の舞台を表したオリジナルイラスト">
-          <div class="stage-card">
-            <svg class="lotus-orbit" viewBox="0 0 200 200" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="100" cy="100" r="74"/><circle cx="100" cy="100" r="48" opacity=".45"/><path d="M100 24c20 22 20 54 0 64-20-10-20-42 0-64Z"/><path d="M100 24c20 22 20 54 0 64-20-10-20-42 0-64Z" transform="rotate(72 100 100)"/><path d="M100 24c20 22 20 54 0 64-20-10-20-42 0-64Z" transform="rotate(144 100 100)"/><path d="M100 24c20 22 20 54 0 64-20-10-20-42 0-64Z" transform="rotate(216 100 100)"/><path d="M100 24c20 22 20 54 0 64-20-10-20-42 0-64Z" transform="rotate(288 100 100)"/></g></svg>
-            <div class="dancer" aria-hidden="true"><span class="halo"></span><span class="ribbon ribbon-one"></span><span class="ribbon ribbon-two"></span></div>
-            <div class="metrics" aria-hidden="true"><div class="metric"><strong>99.9%</strong><span>目標稼働率</span></div><div class="metric"><strong>24h</strong><span>対応窓口</span></div><div class="metric"><strong>3</strong><span>対応地域</span></div></div>
-          </div>
-        </div>
+
+        <ul class="hero-meta">
+          <li>日本の個人事業主が運営</li>
+          <li>アジア太平洋複数リージョン</li>
+          <li>オープンソース志向</li>
+        </ul>
       </div>
     </section>
 
-    <section id="features" class="section alt" aria-labelledby="features-title">
+    <div class="divider" aria-hidden="true"></div>
+
+    <section id="features" class="section features" aria-labelledby="features-title">
       <div class="container">
-        <div class="section-header">
-          <h2 id="features-title">専任チームなしで、運用の面倒を減らす。</h2>
-          <p class="section-lead">信頼できるホスティング、明確なサポート、継続的な保守を必要とするチーム向けの小さな運用サービスです。</p>
+        <div class="section-head">
+          <h2 id="features-title">サービス内容</h2>
+          <p class="section-lead">余計なものは省いて、6 つだけ。</p>
         </div>
         <div class="feature-grid">
-          <article class="feature"><p class="feature-kicker">01</p><h3>管理された実行環境</h3><p>クラウド環境、更新枠、SSL、バックアップ、基本的な監視を整え、継続的に保守します。</p></article>
-          <article class="feature"><p class="feature-kicker">02</p><h3>運用サポート</h3><p>設定相談、更新計画、障害時の一次対応を、担当者が分かる形で支援します。</p></article>
-          <article class="feature"><p class="feature-kicker">03</p><h3>移行しやすい基盤</h3><p>オープンソースの部品と文書化された引き継ぎを重視し、将来の移動を妨げません。</p></article>
-          <article class="feature"><p class="feature-kicker">04</p><h3>リリース衛生</h3><p>定期的なパッチと依存関係の確認で、小規模環境にたまりがちな運用負債を抑えます。</p></article>
-          <article class="feature"><p class="feature-kicker">05</p><h3>地域配置</h3><p>アジア太平洋の配置候補から、利用者と運用要件に合う場所を選べます。</p></article>
-          <article class="feature"><p class="feature-kicker">06</p><h3>分かりやすい料金</h3><p>小さく始めやすい定額プランで、余計な商談手続きを増やしません。</p></article>
+          <article class="feature">
+            <div class="feature-num">01</div>
+            <h3>マネージドインスタンス</h3>
+            <p>お客様専用のクラウドインスタンスを当方が運用。パッチ適用、バージョンアップ、依存関係の整理は背景で進めます。</p>
+          </article>
+          <article class="feature">
+            <div class="feature-num">02</div>
+            <h3>担当者によるサポート</h3>
+            <p>設定のご相談、連携のご質問、障害対応まで、担当者が直接お返事します。原則 1 営業日以内に。</p>
+          </article>
+          <article class="feature">
+            <div class="feature-num">03</div>
+            <h3>インフラのお守り</h3>
+            <p>SSL 証明書、バックアップ、アップグレード窓、稼働監視。常に最新で、監査にも耐える状態を保ちます。</p>
+          </article>
+          <article class="feature">
+            <div class="feature-num">04</div>
+            <h3>オープンソース志向</h3>
+            <p>当方が運用するソフトウェアはオープンソース。いつでもご自身でセルフホストに移行できます。ロックインはありません。</p>
+          </article>
+          <article class="feature">
+            <div class="feature-num">05</div>
+            <h3>マルチリージョン</h3>
+            <p>アジア太平洋の複数リージョンに対応。レイテンシ要件に合わせて配置を選べます。</p>
+          </article>
+          <article class="feature">
+            <div class="feature-num">06</div>
+            <h3>明朗な料金</h3>
+            <p>定額のサブスクリプション、CNY 建て。隠れた費用や従量課金はなし。ダッシュボードからいつでも解約できます。</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <section id="workflow" class="section" aria-labelledby="workflow-title">
-      <div class="container workflow">
-        <div class="info-card">
-          <p class="eyebrow">導入の流れ</p>
-          <h2 id="workflow-title">相談から安定運用まで。</h2>
-          <p class="section-lead">対象アプリを決め、環境を立ち上げ、健全な状態を保ちます。</p>
-        </div>
-        <ol class="steps">
-          <li class="step"><span class="step-num">1</span><div><h3>確認</h3><p>アプリケーション、地域、データ要件、更新方針を確認します。</p></div></li>
-          <li class="step"><span class="step-num">2</span><div><h3>開始</h3><p>実行環境を用意し、公開先を保護し、基本チェックを完了します。</p></div></li>
-          <li class="step"><span class="step-num">3</span><div><h3>運用</h3><p>監視、更新、バックアップ、必要時の対応を継続します。</p></div></li>
-        </ol>
-      </div>
-    </section>
+    <div class="divider" aria-hidden="true"></div>
 
-    <section id="pricing" class="section alt" aria-labelledby="pricing-title">
+    <section id="pricing" class="section pricing" aria-labelledby="pricing-title">
       <div class="container">
-        <div class="section-header">
-          <h2 id="pricing-title">小さなチーム向けの料金。</h2>
-          <p class="section-lead">まず試し、合うと分かってから長めの契約に移れます。</p>
+        <div class="section-head">
+          <h2 id="pricing-title">サブスクリプション</h2>
+          <p class="section-lead">4 つのプラン。中身は同じ、お支払い周期だけ選んでください。</p>
         </div>
         <div class="plan-grid">
-          <article class="plan"><p class="plan-kicker">Trial</p><h3>トライアル</h3><p class="price">無料<span>3日間</span></p><ul><li>管理環境の試用</li><li>メールサポート</li><li>支払い不要</li></ul><a class="btn btn-secondary" href="#contact">試用を相談</a></article>
-          <article class="plan"><p class="plan-kicker">Monthly</p><h3>月額</h3><p class="price">¥30<span>月ごと</span></p><ul><li>管理された実行環境</li><li>標準サポート</li><li>いつでも解約可</li></ul><a class="btn btn-primary" href="#contact">申し込む</a></article>
-          <article class="plan featured"><p class="plan-kicker">Quarterly</p><h3>四半期</h3><p class="price">¥80<span>3か月ごと</span></p><ul><li>管理された実行環境</li><li>優先サポート</li><li>月平均を抑えた料金</li></ul><a class="btn btn-primary" href="#contact">申し込む</a></article>
+          <div class="plan">
+            <span class="plan-tag">トライアル</span>
+            <h3>Trial</h3>
+            <p class="plan-price">無料<small>3 日間</small></p>
+            <ul>
+              <li>インスタンスへのフルアクセス</li>
+              <li>メールサポート</li>
+              <li>支払不要</li>
+            </ul>
+            <a class="btn btn-secondary" href="#contact">試してみる</a>
+          </div>
+          <div class="plan">
+            <span class="plan-tag">月額</span>
+            <h3>Monthly</h3>
+            <p class="plan-price">¥30<small>毎月</small></p>
+            <ul>
+              <li>マネージドインスタンス</li>
+              <li>標準サポート</li>
+              <li>いつでも解約可</li>
+            </ul>
+            <a class="btn btn-primary" href="#contact">申し込む</a>
+          </div>
+          <div class="plan plan-highlight">
+            <span class="plan-tag">3 ヶ月 · 約 11% 割引</span>
+            <h3>Quarterly</h3>
+            <p class="plan-price">¥80<small>3 ヶ月ごと</small></p>
+            <ul>
+              <li>マネージドインスタンス</li>
+              <li>優先サポート</li>
+              <li>約 11% 割引</li>
+            </ul>
+            <a class="btn btn-primary" href="#contact">申し込む</a>
+          </div>
+          <div class="plan plan-highlight">
+            <span class="plan-tag">年額 · 約 33% 割引</span>
+            <h3>Annual</h3>
+            <p class="plan-price">¥240<small>年額</small></p>
+            <ul>
+              <li>マネージドインスタンス</li>
+              <li>優先サポート</li>
+              <li>約 33% 割引</li>
+            </ul>
+            <a class="btn btn-primary" href="#contact">申し込む</a>
+          </div>
         </div>
-        <p class="pricing-note">支払い方法は、決済パートナーを通じてクレジットカード、Alipay、WeChat Pay、USDT (TRC20) などに対応予定です。最終的な利用可否はアカウント審査後に確定します。</p>
+        <p class="pricing-meta">お支払い方法:Alipay、WeChat Pay、USDT (TRC20)、主要クレジットカード。決済代行を通じて処理しています。</p>
       </div>
     </section>
 
-    <section id="about" class="section" aria-labelledby="about-title">
-      <div class="container">
-        <div class="section-header">
-          <h2 id="about-title">独立運営、丁寧な保守、移動しやすい構成。</h2>
-          <p class="section-lead">Nilou Network は、日本を拠点とする独立事業として、現実的なクラウド運用を必要とするチームを支援します。</p>
+    <div class="divider" aria-hidden="true"></div>
+
+    <section id="about" class="section about" aria-labelledby="about-title">
+      <div class="container about-content">
+        <div class="section-head">
+          <h2 id="about-title">事業者について</h2>
+          <p class="section-lead">小さな事業者が、丁寧に運営しています。</p>
         </div>
-        <div class="about-grid">
-          <article class="about-card"><h3>オリジナルの視覚表現</h3><p>蓮、水、舞台をモチーフにした独自デザインです。第三者のキャラクター画像やゲーム素材は使用していません。</p></article>
-          <article class="about-card"><h3>オープンソースへの配慮</h3><p>利用する部品はライセンス条件に従って扱います。必要な場合、対象部品のソース提供にも対応します。</p></article>
-        </div>
+        <p>Nilou Network は、日本の個人事業主が単独で運営する、オープンソースソフトウェア向けのマネージドホスティング・サブスクリプションサービスです。お客様にはマネージド・デプロイメントを月額・年額でご提供し、運用代行と技術サポートを当方がお引き受けします。</p>
+        <p>ホストしているソフトウェアコンポーネントは、寛容なオープンソースライセンスのもとで提供されています。ソースコードは関連ライセンスに従い、ご請求に応じて開示します。本ページではトラッキングスクリプトや解析ビーコン、第三者広告は使用していません。</p>
+        <p class="trademark-notice"><strong>商標について。</strong> ブランド名「Nilou」はペルシャ語で「青蓮」を意味する一般的な単語として使用しています。Nilou Network は独立した事業であり、miHoYo / HoYoverse 及び『原神』フランチャイズとは関係ありません。</p>
       </div>
     </section>
 
-    <section id="contact" class="section" aria-labelledby="contact-title">
-      <div class="container contact-box">
-        <div>
-          <h2 id="contact-title">運用したい内容をお知らせください。</h2>
-          <p>対応可否、地域候補、次の設定手順を返信します。</p>
+    <div class="divider" aria-hidden="true"></div>
+
+    <section id="contact" class="section contact" aria-labelledby="contact-title">
+      <div class="container contact-inner">
+        <div class="section-head">
+          <h2 id="contact-title">お問い合わせ</h2>
+          <p class="section-lead">お申し込み、トライアル、技術的なご質問など。</p>
         </div>
-        <a class="btn btn-primary" href="mailto:hello@nilou.network">hello@nilou.network</a>
+        <ul class="contact-list">
+          <li><strong>メール</strong><a href="mailto:hello@nilou.network">hello@nilou.network</a></li>
+          <li><strong>返信目安</strong><span>原則 1 営業日以内</span></li>
+          <li><strong>稼働状況</strong><span>近日公開</span></li>
+        </ul>
       </div>
     </section>
   </main>
@@ -136,8 +226,24 @@
   <footer class="site-footer">
     <div class="container footer-inner">
       <p class="footer-brand">Nilou Network</p>
-      <nav class="footer-links" aria-label="フッターナビゲーション"><a href="../legal.html">法的表示</a><a href="mailto:hello@nilou.network">連絡先</a></nav>
+      <p class="footer-tagline">セルフホスト、しなくていい。</p>
+      <p class="footer-meta">
+        日本の個人事業主が独立して運営 ·
+        <a href="../legal.html">特定商取引法に基づく表記</a>
+      </p>
     </div>
   </footer>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Nilou Network",
+    "url": "https://nilou.network/",
+    "email": "hello@nilou.network",
+    "areaServed": "Worldwide",
+    "knowsLanguage": ["en", "ja", "zh"]
+  }
+  </script>
 </body>
 </html>
