@@ -875,6 +875,7 @@ img, svg { display: block; max-width: 100%; }
 .hero-mockup img {
   /* Crop pale-teal padding so dashboard window fills more of card */
   width: 115%;
+  max-width: none;
   height: 115%;
   object-fit: cover;
   object-position: center;
