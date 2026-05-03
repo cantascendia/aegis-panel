@@ -3,132 +3,224 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Nilou Network 为小团队提供应用运行所需的托管云运维服务。" />
-  <meta name="theme-color" content="#047c7a" />
-  <title>Nilou Network - 托管云运维</title>
-  <link rel="icon" href="../assets/lotus.svg" type="image/svg+xml" />
+  <meta name="description" content="Nilou Network — 开源应用的托管订阅服务。日本独立运营,代您运行各类自部署仪表盘、监控工具和效率应用。" />
+  <meta name="theme-color" content="#3a9188" />
+  <title>Nilou Network — 开源应用托管订阅</title>
+
+  <meta property="og:title" content="Nilou Network" />
+  <meta property="og:description" content="自部署应用,免去自部署。日本独立运营的开源应用托管服务。" />
+  <meta property="og:url" content="https://nilou.network/zh/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="zh_CN" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:locale:alternate" content="ja_JP" />
+  <meta name="twitter:card" content="summary" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../styles.css" />
-  <link rel="alternate" hreflang="en" href="/en/" />
-  <link rel="alternate" hreflang="ja" href="/ja/" />
-  <link rel="alternate" hreflang="zh" href="/zh/" />
-  <link rel="alternate" hreflang="x-default" href="/" />
+  <link rel="icon" href="../assets/lotus.svg" type="image/svg+xml" />
+  <link rel="canonical" href="https://nilou.network/zh/" />
+  <link rel="alternate" hreflang="en" href="https://nilou.network/en/" />
+  <link rel="alternate" hreflang="ja" href="https://nilou.network/ja/" />
+  <link rel="alternate" hreflang="zh" href="https://nilou.network/zh/" />
+  <link rel="alternate" hreflang="x-default" href="https://nilou.network/" />
 </head>
 <body class="lang-zh">
   <a class="skip-link" href="#main">跳到正文</a>
+
   <header class="topbar">
     <div class="container topbar-inner">
       <a class="brand" href="/zh/" aria-label="Nilou Network 首页">
-        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 8c8 8 8 20 0 24-8-4-8-16 0-24Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M32 8c8 8 8 20 0 24-8-4-8-16 0-24Z" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(60 32 32)"/><path d="M32 8c8 8 8 20 0 24-8-4-8-16 0-24Z" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(120 32 32)"/><circle cx="32" cy="32" r="3" fill="currentColor"/></svg></span>
+        <svg class="brand-icon" viewBox="0 0 200 200" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z"/><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z" transform="rotate(60 100 100)"/><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z" transform="rotate(120 100 100)"/><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z" transform="rotate(180 100 100)"/><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z" transform="rotate(240 100 100)"/><path d="M100 30 C 124 56, 124 88, 100 100 C 76 88, 76 56, 100 30 Z" transform="rotate(300 100 100)"/><circle cx="100" cy="100" r="4" fill="currentColor"/></g>
+        </svg>
         <span>Nilou Network</span>
       </a>
       <nav class="nav" aria-label="主导航">
         <a href="#features">功能</a>
-        <a href="#workflow">流程</a>
         <a href="#pricing">价格</a>
+        <a href="#about">关于</a>
         <span class="lang-switch" aria-label="语言选择">
           <a href="/en/" lang="en">EN</a>
           <a href="/ja/" lang="ja">日本語</a>
           <a href="/zh/" aria-current="page">中文</a>
         </span>
-        <a class="btn btn-primary" href="#contact">咨询</a>
+        <a class="cta-btn" href="#pricing">订阅</a>
       </nav>
     </div>
   </header>
 
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
-      <div class="container hero-grid">
-        <div>
-          <p class="eyebrow">托管云运维</p>
-          <h1 id="hero-title">让应用运行像舞台一样平稳。</h1>
-          <p class="lead">Nilou Network 为小团队提供 SaaS 式的应用运维层：上线协助、更新、备份、监控和故障响应都由明确负责人处理，让团队少花时间维护基础设施。</p>
-          <div class="hero-actions">
-            <a class="btn btn-primary" href="#pricing">查看价格</a>
-            <a class="btn btn-secondary" href="#features">了解内容</a>
-          </div>
-          <ul class="hero-proof" aria-label="服务特点">
-            <li>日本运营</li>
-            <li>尊重开源许可</li>
-            <li>无外部分析脚本</li>
-          </ul>
+      <svg class="ripple ripple-1" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="40" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4"/><circle cx="100" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/><circle cx="100" cy="100" r="80" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"/></svg>
+      <svg class="ripple ripple-2" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="30" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/><circle cx="100" cy="100" r="50" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"/><circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" stroke-width="1" opacity="0.1"/></svg>
+
+      <div class="container hero-inner">
+        <svg class="hero-mark" viewBox="0 0 200 200" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <g stroke-opacity="0.92"><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(45 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(90 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(135 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(180 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(225 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(270 100 100)"/><path d="M100 20 C 130 50, 130 90, 100 100 C 70 90, 70 50, 100 20 Z" transform="rotate(315 100 100)"/></g>
+            <circle cx="100" cy="100" r="6"/><circle cx="100" cy="100" r="2.5" fill="currentColor"/>
+          </g>
+        </svg>
+
+        <p class="eyebrow">托管订阅</p>
+
+        <h1 id="hero-title">
+          <span class="display">自部署应用,</span>
+          <span class="display accent">免去自部署。</span>
+        </h1>
+
+        <p class="lead">
+          仪表盘、监控工具、效率应用——把开源软件的运行交给我们。
+          您只需订阅,服务器、升级、备份、可用性都由我们维护,
+          您专注于真正的业务本身。
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#pricing">查看套餐</a>
+          <a class="btn btn-secondary" href="#contact">联系我们</a>
         </div>
-        <div class="stage" aria-label="蓝色莲花与水舞台原创插画">
-          <div class="stage-card">
-            <svg class="lotus-orbit" viewBox="0 0 200 200" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="100" cy="100" r="74"/><circle cx="100" cy="100" r="48" opacity=".45"/><path d="M100 24c20 22 20 54 0 64-20-10-20-42 0-64Z"/><path d="M100 24c20 22 20 54 0 64-20-10-20-42 0-64Z" transform="rotate(72 100 100)"/><path d="M100 24c20 22 20 54 0 64-20-10-20-42 0-64Z" transform="rotate(144 100 100)"/><path d="M100 24c20 22 20 54 0 64-20-10-20-42 0-64Z" transform="rotate(216 100 100)"/><path d="M100 24c20 22 20 54 0 64-20-10-20-42 0-64Z" transform="rotate(288 100 100)"/></g></svg>
-            <div class="dancer" aria-hidden="true"><span class="halo"></span><span class="ribbon ribbon-one"></span><span class="ribbon ribbon-two"></span></div>
-            <div class="metrics" aria-hidden="true"><div class="metric"><strong>99.9%</strong><span>目标可用性</span></div><div class="metric"><strong>24h</strong><span>支持窗口</span></div><div class="metric"><strong>3</strong><span>可选区域</span></div></div>
-          </div>
-        </div>
+
+        <ul class="hero-meta">
+          <li>日本独立运营</li>
+          <li>亚太多区域托管</li>
+          <li>开源友好</li>
+        </ul>
       </div>
     </section>
 
-    <section id="features" class="section alt" aria-labelledby="features-title">
+    <div class="divider" aria-hidden="true"></div>
+
+    <section id="features" class="section features" aria-labelledby="features-title">
       <div class="container">
-        <div class="section-header">
-          <h2 id="features-title">不组建平台团队，也能减少运维负担。</h2>
-          <p class="section-lead">面向需要可靠托管、清晰支持和持续维护的小团队。</p>
+        <div class="section-head">
+          <h2 id="features-title">服务内容</h2>
+          <p class="section-lead">六件事,简单清楚。</p>
         </div>
         <div class="feature-grid">
-          <article class="feature"><p class="feature-kicker">01</p><h3>托管运行环境</h3><p>准备并维护云端运行环境、发布窗口、SSL、备份和基础观测能力。</p></article>
-          <article class="feature"><p class="feature-kicker">02</p><h3>运维支持</h3><p>配置咨询、更新规划和故障响应由明确负责人处理，不把你丢进复杂工单。</p></article>
-          <article class="feature"><p class="feature-kicker">03</p><h3>可迁移基础</h3><p>优先使用开源组件和文档化交接路径，避免把应用锁死在单一服务里。</p></article>
-          <article class="feature"><p class="feature-kicker">04</p><h3>发布卫生</h3><p>例行补丁和依赖检查，降低小规模部署中常见的维护漂移。</p></article>
-          <article class="feature"><p class="feature-kicker">05</p><h3>区域部署</h3><p>可从亚太区域选项中匹配你的用户延迟和运营要求。</p></article>
-          <article class="feature"><p class="feature-kicker">06</p><h3>透明价格</h3><p>固定订阅档位，适合希望减少企业采购摩擦的小团队。</p></article>
+          <article class="feature">
+            <div class="feature-num">01</div>
+            <h3>托管实例</h3>
+            <p>由我们维护的专属云端实例。补丁、升级、依赖整理都在后台完成,无需您介入。</p>
+          </article>
+          <article class="feature">
+            <div class="feature-num">02</div>
+            <h3>真人支持</h3>
+            <p>配置咨询、集成支持、事故响应——由运营人直接回复,通常一个工作日内。</p>
+          </article>
+          <article class="feature">
+            <div class="feature-num">03</div>
+            <h3>基础设施维护</h3>
+            <p>SSL 证书、备份、升级窗口、监控全部保持最新,服务长期处于可审计状态。</p>
+          </article>
+          <article class="feature">
+            <div class="feature-num">04</div>
+            <h3>开源友好</h3>
+            <p>我们运行的软件均为开源。任何时候您都可以自行迁出、自行部署同款软件,不存在锁定。</p>
+          </article>
+          <article class="feature">
+            <div class="feature-num">05</div>
+            <h3>多区域</h3>
+            <p>亚太多区域可选,适配不同延迟需求。</p>
+          </article>
+          <article class="feature">
+            <div class="feature-num">06</div>
+            <h3>定价透明</h3>
+            <p>固定订阅档,人民币计价。无隐藏费用,无超额账单。仪表盘内随时取消。</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <section id="workflow" class="section" aria-labelledby="workflow-title">
-      <div class="container workflow">
-        <div class="info-card">
-          <p class="eyebrow">服务流程</p>
-          <h2 id="workflow-title">从确认需求到稳定运行。</h2>
-          <p class="section-lead">先明确应用，再启动环境，之后持续保持健康状态。</p>
-        </div>
-        <ol class="steps">
-          <li class="step"><span class="step-num">1</span><div><h3>确认</h3><p>确认应用、区域、数据需求和更新节奏。</p></div></li>
-          <li class="step"><span class="step-num">2</span><div><h3>启动</h3><p>准备运行环境，保护访问入口，并完成基础运维检查。</p></div></li>
-          <li class="step"><span class="step-num">3</span><div><h3>运营</h3><p>持续监控、更新、备份，并在需要时响应问题。</p></div></li>
-        </ol>
-      </div>
-    </section>
+    <div class="divider" aria-hidden="true"></div>
 
-    <section id="pricing" class="section alt" aria-labelledby="pricing-title">
+    <section id="pricing" class="section pricing" aria-labelledby="pricing-title">
       <div class="container">
-        <div class="section-header">
-          <h2 id="pricing-title">适合小团队的价格。</h2>
-          <p class="section-lead">先试用，确认适合后再选择更长周期。</p>
+        <div class="section-head">
+          <h2 id="pricing-title">订阅方案</h2>
+          <p class="section-lead">四档套餐,内容相同,按计费周期选择。</p>
         </div>
         <div class="plan-grid">
-          <article class="plan"><p class="plan-kicker">Trial</p><h3>试用</h3><p class="price">免费<span>3 天</span></p><ul><li>托管环境预览</li><li>邮件支持</li><li>无需付款</li></ul><a class="btn btn-secondary" href="#contact">申请试用</a></article>
-          <article class="plan"><p class="plan-kicker">Monthly</p><h3>月付</h3><p class="price">¥30<span>每月</span></p><ul><li>托管运行环境</li><li>标准支持</li><li>可随时取消</li></ul><a class="btn btn-primary" href="#contact">订阅</a></article>
-          <article class="plan featured"><p class="plan-kicker">Quarterly</p><h3>季付</h3><p class="price">¥80<span>每 3 个月</span></p><ul><li>托管运行环境</li><li>优先支持</li><li>更低月均成本</li></ul><a class="btn btn-primary" href="#contact">订阅</a></article>
+          <div class="plan">
+            <span class="plan-tag">试用</span>
+            <h3>Trial</h3>
+            <p class="plan-price">免费<small>3 天</small></p>
+            <ul>
+              <li>完整实例访问</li>
+              <li>邮件支持</li>
+              <li>无需付款</li>
+            </ul>
+            <a class="btn btn-secondary" href="#contact">开始试用</a>
+          </div>
+          <div class="plan">
+            <span class="plan-tag">月度</span>
+            <h3>Monthly</h3>
+            <p class="plan-price">¥30<small>每月</small></p>
+            <ul>
+              <li>托管实例</li>
+              <li>标准支持</li>
+              <li>随时取消</li>
+            </ul>
+            <a class="btn btn-primary" href="#contact">订阅</a>
+          </div>
+          <div class="plan plan-highlight">
+            <span class="plan-tag">季度 · 约 11% 折扣</span>
+            <h3>Quarterly</h3>
+            <p class="plan-price">¥80<small>每 3 个月</small></p>
+            <ul>
+              <li>托管实例</li>
+              <li>优先支持</li>
+              <li>约 11% 折扣</li>
+            </ul>
+            <a class="btn btn-primary" href="#contact">订阅</a>
+          </div>
+          <div class="plan plan-highlight">
+            <span class="plan-tag">年度 · 约 33% 折扣</span>
+            <h3>Annual</h3>
+            <p class="plan-price">¥240<small>每年</small></p>
+            <ul>
+              <li>托管实例</li>
+              <li>优先支持</li>
+              <li>约 33% 折扣</li>
+            </ul>
+            <a class="btn btn-primary" href="#contact">订阅</a>
+          </div>
         </div>
-        <p class="pricing-note">支付方式可能包括信用卡、支付宝、微信支付和 USDT (TRC20)，并通过支付合作方处理。最终可用性以账户审核结果为准。</p>
+        <p class="pricing-meta">支付方式:支付宝、微信支付、USDT(TRC20)、主流信用卡。订阅计费由我们的支付合作方处理。</p>
       </div>
     </section>
 
-    <section id="about" class="section" aria-labelledby="about-title">
-      <div class="container">
-        <div class="section-header">
-          <h2 id="about-title">独立运营，谨慎维护，可迁移。</h2>
-          <p class="section-lead">Nilou Network 由日本独立业务运营，为需要务实云运维的团队服务。</p>
+    <div class="divider" aria-hidden="true"></div>
+
+    <section id="about" class="section about" aria-labelledby="about-title">
+      <div class="container about-content">
+        <div class="section-head">
+          <h2 id="about-title">关于 Nilou Network</h2>
+          <p class="section-lead">一个小事业者,用心经营。</p>
         </div>
-        <div class="about-grid">
-          <article class="about-card"><h3>原创视觉系统</h3><p>页面使用原创莲花、水与舞台意象，不使用任何第三方角色图或游戏素材。</p></article>
-          <article class="about-card"><h3>尊重开源</h3><p>托管组件会按照对应许可条款处理。对需要披露源码的组件，我们会按要求提供访问方式。</p></article>
-        </div>
+        <p>Nilou Network 由日本独立个人事业主(個人事業主)运营,为开源软件提供托管订阅服务。客户订阅后获得托管部署、运营级支持,以及由我们代为完成的基础设施维护。</p>
+        <p>我们运行的软件均采用宽松的开源许可证。所托管组件的源代码可应请求提供,符合相关开源许可证条款。本页面不使用任何跟踪脚本、分析信标或第三方广告。</p>
+        <p class="trademark-notice"><strong>商标声明。</strong>"Nilou"在此为通用词汇使用,源自波斯语,意为"蓝睡莲"。Nilou Network 为独立事业,与米哈游 / HoYoverse 及《原神》系列无任何关联。</p>
       </div>
     </section>
 
-    <section id="contact" class="section" aria-labelledby="contact-title">
-      <div class="container contact-box">
-        <div>
-          <h2 id="contact-title">告诉我们你想运行什么。</h2>
-          <p>我们会回复可用性、区域选择和下一步配置方式。</p>
+    <div class="divider" aria-hidden="true"></div>
+
+    <section id="contact" class="section contact" aria-labelledby="contact-title">
+      <div class="container contact-inner">
+        <div class="section-head">
+          <h2 id="contact-title">联系我们</h2>
+          <p class="section-lead">订阅、试用申请或技术咨询。</p>
         </div>
-        <a class="btn btn-primary" href="mailto:hello@nilou.network">hello@nilou.network</a>
+        <ul class="contact-list">
+          <li><strong>一般咨询</strong><a href="mailto:hello@nilou.network">hello@nilou.network</a></li>
+          <li><strong>客户支持</strong><a href="mailto:support@nilou.network">support@nilou.network</a></li>
+          <li><strong>付款相关</strong><a href="mailto:billing@nilou.network">billing@nilou.network</a></li>
+          <li><strong>响应时间</strong><span>通常 1 个工作日内</span></li>
+          <li><strong>状态页</strong><span>即将推出</span></li>
+        </ul>
       </div>
     </section>
   </main>
@@ -136,8 +228,24 @@
   <footer class="site-footer">
     <div class="container footer-inner">
       <p class="footer-brand">Nilou Network</p>
-      <nav class="footer-links" aria-label="页脚导航"><a href="../legal.html">法律信息</a><a href="mailto:hello@nilou.network">联系</a></nav>
+      <p class="footer-tagline">自部署应用,免去自部署。</p>
+      <p class="footer-meta">
+        由日本独立个人事业主运营 ·
+        <a href="../legal.html">法律 / 特商法表記</a>
+      </p>
     </div>
   </footer>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Nilou Network",
+    "url": "https://nilou.network/",
+    "email": "support@nilou.network",
+    "areaServed": "Worldwide",
+    "knowsLanguage": ["en", "ja", "zh"]
+  }
+  </script>
 </body>
 </html>
