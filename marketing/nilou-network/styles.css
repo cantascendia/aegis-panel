@@ -1,0 +1,300 @@
+/* Nilou Network — landing page styles
+ * Original work, AGPL-3.0
+ * Color tokens align with docs/launch/brand/BRAND-GUIDELINES.md §2
+ */
+
+:root {
+  --brand-teal: #3a9188;
+  --brand-gold: #f4e5c2;
+  --brand-navy: #1e3a5f;
+  --brand-cream: #faf6ee;
+  --accent-emerald: #5bc0be;
+  --text-primary: #1b2334;
+  --text-secondary: #3d4a66;
+  --text-muted: #9ca9c2;
+  --surface: #ffffff;
+  --surface-alt: #faf6ee;
+  --border: #e5ecf6;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--brand-teal); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Topbar */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+}
+.brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--brand-navy);
+}
+.nav { display: flex; gap: 24px; align-items: center; }
+.nav a { color: var(--text-secondary); font-weight: 500; }
+.nav .cta {
+  background: var(--brand-teal);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 6px;
+}
+.nav .cta:hover { background: var(--brand-navy); text-decoration: none; }
+
+/* Hero */
+.hero {
+  padding: 96px 0 80px;
+  background: linear-gradient(180deg, var(--surface-alt) 0%, var(--surface) 100%);
+  text-align: center;
+}
+.hero h1 {
+  font-size: 2.75rem;
+  font-weight: 700;
+  margin: 0 0 24px;
+  color: var(--brand-navy);
+  line-height: 1.2;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero .lead {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  max-width: 700px;
+  margin: 0 auto 32px;
+}
+.hero-cta {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.hero-meta {
+  margin-top: 32px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-primary {
+  background: var(--brand-teal);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--brand-navy);
+  text-decoration: none;
+}
+.btn-secondary {
+  background: var(--surface);
+  color: var(--brand-teal);
+  border-color: var(--brand-teal);
+}
+.btn-secondary:hover {
+  background: var(--brand-cream);
+  text-decoration: none;
+}
+
+/* Sections */
+.section {
+  padding: 80px 0;
+}
+.section h2 {
+  font-size: 2rem;
+  color: var(--brand-navy);
+  margin: 0 0 16px;
+  text-align: center;
+}
+.section-lead {
+  text-align: center;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto 48px;
+}
+
+/* Features */
+.features { background: var(--surface); }
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+  margin-top: 48px;
+}
+.feature {
+  padding: 24px;
+  background: var(--surface-alt);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.feature h3 {
+  margin: 0 0 12px;
+  color: var(--brand-teal);
+  font-size: 1.15rem;
+}
+.feature p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* Pricing */
+.pricing { background: var(--surface-alt); }
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin-top: 48px;
+}
+.plan {
+  background: var(--surface);
+  padding: 32px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.plan h3 {
+  margin: 0 0 16px;
+  color: var(--brand-navy);
+  font-size: 1.25rem;
+}
+.plan-price {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--brand-teal);
+  margin: 0 0 16px;
+}
+.plan-price span {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-top: 4px;
+}
+.plan ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  text-align: left;
+}
+.plan li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.plan li:last-child { border-bottom: none; }
+.plan .btn { width: 100%; }
+.pricing-meta {
+  text-align: center;
+  margin-top: 32px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* About */
+.about { background: var(--surface); }
+.about p {
+  max-width: 700px;
+  margin: 0 auto 16px;
+  color: var(--text-secondary);
+}
+.trademark-notice {
+  background: var(--surface-alt);
+  padding: 16px 24px;
+  border-radius: 6px;
+  border-left: 3px solid var(--brand-gold);
+  font-size: 0.9rem;
+  margin-top: 32px;
+}
+
+/* Contact */
+.contact { background: var(--surface-alt); }
+.contact p {
+  max-width: 600px;
+  margin: 0 auto 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.contact-list {
+  list-style: none;
+  padding: 0;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.contact-list li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.contact-list li:last-child { border-bottom: none; }
+
+/* Footer */
+.site-footer {
+  background: var(--brand-navy);
+  color: var(--brand-cream);
+  padding: 32px 0;
+  margin-top: 0;
+}
+.footer-inner {
+  text-align: center;
+}
+.footer-brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin: 0 0 8px;
+}
+.footer-meta {
+  font-size: 0.85rem;
+  color: var(--brand-gold);
+  margin: 0;
+}
+.footer-meta a {
+  color: var(--brand-gold);
+  margin: 0 8px;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .nav { gap: 12px; font-size: 0.9rem; }
+  .nav a:not(.cta) { display: none; }
+  .hero h1 { font-size: 2rem; }
+  .hero { padding: 64px 0 48px; }
+  .section { padding: 48px 0; }
+  .section h2 { font-size: 1.5rem; }
+}
