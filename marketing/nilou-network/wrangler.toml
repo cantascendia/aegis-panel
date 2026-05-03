@@ -1,6 +1,6 @@
-# Cloudflare Wrangler config — Nilou Network landing
-# Deploy: from repo root, run `npx wrangler pages deploy marketing/nilou-network --project-name=nilou-network`
-# https://developers.cloudflare.com/pages/platform/wrangler/
+# Cloudflare Wrangler config for Nilou Network static marketing pages.
+# Deploy with an already installed Wrangler CLI:
+# wrangler pages deploy marketing/nilou-network --project-name=nilou-network
 
 name = "nilou-network"
 compatibility_date = "2026-05-03"
