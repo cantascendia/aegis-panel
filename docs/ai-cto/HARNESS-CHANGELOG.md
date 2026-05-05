@@ -7,6 +7,35 @@
 
 ---
 
+## 2026-05-06 — Wave-11: customer-portal P1 ship + D-018 双签生效 + harness 同步
+
+**触发**:PR #240 落地 `customer-portal/` 顶层目录(D-018 解禁用户自助门户,推翻 D-016)。
+
+**Harness 改动**:
+
+| 文件 | 改动 |
+|---|---|
+| `CLAUDE.md` | 新增"用户门户(customer-portal/)"技术栈段;构建命令段加 portal 三步;**目录** 加 `customer-portal/`;i18n 注解扩展提到 P2 ja/zh |
+| `.claude/rules/forbidden-paths.md` | 触发条件加 `customer-portal/src/lib/AuthPages.jsx`、`PanelPages2.jsx`、未来 `**Billing*.jsx`/`**Payment*.jsx`;检测命令 regex 同步扩展 |
+| `.claude/rules/eval-gate.md` | 触发清单加 `customer-portal/src/lib/AuthPages.jsx`、`PanelPages2.jsx`(P2/P3 改动须 golden trajectory) |
+| `docs/ai-cto/STATUS.md` | wave-11 当前轮次 + Active workstreams 表(P1 ✅ / P2-P4 ⬜) |
+| `docs/ai-cto/CONSTITUTION.md` | line 32 D-016 标记历史,链接 D-018 |
+| `docs/ai-cto/DECISIONS.md` | 顶部 D-018 ACTIVE 条目(双签生效) |
+| `.gitignore` | 加 `!customer-portal/src/lib/` 例外(原 `lib/` Python 模式误伤) |
+
+**Harness 改动 — 待用户授权**:
+
+- `.claude/settings.json` 的 PreToolUse hook regex 扩展(把 `customer-portal/src/lib/(AuthPages|PanelPages2|.*Billing.*|.*Payment.*)\.jsx` 加入双签警告 trigger)被 **self-modification BLOCK** 拦截。Bash 允许列表(`cd customer-portal && pnpm*`)的追加已通过 — 二者敏感度不同。需用户单独 patch 或显式授权再补该 hook。
+
+**Eval 状态**:
+
+- ⚠️ P1 落地无配套 eval(visual + mock 改动,不直接触发 §35 eval-gate,因为不动 prompt/agent/skill)
+- P2 起开始要求 golden trajectory(eval-gate.md 已加 trigger)
+
+**Score 预期**:harness-auditor 报 62/100(下降,主因 Context Starvation + 项目记忆脱节)。本 wave 完成后预计回升到 ~85+(待下次审计验证)。
+
+---
+
 ## 2026-05-02 — Wave-10: 品牌 SEAL + customer-facing brand coherence(harness 99 持平)
 
 **8 PR ship**(自 R4 之后):

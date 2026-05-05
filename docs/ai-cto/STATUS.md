@@ -1,11 +1,35 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-02 wave-9 (production cutover v0.4.1 + TRC20 hot-fix + harness 95/100；前置 wave-8 客户文案 + 招募 + 监控全链路；wave-9 PR #186 TRC20 dashboard checkout 404 hot-fix commit f2b4673 → tag v0.4.1 + 3 launch docs (PITCH-CARDS/VPS-PROVIDER/HOW-TO-RECRUIT-FROM-WECHAT) + harness audit re-run 94 → 95；TRC20 invoice id=1 awaiting roundtrip)
+> 最后更新:2026-05-06 wave-11 (D-018 双签生效 + customer-portal P1 ship PR #240 + harness 同步)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
+
+**wave-11 customer-portal P1 ship**(2026-05-06,**D-018 双签生效 + 19 页静态门户 land**):
+
+- **D-018 SEALED**(CTO + senior engineer 双签):推翻 D-016,商业化 Phase B 启用用户自助门户
+- **PR #240** ship:`customer-portal/` 顶层目录 + 19 页 React/Vite 静态原型(8 marketing + 2 auth + 9 panel)+ mock data
+  - 设计来源:Claude Design 导出包 `nilou-network-design-system`
+  - 路径硬约束:**不混入** `dashboard/` / `app/` / `marketing/nilou-network/`
+  - Build:236 KB JS / 68 KB gzipped,462ms
+  - Vite 6 + React 18.3 + JSX,base `/portal/`,dev port 5174
+- **Harness 同步**(同会话):CLAUDE.md 加 customer-portal 段 / forbidden-paths 加 AuthPages+PanelPages2 / eval-gate 同步;settings.json hook regex **被 self-modification block 拦截,等用户授权**
+
+### Active workstreams
+
+| Workstream | Status | Notes |
+|---|---|---|
+| customer-portal P1 (visual + mock) | ✅ PR #240 | 等 review merge |
+| customer-portal P2 (i18n + JSX→TSX + auth) | ⬜ 待启动 | 需 `/cto-spec specify customer-portal P2` |
+| customer-portal P3 (panel 9 页接真 API) | ⬜ 阻塞 P2 | traffic ← Marznode gRPC,billing ← 支付,tickets |
+| customer-portal P4 (营销页接管 nilou-network/) | ⬜ 末位 | 三语合并,最低优先级 |
+| Marzneshin upstream sync (季度) | ⬜ 待评估 | 上次 sync 时间待查 |
+
+---
+
+## 历史轮次
 
 **wave-10 品牌生效**(2026-05-02 → 2026-05-03,**Nilou Network 品牌 SEALED + launch docs ship + dashboard 品牌化 + v0.4.3 ship**):
 

@@ -9,6 +9,9 @@
 - `**/migration/**`、`**/migrations/**`、`**/database/migrations/**`
 - `**/infra/**`、`**/terraform/**`、`**/ansible/**`
 - `.github/workflows/**`
+- `customer-portal/src/lib/AuthPages.jsx`（用户侧 auth UI；P2 接 admin auth 时触发,D-018）
+- `customer-portal/src/lib/PanelPages2.jsx`（含 BillingPage；P3 接支付时触发,D-018）
+- `customer-portal/src/lib/**Billing*.jsx`、`customer-portal/src/lib/**Payment*.jsx`（未来拆分时预留匹配）
 
 ## 强制铁律
 
@@ -32,10 +35,10 @@
 
 ```bash
 # 触及 forbidden 路径的 commit
-git log --oneline -50 | xargs -I {} bash -c 'git show --name-only {} | grep -qE "(auth|payment|secrets|migration|crypto)/" && echo {}' 2>/dev/null
+git log --oneline -50 | xargs -I {} bash -c 'git show --name-only {} | grep -qE "(auth|payment|secrets|migration|crypto)/|customer-portal/src/lib/(AuthPages|PanelPages2|.*Billing.*|.*Payment.*)\.jsx" && echo {}' 2>/dev/null
 
 # 触及 forbidden 路径的 staged 文件
-git diff --cached --name-only | grep -E "(auth|payment|secrets|migration|crypto)/"
+git diff --cached --name-only | grep -E "(auth|payment|secrets|migration|crypto)/|customer-portal/src/lib/(AuthPages|PanelPages2|.*Billing.*|.*Payment.*)\.jsx"
 ```
 
 完整定义见手册 §32 AI 代码生成的人工审核边界。

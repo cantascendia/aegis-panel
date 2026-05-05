@@ -76,6 +76,15 @@ CTO 操作手册见 ai-playbook 仓库的 `playbook/handbook.md`。
 - Biome(lint)+ Vitest + React Testing
 - 构建产物: `dashboard/dist/`,通过 `VITE_BASE_API` 指向后端 API
 
+**用户门户(customer-portal/,本 fork 自研,D-018 解禁)**:
+- Vite 6 + React 18.3 + JSX(注意:不是 TS,与 dashboard 区分)
+- 无 Tailwind/shadcn,使用 CSS variables(`src/styles/tokens.css`)
+- 手写 hash router(`src/lib/Atoms.jsx` 中 `Router`),P2 可能换 react-router-dom
+- `vite.config.js`:`base: '/portal/'`,dev port 5174(避让 dashboard 5173)
+- 构建产物:`customer-portal/dist/`
+- **不是** upstream 同步区(纯自研)、**不是** dashboard(操作员面板) — 切勿混淆
+- 当前 P1=visual + mock,P2=auth 接入,P3=API 接入,P4=营销页接管(见 D-018)
+
 **多节点架构**:
 - 控制面(本仓库 = Marzneshin)通过 gRPC 调用多个 **Marznode**(`marzneshin/marznode`)
 - 每个 VPS 跑一个 Marznode,数据面实际运行 xray-core
@@ -103,6 +112,13 @@ pnpm run build            # 生产构建到 dashboard/dist
 pnpm run test             # vitest
 pnpm run lint             # biome
 
+# 用户门户(customer-portal)
+cd customer-portal
+pnpm install
+pnpm dev                  # http://localhost:5174/portal/
+pnpm build                # 生产构建到 customer-portal/dist
+pnpm preview              # 本地预览 dist/
+
 # 一键(已有 makefile 快捷方式)
 make start                # alembic upgrade + python main.py
 make dashboard-deps dashboard-build dashboard-dev
@@ -123,7 +139,8 @@ pytest tests/
 - `app/db/` + `app/models/` — SQLAlchemy + Pydantic
 - `app/marznode/` — gRPC 客户端到数据面
 - `app/tasks/` — APScheduler 任务
-- `dashboard/` — 独立前端工程,**upstream 同步区**
+- `dashboard/` — 独立前端工程,**upstream 同步区**(操作员面板)
+- `customer-portal/` — 用户自助门户 SPA,**本 fork 自研**(D-018 授权,Vite + React 18 + JSX)
 - `hardening/`、`deploy/`、`ops/` — **本 fork 自研模块**,upstream 冲突面最小
 - `docs/ai-cto/` — CTO 项目记忆(公开部分),`docs/ai-cto/private/` 放敏感运营数据(已 gitignore)
 - `tests/` — 稀疏,需补齐
@@ -138,7 +155,7 @@ pytest tests/
 - **AGPL-3.0 合规铁律**: 通过网络对用户提供服务时必须能让用户获取源码;绝不删除 upstream 版权头
 - **SSL 默认安全**: `main.py` 无 SSL 时强制监听 127.0.0.1,不要改这个行为;外部访问走 SSH tunnel / Nginx / Cloudflare Tunnel
 - **运营敏感数据**: JWT secret、DB 密码、Xray 私钥、CF 凭据统一走 `.env`(gitignore 已覆盖),**禁止硬编码**
-- **i18n**: dashboard/ 已接 6 语言,新增 UI 文本必须走 i18n key,不硬编码中英文
+- **i18n**: dashboard/ 已接 6 语言,新增 UI 文本必须走 i18n key,不硬编码中英文。`customer-portal/` P1 暂英文单语言,P2 必须补 ja/zh(见 D-018)
 - **Upstream 同步**: 每季度 `git fetch marzneshin-upstream`,合并前审核 changelog,不盲合
 - **>200 用户铺垫**: 涉及用户列表/订阅查询/流量统计的改动必须先考虑 query 复杂度与索引,避免早期引入 N+1
 - **Marzban 生态外挂工具不兼容**: V2IpLimit/miplimiter 显式指向 Marzban API,要么改造,要么在 `hardening/` 下自研原生模块(见 `docs/ai-cto/COMPETITORS.md`)
