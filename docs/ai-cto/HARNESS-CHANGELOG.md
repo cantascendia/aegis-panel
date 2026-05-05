@@ -23,9 +23,10 @@
 | `docs/ai-cto/DECISIONS.md` | 顶部 D-018 ACTIVE 条目(双签生效) |
 | `.gitignore` | 加 `!customer-portal/src/lib/` 例外(原 `lib/` Python 模式误伤) |
 
-**Harness 改动 — 待用户授权**:
+**Harness 改动 — 用户授权后补 push**:
 
-- `.claude/settings.json` 的 PreToolUse hook regex 扩展(把 `customer-portal/src/lib/(AuthPages|PanelPages2|.*Billing.*|.*Payment.*)\.jsx` 加入双签警告 trigger)被 **self-modification BLOCK** 拦截。Bash 允许列表(`cd customer-portal && pnpm*`)的追加已通过 — 二者敏感度不同。需用户单独 patch 或显式授权再补该 hook。
+- `.claude/settings.json` PreToolUse 双签警告 hook regex 扩展:**已应用**(用户 2026-05-06 显式授权"允许 hook")。`customer-portal/src/lib/(AuthPages|PanelPages2|.*Billing.*|.*Payment.*)\.jsx` 已并入 forbidden-path trigger,与 §32.1 行为对齐
+- `.claude/settings.json` PostToolUse git-commit 警告 hook regex:**未授权**(授权仅及 PreToolUse,PostToolUse 是不同 hook)。当前 git-commit 提醒仍只匹配 `(auth|payment|secrets|migration|crypto)/` 字面路径,不会拦截 portal 目录下的 jsx commit。需用户单独决定是否扩展
 
 **Eval 状态**:
 
