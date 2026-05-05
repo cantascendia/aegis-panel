@@ -16,6 +16,7 @@ eggs/
 lib/
 !deploy/install/lib/
 !scripts/lib/
+!customer-portal/src/lib/
 lib64/
 parts/
 sdist/
