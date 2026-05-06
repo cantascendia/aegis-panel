@@ -1,11 +1,40 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-06 wave-11 (D-018 双签生效 + customer-portal P1 ship PR #240 + harness 同步)
+> 最后更新:2026-05-06 wave-12 (customer-portal P2 SPEC DRAFT,等用户 SEAL TBD-6/8/10)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
+
+**wave-12 customer-portal P2 SPEC**(2026-05-06,**Spec-Driven 起草 + 10 TBD + 7 已 CTO 倾向 SEAL**):
+
+- **SPEC-customer-portal-p2.md ship**:`docs/ai-cto/SPEC-customer-portal-p2.md`(620 行 DRAFT)
+  - spec-planner sub-agent 起草 + CTO Pre-Seal Notes 补充
+  - 5 项 deliverable:JSX→TSX / i18n (en+ja+zh-cn) / Auth wiring / react-router-dom v6 swap / Error boundaries
+  - 9 项 risk 评估,**R-1(privilege leak)CRITICAL** + 4 项 CTO 补识别隐患
+  - 估时 7-10 person-days(part-time 1.5 周),3 sub-PR(P2.1 TSX → P2.2 i18n → P2.3 auth+router)
+- **10 TBD 分类**:
+  - 7 项技术 TBD CTO 倾向 SEAL(graduated TSX strict / localStorage / single i18n ns / react-router-dom / RequireAuth wrapper / 3 sub-PR / marketing skeleton-only)
+  - 3 项必须用户决策:**TBD-6** auth scope option A/B/C(privilege 架构)/ TBD-8 翻译来源 / TBD-10 mutation 工具
+- **Branch**:`spec/customer-portal-p2`(off P1 PR #240,SPEC 文档 only,不动代码)
+
+### Active workstreams
+
+| Workstream | Status | Notes |
+|---|---|---|
+| customer-portal P1 (visual + mock) | ✅ PR #240 等 merge | 4 commits + harness sync |
+| customer-portal P2 SPEC | 📝 DRAFT | SPEC PR pending,等用户 SEAL TBD-6/8/10 |
+| customer-portal P2.1 TSX migration | ⬜ blocked on SPEC SEAL | 不依赖 TBD-6/8/10,可 SPEC SEAL 当天启动 |
+| customer-portal P2.2 i18n | ⬜ blocked on TBD-8(翻译来源) | en/ja/zh-cn |
+| customer-portal P2.3 auth + router | ⬜ blocked on TBD-6(auth scope) | forbidden-path,需 senior 双签 |
+| customer-portal P3 (panel 9 页接真 API) | ⬜ blocked on P2 | traffic ← Marznode gRPC,billing ← 支付,tickets |
+| customer-portal P4 (营销页接管 nilou-network/) | ⬜ 末位 | 三语合并,P3 之后 |
+| Marzneshin upstream sync (季度) | ⬜ 待评估 | 上次 sync 时间待查 |
+
+---
+
+## 历史轮次
 
 **wave-11 customer-portal P1 ship**(2026-05-06,**D-018 双签生效 + 19 页静态门户 land**):
 
