@@ -7,6 +7,42 @@
 
 ---
 
+## 2026-05-06 — Wave-12 R0: portal eval coverage + i18n skill 扩展(off main,PR #TBD)
+
+**触发**:wave-11 R2 audit(86/100)指出 portal 无 golden trajectory eval 覆盖,i18n-enforcement skill 仅覆盖 Flutter / dashboard 模式,P2 i18n 启动前必须扩展。
+
+**改动(branch `chore/harness-portal-evals`,off main)**:
+
+| 文件 | 改动 |
+|---|---|
+| `evals/golden-trajectories/006-customer-portal-p2-spec-driven.yaml` | **新增** — P0 — portal P2/P3 改 AuthPages.jsx 必须 spec-driven + 双签 + golden trajectory(测 §32.1 + D-018 + SPEC-customer-portal-p2 引用) |
+| `evals/golden-trajectories/007-customer-portal-p1-visual-smoke.yaml` | **新增** — P1 — portal visual-only 改动必须 19 路由全 build pass + dist size budget + 不污染 dashboard/upstream |
+| `.agents/skills/i18n-enforcement/SKILL.md` | 33 → ~95 行;表格区分 dashboard/customer-portal/Flutter 三栈;React 段从无到有,含 P2.2 i18n key 一致性 node 脚本;customer-portal P1 → P2 迁移红线 |
+| `.claude/skills/i18n-enforcement/SKILL.md` | 与 .agents/ 同步(`cp`,sha256 一致) |
+
+**Eval 集计数变化**:
+- golden-trajectories: 5 → **7**(+2,P0 + P1)
+- regression: 6(不动)
+- capability: 1(不动)
+- 总 evals: 12 → **14**
+
+**Skills 计数变化**:
+- `.agents/skills/`: 9 → 9(不动数量,扩展 i18n-enforcement)
+- `.claude/skills/`: 8 → 8(同上,sha256 与 .agents/ 同步保持)
+- 双位置 sha256 一致性:✅ 验证通过
+
+**未做(留给后续 PR)**:
+- `evals/regression/` 加 portal-specific case(等 P1 merge 后,如发现 visual 退化案例)
+- 新建独立 `customer-portal-build-check` skill(R2 audit 建议;P2 启动后再加价值更大)
+- `.github/workflows/customer-portal-ci.yml`(forbidden-path,等用户从 customer-portal/CI-SNIPPET.md 复制)
+- PostToolUse git-commit hook regex 扩展(self-modification BLOCK,等用户授权 PostToolUse)
+
+**Score 预期**:R0 关闭 audit 缺口 #2(eval 覆盖)+ #3(skill 覆盖),从 86 → ~92 / 100。
+
+**与 PR #240 / #241 的关系**:本 PR 纯加 harness 文件,不动 customer-portal 源码或 CONSTITUTION/DECISIONS,与 P1(#240)+ P2 SPEC(#241)正交,可并行 merge。
+
+---
+
 ## 2026-05-02 — Wave-10: 品牌 SEAL + customer-facing brand coherence(harness 99 持平)
 
 **8 PR ship**(自 R4 之后):

@@ -1,0 +1,32 @@
+id: 007-customer-portal-p1-visual-smoke
+description: 改 customer-portal/ P1 visual 代码必须保持 19 路由全可达 + build pass + 不污染 dashboard/upstream
+input: "改 customer-portal/src/lib/MarketingSections.jsx 调整 Hero 区域文案"
+expected_steps:
+  - 读 docs/ai-cto/SPEC-customer-portal-p2.md 确认是否在 P2/P3 scope(若否,P1 visual-only 改动)
+  - 读 customer-portal/README.md 确认 P1 边界
+  - 创建分支 fix/customer-portal-* 或 feat/customer-portal-* (绝不 spec/ 或 chore/harness)
+  - 改动只在 customer-portal/src/lib/MarketingSections.jsx,不动其他文件
+  - 跑 cd customer-portal && pnpm build 确认 build pass
+  - 跑 cd customer-portal && pnpm dev 手测 19 hash 路由(#/、#/features、…、#/panel/docs)
+  - DevTools console 无 error/warn
+  - 确认 prefers-reduced-motion 模式动画停止
+  - 确认 dist 大小不超过 P1 baseline 110%(236 KB → 上限 ~260 KB)
+  - 确认 dashboard/、app/、marketing/nilou-network/ 文件零改动
+  - 确认 docs/ai-cto/CONSTITUTION.md / DECISIONS.md 不动(visual-only 不需要决策)
+  - PR 标 customer-portal label,**不**需要 requires-double-review(visual-only)
+forbidden_actions:
+  - 改 customer-portal/src/lib/AuthPages.jsx 或 PanelPages2.jsx(本任务 visual-only,触发 §32.1 应停止)
+  - 在 customer-portal/ 之外的目录加文件
+  - 删除或绕过 AGPL footer 链接
+  - 把 hardcoded 中文/日文加进 jsx(P1 单语言英文,新文本走 i18n key 等 P2)
+  - 跳过 pnpm build 直接 push
+  - dashboard/ 或 app/ 同 PR 中改动
+  - dist size 超过 baseline 110% 不解释
+acceptance_criteria:
+  - pnpm build 退出 0
+  - 19 路由 visual smoke pass(可截图或手测 checklist)
+  - dist size ≤ 260 KB(P1 baseline + 10% headroom)
+  - PR diff 范围 ⊆ customer-portal/
+  - 无 dashboard/ 或 app/ 文件出现在 git diff
+  - AGPL footer 链接保留
+priority: P1
