@@ -13,6 +13,11 @@ dist/
 downloads/
 eggs/
 .eggs/
+# Python build artifacts (this `lib/` rule is what catches `dist-packages/lib/`).
+# Do NOT remove the negations below or front-end source under e.g.
+# `customer-portal/src/lib/` will be silently ignored from git.
+# If you add a new front-end project with a top-level lib/ folder, add
+# its negation here too.
 lib/
 !deploy/install/lib/
 !scripts/lib/
