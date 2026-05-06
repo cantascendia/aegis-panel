@@ -121,20 +121,24 @@ P2 ships **three sub-deliverables** plus reliability scaffolding, in three sub-P
 ### 1.1 Deliverable A — JSX → TSX migration (sub-PR P2.1)
 
 **In scope**:
-- Convert all 10 `.jsx` source files in `customer-portal/src/` to `.tsx` (or `.ts` for non-JSX modules — none currently).
-- Add `tsconfig.json` with **graduated strictness** (TBD-1 below; recommend `noImplicitAny: true`, `strictNullChecks: false` for P2; full `strict: true` for P3).
+- Convert all 11 `.jsx` source files in `customer-portal/src/` to `.tsx` (10 originals + `ErrorBoundary.jsx` from PR #240 commit dd6ea09).
+- Add `tsconfig.json` with **graduated strictness** (TBD-1; recommend `noImplicitAny: true`, `strictNullChecks: false` for P2; full `strict: true` for P3).
 - Add `@types/react`, `@types/react-dom` devDeps; pin Vite 6 React plugin TS support.
 - Type the `Router` / `useRoute` / `Link` / `Btn` / `Pill` / `Icon` / `LotusMark` / etc. exports in `Atoms.tsx` with `interface` declarations (no `any` for component props).
 - Type the mock data shapes (Plan, Node, Invoice, Ticket) — these become the contracts P3 backend must honour.
 - Update `vite.config.js` → `vite.config.ts`. Keep `base: '/portal/'` and dev port 5174.
 - Update `package.json` build scripts: `tsc --noEmit && vite build` (typecheck before bundle).
 - Add `pnpm typecheck` script and CI step (extend `.github/workflows/customer-portal.yml` if it exists, or create one mirroring dashboard's).
+- **Add testing infrastructure** (vitest + @testing-library/react + jsdom + fast-check). Mandate 1 property-based test (§20.3 防作弊规则 #4):
+  - `customer-portal/src/lib/ErrorBoundary.test.tsx` — property: `forall errors: array(N), localStorage.aegis_portal_errors.length <= 20 && is_FIFO(stored, errors.slice(-20))`. Closes the wave-12 reliability-auditor recommendation #3.
+  - Eval 010 already grep-asserts FIFO; this test executes it.
 
 **Out of scope**:
-- Logic changes (this is a pure rename + type annotation pass).
+- Logic changes (this is a pure rename + type annotation pass + test scaffolding).
 - Renaming exports or restructuring file boundaries.
 - Tailwind / shadcn migration (CSS variables stay).
 - Splitting `PanelPages1.tsx` / `PanelPages2.tsx` into per-page files (P3 candidate).
+- Tests for components other than ErrorBoundary (P2.2 / P2.3 sub-PRs each add their own targeted tests; P3 adds API client tests).
 
 ### 1.2 Deliverable B — i18n (sub-PR P2.2)
 
