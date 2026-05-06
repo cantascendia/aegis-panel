@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useRoute, Btn, Eyebrow } from './lib/Atoms.jsx';
+import { ErrorBoundary } from './lib/ErrorBoundary.jsx';
 import { MarketingTopbar, MarketingFooter, Section } from './lib/Marketing.jsx';
 import {
   HomePage,
@@ -95,17 +96,23 @@ const App = () => {
     document.title = `${route.label.replace(/^\d+\s+/, '')} — Nilou Network`;
   }, [route.label]);
 
+  // Wrap the route subtree in an ErrorBoundary (PORTAL-RELIABILITY.md §4).
+  // App-level boundary catches any thrown error in any of the 19 routes.
+  // P2.3 will additionally wrap PanelShell with a panel-scope boundary so
+  // panel page crashes don't unmount sidebar+topbar.
   return (
     <div data-screen-label={route.label}>
-      {route.kind === 'marketing' && (
-        <>
-          <MarketingTopbar />
-          {route.el}
-          <MarketingFooter />
-        </>
-      )}
-      {route.kind === 'auth' && route.el}
-      {route.kind === 'panel' && route.el}
+      <ErrorBoundary scope="app">
+        {route.kind === 'marketing' && (
+          <>
+            <MarketingTopbar />
+            {route.el}
+            <MarketingFooter />
+          </>
+        )}
+        {route.kind === 'auth' && route.el}
+        {route.kind === 'panel' && route.el}
+      </ErrorBoundary>
     </div>
   );
 };

@@ -42,12 +42,18 @@ const FieldGroup = ({ label, hint, children, style = {} }) => (
   </label>
 );
 
+// ⚠️ P1 mock onSubmit — DO NOT wire `fetch(/api/admins/token)` directly here
+// without (1) await + .ok check, (2) error branch that keeps the user on /login
+// + clears password, (3) token-store call, (4) is_sudo banner read.
+// See SPEC-customer-portal-p2.md §1.3 deliverable C and PORTAL-RELIABILITY.md §2.
+// The eval `006-customer-portal-p2-spec-driven.yaml` will catch a partial wire.
+// This file is a §32.1 forbidden path — every edit here triggers double-sign.
 const LoginPage = () => {
   const { go } = useRoute();
   return (
     <AuthShell title="Welcome back," accent="lotus." sub="Sign in to your dashboard."
       footer={<>Don&apos;t have an account? <Link to="/signup" style={{ color: 'var(--brand-teal)', fontWeight: 600 }}>Create one</Link></>}>
-      <form onSubmit={(e) => { e.preventDefault(); go('/dashboard'); }}>
+      <form onSubmit={(e) => { e.preventDefault(); go('/dashboard'); /* P1-MOCK-BYPASS — see warning above */ }}>
         <FieldGroup label="Email"><input type="email" defaultValue="liu.wei@nilou-demo.network" style={inputCss} /></FieldGroup>
         <FieldGroup label="Password"><input type="password" defaultValue="••••••••••" style={inputCss} /></FieldGroup>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.86rem', marginBottom: 20 }}>
