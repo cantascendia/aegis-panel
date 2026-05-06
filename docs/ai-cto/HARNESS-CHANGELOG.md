@@ -7,7 +7,27 @@
 
 ---
 
-## 2026-05-06 — Wave-12 R0: portal eval coverage + i18n skill 扩展(off main,PR #TBD)
+## 2026-05-06 — Wave-12 R1: customer-portal-build-check skill(填 CI workflow 解锁前的缺口)
+
+**触发**:wave-11 R2 audit improvement #2(`.github/workflows/customer-portal-ci.yml`)是 forbidden-path,需用户从 `customer-portal/CI-SNIPPET.md` 复制 + 双签才能落地。在那之前,agent layer 可以做兜底。
+
+**改动**(同 PR #242):
+
+| 文件 | 改动 |
+|---|---|
+| `.agents/skills/customer-portal-build-check/SKILL.md` | **新增** — agent-layer 守门:build pass / dist size budget(P1 ≤ 260KB / P2 ≤ 400KB / P3 ≤ 600KB)/ 19 路由完整性 grep 检查 / Tailwind 漏混入反查 / AGPL footer 链接保留 |
+| `.claude/skills/customer-portal-build-check/SKILL.md` | sha256-mirror |
+
+**Skills 计数**:
+- `.agents/skills/`: 9 → **10**
+- `.claude/skills/`: 8 → **9**
+- 双位置 sha256 一致
+
+**作用**:在 GitHub Actions CI workflow 落地前,本 skill 让 agent 在 PR 前手测 portal 完整性。落地 CI 后保留作 PR 前自检 + 解释清楚的失败模式 doc。
+
+---
+
+## 2026-05-06 — Wave-12 R0: portal eval coverage + i18n skill 扩展(PR #242)
 
 **触发**:wave-11 R2 audit(86/100)指出 portal 无 golden trajectory eval 覆盖,i18n-enforcement skill 仅覆盖 Flutter / dashboard 模式,P2 i18n 启动前必须扩展。
 
