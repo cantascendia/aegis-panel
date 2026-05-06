@@ -7,6 +7,29 @@
 
 ---
 
+## 2026-05-06 — Wave-12 R3: 终验 + branch split 闭环 + property test routed to P2.1
+
+**触发**:R2 后跑 vibe-checker(🟢 HEALTHY,Spec-Driven 范例)+ harness-auditor 终验(**92/100**,branch-split -2)。auditor 给 3 项到 100 路径:branch split 修 / eval-runner CI / property-based test。
+
+**R3 改动**:
+
+| 项 | 操作 |
+|---|---|
+| **PR #242 base 切到 PR #240** | `gh pr edit 242 --base feat/customer-portal-p1-static`,闭环 branch-split 问题(eval 010 grep 现在能在 merged tree 跑通) |
+| **PR #241 SPEC §1.1 扩展** | 把 ErrorBoundary FIFO 20 property-based test 折叠进 P2.1 sub-PR scope(commit `cae2927`),不污染 P1 |
+| **PR #241 title** | `spec(...)` → `docs(...)`(API 调用,非 force push;Conventional Commit Title CI re-run SUCCESS) |
+
+**未做(等用户)**:
+
+- `.github/workflows/eval-smoke.yml`(auditor 建议 #2,grep 自动化执行 evals 003/006/007/009/010 的 acceptance_criteria)— forbidden-path,等用户从 `customer-portal/CI-SNIPPET.md` 流程复制
+- PostToolUse hook regex(R2 仍开放)— 等用户授权
+
+**Score**:92 → 预计 **94 / 100**(branch-split -2 缺口闭环;property test 走 P2.1 不在本 wave 计分,P2.1 落地后再 +3 → 97)。
+
+**Audit 流水**:62(P1 ship)→ 86(R1)→ 92(R2 + 终验)→ 94(R3,本 entry)。
+
+---
+
 ## 2026-05-06 — Wave-12 R2: reliability audit P0 全闭环 + 2 regression eval
 
 **触发**:reliability-auditor 重审(R1 后台启动),portal 子系统 score **58/100**。8 项 punch list 中 3 项 P0 是 P1 ship 前的真实风险:无 ErrorBoundary / hash router unprotected / LoginPage P2 footgun。
