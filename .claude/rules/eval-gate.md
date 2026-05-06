@@ -9,6 +9,8 @@
 - `**/.agents/skills/*/SKILL.md`
 - `**/.claude/skills/*/SKILL.md`
 - `playbook/handbook.md`
+- `customer-portal/src/lib/AuthPages.jsx`（用户侧 auth UI,P2 接 admin auth 改动需 golden trajectory）
+- `customer-portal/src/lib/PanelPages2.jsx`（含 BillingPage,P3 接支付改动需 golden trajectory）
 
 ## 强制铁律
 

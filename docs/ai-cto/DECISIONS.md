@@ -5,6 +5,40 @@
 
 ---
 
+## D-018 | 2026-05-06 | customer-portal 解禁(推翻 D-016) — 商业化 Phase B 启用用户自助门户
+
+**状态**:**ACTIVE** — CTO + senior engineer 双签通过(2026-05-06)
+
+**决策**:
+1. **D-016 推翻**:原"绝对禁止用户自助门户 SPA / 用户侧 web auth"条款解除,Phase B 商业化阶段建立用户自助门户(对应 Constitution ② 章节注释)
+2. **路径硬约束**:门户实现独立目录 `customer-portal/`,**不混入** `dashboard/`(操作员面板 = Marzneshin 上游同步区)、**不混入** `app/`(Python 后端)、**不混入** `marketing/nilou-network/`(营销静态站)
+3. **分阶段实施**:
+   - **P1**(本决策范围,本 PR):静态前端 19 页 visual 完整 + mock data,Vite + React,无后端 API,无真实 auth
+   - **P2**(后续 PR):i18n (ja/zh) + JSX→TSX + Login/Signup 接 Marzneshin admin auth(复用现有 JWT/cookie)
+   - **P3**(后续 PR):Panel 9 页接真后端 API(traffic ← Marznode gRPC,billing ← 支付/Stripe,tickets ← 自建工单表)
+   - **P4**(后续 PR):Marketing 8 页合并/接管 `marketing/nilou-network/{en,ja,zh}/` 三语静态站
+4. **forbidden-paths 标签**:涉及 auth/billing/secrets 的 PR 必须打 `requires-double-review`(对齐 §32 + .claude/rules/forbidden-paths.md)
+
+**Why**:
+- 原 D-016(2025-Q4)制定时项目处于 MVP 自用阶段,"无管理员代办"硬条件适合早期人工运营
+- Phase B 进入 200+ 付费用户阶段,管理员代办成为产能瓶颈(每个续费 / 节点切换 / 客户端配置都要 1-on-1)
+- 设计已具完整 spec(Claude Design 19 页交付),不存在"边写边定义"的 vibe coding 风险
+- 客户实际反馈倾向自助:"想自己改 plan / 看流量 / 拿订阅 URL,不想每次都 ping 管理员"
+
+**How to apply**:
+- 顶层目录 `customer-portal/` 已建立(本 PR 落地)
+- Constitution 第 32 行 D-016 条款标记为已推翻,链接到本决策
+- 后续 P2-P4 每阶段单独 SPEC + PR,不一次性 land
+- AGPL self-check:portal 页底必须含 GitHub 源码链接(满足 §13)
+- forbidden-paths 规则:portal 涉及 `customer-portal/src/lib/AuthPages.jsx`、`customer-portal/src/lib/Panel*Billing*.jsx` 走双签
+
+**推翻条件**:
+- senior engineer 拒签 → 本决策不生效,P1 PR 退回 preview/ 隔离方案(不进 customer-portal/)
+- 6 个月内 portal 实际使用率 < 10% 注册用户 → 重评估是否值得 P2/P3 投入
+- 出现合规/法律风险(用户侧 auth 触发额外个人信息保护要求)→ 退回到管理员代办模式
+
+---
+
 ## D-019 | 2026-04-30 | SPEC-rbac SEALED — 4 角色 + `<scope>:<verb>:<target>` + 6 周 4-Phase 迁移期(issue #104)
 
 **决策**(3 个 TBD 一次性 SEAL):

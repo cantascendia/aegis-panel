@@ -7,7 +7,13 @@
       "Bash(git status)",
       "Bash(git diff*)",
       "Bash(git log*)",
-      "Bash(git branch*)"
+      "Bash(git branch*)",
+      "Bash(cd customer-portal && pnpm*)",
+      "Bash(cd customer-portal && pnpm install*)",
+      "Bash(cd customer-portal && pnpm build*)",
+      "Bash(cd customer-portal && pnpm dev*)",
+      "Bash(cd customer-portal && pnpm preview*)",
+      "Bash(cd dashboard && pnpm*)"
     ]
   },
   "outputStyle": "cto",
@@ -54,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -qE '\"file_path\"[[:space:]]*:[[:space:]]*\"[^\"]*(/auth/|/payment/|/billing/|/secrets/|/migration|/migrations/|/crypto/|/infra/|terraform/)' && echo '⚠️ §32.1 Forbidden 路径：此改动需要双签（CTO + senior + 第二模型 §19）。AI 不得单方面合并；PR 必须打 requires-double-review 标签。' || true"
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -qE '\"file_path\"[[:space:]]*:[[:space:]]*\"[^\"]*(/auth/|/payment/|/billing/|/secrets/|/migration|/migrations/|/crypto/|/infra/|terraform/|customer-portal/src/lib/(AuthPages|PanelPages2|.*Billing.*|.*Payment.*)\\.jsx)' && echo '⚠️ §32.1 Forbidden 路径：此改动需要双签（CTO + senior + 第二模型 §19）。AI 不得单方面合并；PR 必须打 requires-double-review 标签。' || true"
           }
         ]
       }
