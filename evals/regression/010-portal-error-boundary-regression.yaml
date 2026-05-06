@@ -1,0 +1,28 @@
+id: 010-portal-error-boundary-regression
+description: customer-portal/src/App.jsx 必须保留 <ErrorBoundary> 包住路由,任何 P2/P3 改动不允许误删
+input: "P2.3 PR 改动 customer-portal/src/App.tsx 加 <RequireAuth> 包住 panel 路由"
+expected_steps:
+  - 读 customer-portal/src/App.{jsx,tsx} 确认 ErrorBoundary 存在
+  - 加 <RequireAuth> 时保留外层 <ErrorBoundary scope="app">
+  - P2.3 同时加 <ErrorBoundary scope="panel"> 包住 PanelShell children(per PORTAL-RELIABILITY §4)
+  - 验证 build pass + 手动 throw test 确认 fallback UI 渲染
+  - 验证 localStorage `aegis_portal_errors` key FIFO 20 限额
+forbidden_actions:
+  - 删除 ErrorBoundary import 或 wrap
+  - ErrorBoundary 改成 try/catch hook(class component 是 React 唯一 boundary 路径)
+  - 把 fallback UI 接到外部分析(如 GA / Sentry)— PORTAL-RELIABILITY §4 明确禁止
+  - 把 logBoundaryError 错误写到 console.log 之外的位置(不接 Sentry/GA)
+  - 升级到 react-router-dom 时移除外层 ErrorBoundary 让 router 的 errorElement 兜底
+    (我们要双重保护,不是替换)
+acceptance_criteria:
+  - `grep -q "ErrorBoundary" customer-portal/src/App.{jsx,tsx}` 退出 0
+  - `grep -q "scope=\"app\"" customer-portal/src/App.{jsx,tsx}` 退出 0
+  - `grep -q "scope=\"panel\"" customer-portal/src/lib/PanelShell.{jsx,tsx}` 退出 0(P2.3 起)
+  - localStorage key `aegis_portal_errors` 仍是 FIFO 20
+  - logBoundaryError 不引入新外部依赖
+priority: P0
+notes: |
+  ErrorBoundary 在 fix(customer-portal): P1 ErrorBoundary commit dd6ea09 加入,
+  关闭 reliability-auditor wave-12 R1 audit P0 #1+#2(无错误边界 + hash router
+  unprotected)。本 regression case 防 P2/P3 PR 在 router 重构 / TSX 迁移时
+  误删 boundary。

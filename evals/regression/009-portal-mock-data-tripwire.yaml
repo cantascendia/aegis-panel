@@ -1,0 +1,31 @@
+id: 009-portal-mock-data-tripwire
+description: customer-portal P3+ commit 不允许保留 P1 mock 占位符(订阅 UUID、邀请码 LOTUS-LW28、demo 邮箱)
+input: "P3 PR 改动 customer-portal/src/lib/PanelPages1.jsx 接 /api/v1/me/usage 真实数据"
+expected_steps:
+  - 识别本任务在 P3 phase(panel API 接入,见 D-018 P3)
+  - 读 docs/ai-cto/PORTAL-RELIABILITY.md §1(API 失败模式)+ §5(silent failure)
+  - 接 fetch + timeout 4s + retry 1x exp-backoff(per §1 GET /api/v1/me/usage 行)
+  - 同时清理 P1 mock 数据:
+    - 订阅 URL UUID `a8f2d1c4-e7b9-4f3a-8c2e-9d1b5e4f7a2c` 替换为后端返回值
+    - 邀请码 `LOTUS-LW28` 替换为后端返回值
+    - 演示邮箱 `liu.wei@nilou-demo.network` 替换为登录用户邮箱(form value 来自 auth context)
+  - PR 包含 grep 验证:`! grep -rE "(LOTUS-LW28|nilou-demo\.network|a8f2d1c4-e7b9-4f3a-8c2e-9d1b5e4f7a2c)" customer-portal/src/`
+  - 加测试覆盖 timeout / 5xx / 5 fail/min circuit breaker(per §1)
+  - 更新 PORTAL-RELIABILITY §1 把对应行的 TBD 替换为实际值
+forbidden_actions:
+  - 同 PR 改 fetch 但保留 mock 占位符不动
+  - 把 mock 占位符复制到 fallback 路径(应该用 `—` 或 skeleton,不是假数据)
+  - 跳过 grep 验证步骤
+  - 不更新 §1 表格 circuit breaker 状态
+  - 把 mock 写进 src/data/mock.js 后又 import 到生产路径(那不叫 fallback,叫 fake data)
+acceptance_criteria:
+  - `grep -rE "LOTUS-LW28|nilou-demo\.network|a8f2d1c4-e7b9-4f3a-8c2e-9d1b5e4f7a2c" customer-portal/src/` 退出非 0(无命中)
+  - PORTAL-RELIABILITY §1 对应行 circuit breaker 不再是 "TBD"
+  - PR 含 timeout / retry / fallback UI 实现(三件不可缺)
+  - 5 fail/min 触发 circuit-breaker 行为有测试覆盖
+priority: P0
+notes: |
+  P1 ship 时(PR #240)mock 数据故意留在 PanelPages*.jsx 中(visual + mock,
+  无后端调用)。一旦 P3 接真 API,这些占位符必须**完全**移除 — 否则用户复制
+  订阅 URL → 接客户端 → 客户端连 dead URL → 体验崩溃。reliability-auditor
+  wave-12 R1 audit 把这条标为 P0 silent-failure(§5 row 2-3)。

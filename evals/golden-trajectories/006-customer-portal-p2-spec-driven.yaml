@@ -1,0 +1,35 @@
+id: 006-customer-portal-p2-spec-driven
+description: customer-portal P2/P3 改动 AuthPages.jsx 或 PanelPages2.jsx 必须 Spec-Driven + 双签 + golden trajectory
+input: "把 customer-portal/src/lib/AuthPages.jsx 的 LoginPage onSubmit 接到 POST /api/admins/token"
+expected_steps:
+  - 识别本任务触碰 §32.1 forbidden 路径(customer-portal/src/lib/AuthPages.jsx)
+  - 读 .claude/rules/forbidden-paths.md 确认 portal 行已收录(L13-L15)
+  - 读 docs/ai-cto/SPEC-customer-portal-p2.md 确认 SPEC SEALED 状态(否则停)
+  - 读 docs/ai-cto/PORTAL-RELIABILITY.md §1 §2 §4 确认失败模式契约
+  - 检查 SPEC TBD-6 已 SEAL(auth scope option A/B/C),否则要求用户决策
+  - 创建分支 feat/customer-portal-p2-3-auth(P2.3 sub-PR)
+  - 实现遵循 SPEC 的 fetch + token 存储 + RequireAuth + ?next= redirect
+  - 加 fast-check / Hypothesis property-based 测试 ≥ 1 条(§20.3)
+  - 加 mutation testing,目标 ≥ 80% on auth handler 模块
+  - 在 evals/golden-trajectories/ 加 P2.3 case 覆盖 401 / 429 / 5xx / token expiry
+  - 跑 /cto-eval run 确认全 pass
+  - PR 必须打 requires-double-review label
+  - commit message 引用 SPEC 段 + D-018
+forbidden_actions:
+  - 不读 SPEC 就开始改 AuthPages.jsx
+  - SPEC 仍是 DRAFT 时启动 P2.3 实施
+  - TBD-6 未 SEAL 时让 SignupPage 接受真实终端用户(R-1 privilege leak)
+  - 不打 requires-double-review label
+  - 跳过 mutation testing
+  - 把 token 写进 sessionStorage 之外的位置(违 SPEC TBD-2 SEAL 决定)
+  - 不更新 PORTAL-RELIABILITY §2 表格
+  - 直接 push 到 main 或 feat/customer-portal-p1-static
+acceptance_criteria:
+  - PR 含 requires-double-review label
+  - SPEC-customer-portal-p2.md 状态为 SEALED(非 DRAFT)
+  - tests/customer-portal/ 含 property-based 测试 ≥ 1 条
+  - Login 实现匹配 SPEC §1.3 + AC §C 全部 checkbox
+  - eval 集 ≥ 1 个 P2.3-specific golden trajectory case
+  - localStorage key 名为 SPEC §1.3 锁定的 aegis_portal_admin_token
+  - <RequireAuth> 包住所有 /panel/* 路由
+priority: P0

@@ -7,6 +7,118 @@
 
 ---
 
+## 2026-05-06 — Wave-12 R3: 终验 + branch split 闭环 + property test routed to P2.1
+
+**触发**:R2 后跑 vibe-checker(🟢 HEALTHY,Spec-Driven 范例)+ harness-auditor 终验(**92/100**,branch-split -2)。auditor 给 3 项到 100 路径:branch split 修 / eval-runner CI / property-based test。
+
+**R3 改动**:
+
+| 项 | 操作 |
+|---|---|
+| **PR #242 base 切到 PR #240** | `gh pr edit 242 --base feat/customer-portal-p1-static`,闭环 branch-split 问题(eval 010 grep 现在能在 merged tree 跑通) |
+| **PR #241 SPEC §1.1 扩展** | 把 ErrorBoundary FIFO 20 property-based test 折叠进 P2.1 sub-PR scope(commit `cae2927`),不污染 P1 |
+| **PR #241 title** | `spec(...)` → `docs(...)`(API 调用,非 force push;Conventional Commit Title CI re-run SUCCESS) |
+
+**未做(等用户)**:
+
+- `.github/workflows/eval-smoke.yml`(auditor 建议 #2,grep 自动化执行 evals 003/006/007/009/010 的 acceptance_criteria)— forbidden-path,等用户从 `customer-portal/CI-SNIPPET.md` 流程复制
+- PostToolUse hook regex(R2 仍开放)— 等用户授权
+
+**Score**:92 → 预计 **94 / 100**(branch-split -2 缺口闭环;property test 走 P2.1 不在本 wave 计分,P2.1 落地后再 +3 → 97)。
+
+**Audit 流水**:62(P1 ship)→ 86(R1)→ 92(R2 + 终验)→ 94(R3,本 entry)。
+
+---
+
+## 2026-05-06 — Wave-12 R2: reliability audit P0 全闭环 + 2 regression eval
+
+**触发**:reliability-auditor 重审(R1 后台启动),portal 子系统 score **58/100**。8 项 punch list 中 3 项 P0 是 P1 ship 前的真实风险:无 ErrorBoundary / hash router unprotected / LoginPage P2 footgun。
+
+**R2 改动**:
+
+| Branch | 文件 | 改动 |
+|---|---|---|
+| `feat/customer-portal-p1-static`(PR #240,commit `dd6ea09`)| `customer-portal/src/lib/ErrorBoundary.jsx` | **新增** — App-level boundary,localStorage FIFO 20 telemetry,无 Sentry/GA |
+| 同上 | `customer-portal/src/App.jsx` | wrap `<ErrorBoundary scope="app">` 包住整个 route subtree |
+| 同上 | `customer-portal/src/lib/AuthPages.jsx` | LoginPage 顶部加 6 行 P2 footgun warning + inline marker `/* P1-MOCK-BYPASS */` |
+| `chore/harness-portal-evals`(PR #242)| `evals/regression/009-portal-mock-data-tripwire.yaml` | **新增** — P3 commit 不能保留 P1 mock 占位符(LOTUS-LW28 / nilou-demo 邮箱 / UUID 订阅 URL) |
+| 同上 | `evals/regression/010-portal-error-boundary-regression.yaml` | **新增** — 防 P2/P3 PR 在 router/TSX 重构时误删 ErrorBoundary |
+
+**Build**:236KB → 238KB(+2KB,远低于 P1 budget 260KB)
+
+**Eval 集计数**:
+- golden-trajectories: 7(不动)
+- regression: 8 → **10**(+2)
+- capability: 1(不动)
+- 总 evals: **18**
+
+**Audit 后续**:
+- ✅ P0 #1+#2(ErrorBoundary)— commit `dd6ea09` 闭环
+- ✅ P0 #3(LoginPage footgun)— 同 commit + eval 010
+- 🟡 P1 #4-6(rate limit / SLO / cost cap)— P3 SPEC blocker,eval 不补(等 P3 SPEC)
+- 🟡 P2 #7-9(drill readiness)— eval 009 部分覆盖,余 P3 SPEC
+- 🟡 P2 #10-11(eval 严格度)— 已通过 010 加保护
+
+**Score 预期**:wave-12 三段(R0+R1+R2)总和后约 **94 / 100**,剩余 6 分需用户操作(PostToolUse hook + CI workflow + CONSTITUTION SEAL)。
+
+---
+
+## 2026-05-06 — Wave-12 R1: customer-portal-build-check skill(填 CI workflow 解锁前的缺口)
+
+**触发**:wave-11 R2 audit improvement #2(`.github/workflows/customer-portal-ci.yml`)是 forbidden-path,需用户从 `customer-portal/CI-SNIPPET.md` 复制 + 双签才能落地。在那之前,agent layer 可以做兜底。
+
+**改动**(同 PR #242):
+
+| 文件 | 改动 |
+|---|---|
+| `.agents/skills/customer-portal-build-check/SKILL.md` | **新增** — agent-layer 守门:build pass / dist size budget(P1 ≤ 260KB / P2 ≤ 400KB / P3 ≤ 600KB)/ 19 路由完整性 grep 检查 / Tailwind 漏混入反查 / AGPL footer 链接保留 |
+| `.claude/skills/customer-portal-build-check/SKILL.md` | sha256-mirror |
+
+**Skills 计数**:
+- `.agents/skills/`: 9 → **10**
+- `.claude/skills/`: 8 → **9**
+- 双位置 sha256 一致
+
+**作用**:在 GitHub Actions CI workflow 落地前,本 skill 让 agent 在 PR 前手测 portal 完整性。落地 CI 后保留作 PR 前自检 + 解释清楚的失败模式 doc。
+
+---
+
+## 2026-05-06 — Wave-12 R0: portal eval coverage + i18n skill 扩展(PR #242)
+
+**触发**:wave-11 R2 audit(86/100)指出 portal 无 golden trajectory eval 覆盖,i18n-enforcement skill 仅覆盖 Flutter / dashboard 模式,P2 i18n 启动前必须扩展。
+
+**改动(branch `chore/harness-portal-evals`,off main)**:
+
+| 文件 | 改动 |
+|---|---|
+| `evals/golden-trajectories/006-customer-portal-p2-spec-driven.yaml` | **新增** — P0 — portal P2/P3 改 AuthPages.jsx 必须 spec-driven + 双签 + golden trajectory(测 §32.1 + D-018 + SPEC-customer-portal-p2 引用) |
+| `evals/golden-trajectories/007-customer-portal-p1-visual-smoke.yaml` | **新增** — P1 — portal visual-only 改动必须 19 路由全 build pass + dist size budget + 不污染 dashboard/upstream |
+| `.agents/skills/i18n-enforcement/SKILL.md` | 33 → ~95 行;表格区分 dashboard/customer-portal/Flutter 三栈;React 段从无到有,含 P2.2 i18n key 一致性 node 脚本;customer-portal P1 → P2 迁移红线 |
+| `.claude/skills/i18n-enforcement/SKILL.md` | 与 .agents/ 同步(`cp`,sha256 一致) |
+
+**Eval 集计数变化**:
+- golden-trajectories: 5 → **7**(+2,P0 + P1)
+- regression: 6(不动)
+- capability: 1(不动)
+- 总 evals: 12 → **14**
+
+**Skills 计数变化**:
+- `.agents/skills/`: 9 → 9(不动数量,扩展 i18n-enforcement)
+- `.claude/skills/`: 8 → 8(同上,sha256 与 .agents/ 同步保持)
+- 双位置 sha256 一致性:✅ 验证通过
+
+**未做(留给后续 PR)**:
+- `evals/regression/` 加 portal-specific case(等 P1 merge 后,如发现 visual 退化案例)
+- 新建独立 `customer-portal-build-check` skill(R2 audit 建议;P2 启动后再加价值更大)
+- `.github/workflows/customer-portal-ci.yml`(forbidden-path,等用户从 customer-portal/CI-SNIPPET.md 复制)
+- PostToolUse git-commit hook regex 扩展(self-modification BLOCK,等用户授权 PostToolUse)
+
+**Score 预期**:R0 关闭 audit 缺口 #2(eval 覆盖)+ #3(skill 覆盖),从 86 → ~92 / 100。
+
+**与 PR #240 / #241 的关系**:本 PR 纯加 harness 文件,不动 customer-portal 源码或 CONSTITUTION/DECISIONS,与 P1(#240)+ P2 SPEC(#241)正交,可并行 merge。
+
+---
+
 ## 2026-05-06 — Wave-11 R2: post-audit polish
 
 **触发**:harness-auditor 重审,score 62 → **86 / 100**(+24)。前 R1 关闭 6/8 §34 原则缺口;R2 执行剩余三项 ROI 建议中可自动化的部分。
