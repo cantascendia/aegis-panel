@@ -7,6 +7,39 @@
 
 ---
 
+## 2026-05-06 — Wave-12 R2: reliability audit P0 全闭环 + 2 regression eval
+
+**触发**:reliability-auditor 重审(R1 后台启动),portal 子系统 score **58/100**。8 项 punch list 中 3 项 P0 是 P1 ship 前的真实风险:无 ErrorBoundary / hash router unprotected / LoginPage P2 footgun。
+
+**R2 改动**:
+
+| Branch | 文件 | 改动 |
+|---|---|---|
+| `feat/customer-portal-p1-static`(PR #240,commit `dd6ea09`)| `customer-portal/src/lib/ErrorBoundary.jsx` | **新增** — App-level boundary,localStorage FIFO 20 telemetry,无 Sentry/GA |
+| 同上 | `customer-portal/src/App.jsx` | wrap `<ErrorBoundary scope="app">` 包住整个 route subtree |
+| 同上 | `customer-portal/src/lib/AuthPages.jsx` | LoginPage 顶部加 6 行 P2 footgun warning + inline marker `/* P1-MOCK-BYPASS */` |
+| `chore/harness-portal-evals`(PR #242)| `evals/regression/009-portal-mock-data-tripwire.yaml` | **新增** — P3 commit 不能保留 P1 mock 占位符(LOTUS-LW28 / nilou-demo 邮箱 / UUID 订阅 URL) |
+| 同上 | `evals/regression/010-portal-error-boundary-regression.yaml` | **新增** — 防 P2/P3 PR 在 router/TSX 重构时误删 ErrorBoundary |
+
+**Build**:236KB → 238KB(+2KB,远低于 P1 budget 260KB)
+
+**Eval 集计数**:
+- golden-trajectories: 7(不动)
+- regression: 8 → **10**(+2)
+- capability: 1(不动)
+- 总 evals: **18**
+
+**Audit 后续**:
+- ✅ P0 #1+#2(ErrorBoundary)— commit `dd6ea09` 闭环
+- ✅ P0 #3(LoginPage footgun)— 同 commit + eval 010
+- 🟡 P1 #4-6(rate limit / SLO / cost cap)— P3 SPEC blocker,eval 不补(等 P3 SPEC)
+- 🟡 P2 #7-9(drill readiness)— eval 009 部分覆盖,余 P3 SPEC
+- 🟡 P2 #10-11(eval 严格度)— 已通过 010 加保护
+
+**Score 预期**:wave-12 三段(R0+R1+R2)总和后约 **94 / 100**,剩余 6 分需用户操作(PostToolUse hook + CI workflow + CONSTITUTION SEAL)。
+
+---
+
 ## 2026-05-06 — Wave-12 R1: customer-portal-build-check skill(填 CI workflow 解锁前的缺口)
 
 **触发**:wave-11 R2 audit improvement #2(`.github/workflows/customer-portal-ci.yml`)是 forbidden-path,需用户从 `customer-portal/CI-SNIPPET.md` 复制 + 双签才能落地。在那之前,agent layer 可以做兜底。
