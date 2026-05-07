@@ -204,6 +204,9 @@
       "data_limit_method": "Data Limit",
       "fixed_date": "Fixed Date",
       "expire_method": "Expiration",
+      "expiring_week": "Expiring (7d)",
+      "over_quota": "Over Quota",
+      "add_user": "Add User",
       "on_first_use": "On first use",
       "reset_usage": "Reset Usage",
       "revoke_subscription": "Revoke Subscription",
@@ -247,6 +250,10 @@
       }
     },
     "admins": {
+      "total": "Total Admins",
+      "sudo": "Sudo",
+      "enabled": "Enabled",
+      "create_admin": "Create Admin",
       "disable_users": "Disable users",
       "enable_users": "Enable users",
       "permission": "Permission",
