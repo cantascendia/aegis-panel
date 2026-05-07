@@ -1,3 +1,10 @@
+/* AEGIS fork: theme override @import MUST come before @tailwind
+ * directives because CSS spec requires @import to precede all other
+ * rules. PostCSS silently drops @import lines that come after
+ * @tailwind. Sibling file dashboard/src/nilou-theme.css is the
+ * entire fork delta to the dashboard theme layer. */
+@import "./nilou-theme.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

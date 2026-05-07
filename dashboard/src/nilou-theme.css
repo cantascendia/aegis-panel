@@ -1,0 +1,124 @@
+/*
+ * Nilou Network — dashboard theme override.
+ *
+ * Fork-only, lives in hardening/ to keep the diff against upstream
+ * Marzneshin dashboard at exactly ONE line: an @import in
+ * dashboard/src/globals.css. Same pattern as
+ * apply_panel_hardening() in app/marzneshin.py.
+ *
+ * UNLAYERED on purpose — CSS cascade rule: unlayered styles beat ANY
+ * @layer-wrapped styles. Marzneshin's globals.css declares its tokens
+ * inside @layer base { :root {...} } which we override here without
+ * needing later source order.
+ *
+ * Source of truth for tokens:
+ *   customer-portal/src/styles/tokens.css
+ *   docs/launch/brand/BRAND-GUIDELINES.md §2-3
+ *
+ * Refs: D-018 customer-portal Phase B; user 'dashboard 太丑' incident.
+ */
+
+/* Webfonts */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ============================================================
+ * Color tokens — HSL space matching shadcn convention.
+ *   --brand-teal       #3a9188 → 174 44% 40%
+ *   --brand-teal-deep  #2d736b → 174 44% 31%
+ *   --brand-teal-soft  #5bc0be → 178 46% 56%
+ *   --brand-gold       #c9a253 → 41 56% 56%
+ *   --brand-cream      #f4ead5 → 42 64% 89%
+ *   --brand-ink        #1a2332 → 217 32% 15%
+ * ============================================================ */
+:root:root {
+  --background:           42 64% 96%;
+  --foreground:           217 32% 15%;
+
+  --card:                 0 0% 100%;
+  --card-foreground:      217 32% 15%;
+
+  --popover:              0 0% 100%;
+  --popover-foreground:   217 32% 15%;
+
+  --primary:              174 44% 31%;
+  --primary-foreground:   42 64% 96%;
+
+  --secondary:            174 30% 92%;
+  --secondary-foreground: 174 44% 25%;
+
+  --muted:                42 30% 92%;
+  --muted-foreground:     217 15% 40%;
+
+  --accent:               41 56% 56%;
+  --accent-foreground:    217 32% 15%;
+
+  --destructive:          0 70% 50%;
+  --destructive-accent:   0 70% 90%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success:              158 50% 40%;
+  --success-accent:       158 50% 80%;
+  --success-foreground:   0 0% 100%;
+
+  --border:               42 30% 80%;
+  --input:                42 30% 85%;
+  --ring:                 174 44% 31%;
+
+  --radius:               0.625rem;
+}
+
+.dark.dark {
+  --background:           217 32% 8%;
+  --foreground:           42 64% 96%;
+
+  --card:                 217 32% 12%;
+  --card-foreground:      42 64% 96%;
+
+  --popover:              217 32% 12%;
+  --popover-foreground:   42 64% 96%;
+
+  --primary:              178 46% 56%;
+  --primary-foreground:   217 32% 8%;
+
+  --secondary:            217 25% 20%;
+  --secondary-foreground: 42 64% 96%;
+
+  --muted:                217 25% 18%;
+  --muted-foreground:     42 30% 70%;
+
+  --accent:               41 56% 56%;
+  --accent-foreground:    217 32% 8%;
+
+  --destructive:          0 65% 55%;
+  --destructive-accent:   0 50% 25%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success:              158 50% 50%;
+  --success-accent:       158 40% 25%;
+  --success-foreground:   0 0% 100%;
+
+  --border:               217 25% 25%;
+  --input:                217 25% 22%;
+  --ring:                 178 46% 56%;
+}
+
+/* Typography */
+body {
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans', system-ui, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+h1, h2, h3,
+.font-display,
+[class*="DialogTitle"],
+[class*="dialog-title"] {
+  font-family: 'Cormorant Garamond', 'Songti SC', Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+code, kbd, pre, samp,
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  font-feature-settings: 'liga' 0;
+}
