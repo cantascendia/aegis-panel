@@ -49,10 +49,10 @@ const DashboardUsersLazyImport = createFileRoute('/_dashboard/users')()
 const DashboardSettingsLazyImport = createFileRoute('/_dashboard/settings')()
 const DashboardServicesLazyImport = createFileRoute('/_dashboard/services')()
 const DashboardRealityLazyImport = createFileRoute('/_dashboard/reality')()
-const DashboardAuditLazyImport = createFileRoute('/_dashboard/audit')()
 const DashboardNodesLazyImport = createFileRoute('/_dashboard/nodes')()
 const DashboardHostsLazyImport = createFileRoute('/_dashboard/hosts')()
 const DashboardHealthLazyImport = createFileRoute('/_dashboard/health')()
+const DashboardAuditLazyImport = createFileRoute('/_dashboard/audit')()
 const DashboardAdminsLazyImport = createFileRoute('/_dashboard/admins')()
 const DashboardBillingPurchaseLazyImport = createFileRoute(
   '/_dashboard/billing/purchase',
@@ -119,14 +119,6 @@ const DashboardRealityLazyRoute = DashboardRealityLazyImport.update({
   import('./routes/_dashboard/reality.lazy').then((d) => d.Route),
 )
 
-const DashboardAuditLazyRoute = DashboardAuditLazyImport.update({
-  id: '/audit',
-  path: '/audit',
-  getParentRoute: () => DashboardRoute,
-} as any).lazy(() =>
-  import('./routes/_dashboard/audit.lazy').then((d) => d.Route),
-)
-
 const DashboardNodesLazyRoute = DashboardNodesLazyImport.update({
   id: '/nodes',
   path: '/nodes',
@@ -149,6 +141,14 @@ const DashboardHealthLazyRoute = DashboardHealthLazyImport.update({
   getParentRoute: () => DashboardRoute,
 } as any).lazy(() =>
   import('./routes/_dashboard/health.lazy').then((d) => d.Route),
+)
+
+const DashboardAuditLazyRoute = DashboardAuditLazyImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => DashboardRoute,
+} as any).lazy(() =>
+  import('./routes/_dashboard/audit.lazy').then((d) => d.Route),
 )
 
 const DashboardAdminsLazyRoute = DashboardAdminsLazyImport.update({
@@ -398,6 +398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminsLazyImport
       parentRoute: typeof DashboardImport
     }
+    '/_dashboard/audit': {
+      id: '/_dashboard/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof DashboardAuditLazyImport
+      parentRoute: typeof DashboardImport
+    }
     '/_dashboard/health': {
       id: '/_dashboard/health'
       path: '/health'
@@ -424,13 +431,6 @@ declare module '@tanstack/react-router' {
       path: '/reality'
       fullPath: '/reality'
       preLoaderRoute: typeof DashboardRealityLazyImport
-      parentRoute: typeof DashboardImport
-    }
-    '/_dashboard/audit': {
-      id: '/_dashboard/audit'
-      path: '/audit'
-      fullPath: '/audit'
-      preLoaderRoute: typeof DashboardAuditLazyImport
       parentRoute: typeof DashboardImport
     }
     '/_dashboard/services': {
@@ -830,11 +830,11 @@ const DashboardUsersLazyRouteWithChildren =
 
 interface DashboardRouteChildren {
   DashboardAdminsLazyRoute: typeof DashboardAdminsLazyRouteWithChildren
+  DashboardAuditLazyRoute: typeof DashboardAuditLazyRoute
   DashboardHealthLazyRoute: typeof DashboardHealthLazyRoute
   DashboardHostsLazyRoute: typeof DashboardHostsLazyRouteWithChildren
   DashboardNodesLazyRoute: typeof DashboardNodesLazyRouteWithChildren
   DashboardRealityLazyRoute: typeof DashboardRealityLazyRoute
-  DashboardAuditLazyRoute: typeof DashboardAuditLazyRoute
   DashboardServicesLazyRoute: typeof DashboardServicesLazyRouteWithChildren
   DashboardSettingsLazyRoute: typeof DashboardSettingsLazyRoute
   DashboardUsersLazyRoute: typeof DashboardUsersLazyRouteWithChildren
@@ -847,11 +847,11 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminsLazyRoute: DashboardAdminsLazyRouteWithChildren,
+  DashboardAuditLazyRoute: DashboardAuditLazyRoute,
   DashboardHealthLazyRoute: DashboardHealthLazyRoute,
   DashboardHostsLazyRoute: DashboardHostsLazyRouteWithChildren,
   DashboardNodesLazyRoute: DashboardNodesLazyRouteWithChildren,
   DashboardRealityLazyRoute: DashboardRealityLazyRoute,
-  DashboardAuditLazyRoute: DashboardAuditLazyRoute,
   DashboardServicesLazyRoute: DashboardServicesLazyRouteWithChildren,
   DashboardSettingsLazyRoute: DashboardSettingsLazyRoute,
   DashboardUsersLazyRoute: DashboardUsersLazyRouteWithChildren,
@@ -870,11 +870,11 @@ export interface FileRoutesByFullPath {
   '': typeof DashboardRouteWithChildren
   '/login': typeof AuthLoginRoute
   '/admins': typeof DashboardAdminsLazyRouteWithChildren
+  '/audit': typeof DashboardAuditLazyRoute
   '/health': typeof DashboardHealthLazyRoute
   '/hosts': typeof DashboardHostsLazyRouteWithChildren
   '/nodes': typeof DashboardNodesLazyRouteWithChildren
   '/reality': typeof DashboardRealityLazyRoute
-  '/audit': typeof DashboardAuditLazyRoute
   '/services': typeof DashboardServicesLazyRouteWithChildren
   '/settings': typeof DashboardSettingsLazyRoute
   '/users': typeof DashboardUsersLazyRouteWithChildren
@@ -914,11 +914,11 @@ export interface FileRoutesByTo {
   '': typeof AuthRouteWithChildren
   '/login': typeof AuthLoginRoute
   '/admins': typeof DashboardAdminsLazyRouteWithChildren
+  '/audit': typeof DashboardAuditLazyRoute
   '/health': typeof DashboardHealthLazyRoute
   '/hosts': typeof DashboardHostsLazyRouteWithChildren
   '/nodes': typeof DashboardNodesLazyRouteWithChildren
   '/reality': typeof DashboardRealityLazyRoute
-  '/audit': typeof DashboardAuditLazyRoute
   '/services': typeof DashboardServicesLazyRouteWithChildren
   '/settings': typeof DashboardSettingsLazyRoute
   '/users': typeof DashboardUsersLazyRouteWithChildren
@@ -955,11 +955,11 @@ export interface FileRoutesById {
   '/_dashboard': typeof DashboardRouteWithChildren
   '/_auth/login': typeof AuthLoginRoute
   '/_dashboard/admins': typeof DashboardAdminsLazyRouteWithChildren
+  '/_dashboard/audit': typeof DashboardAuditLazyRoute
   '/_dashboard/health': typeof DashboardHealthLazyRoute
   '/_dashboard/hosts': typeof DashboardHostsLazyRouteWithChildren
   '/_dashboard/nodes': typeof DashboardNodesLazyRouteWithChildren
   '/_dashboard/reality': typeof DashboardRealityLazyRoute
-  '/_dashboard/audit': typeof DashboardAuditLazyRoute
   '/_dashboard/services': typeof DashboardServicesLazyRouteWithChildren
   '/_dashboard/settings': typeof DashboardSettingsLazyRoute
   '/_dashboard/users': typeof DashboardUsersLazyRouteWithChildren
@@ -1001,11 +1001,11 @@ export interface FileRouteTypes {
     | ''
     | '/login'
     | '/admins'
+    | '/audit'
     | '/health'
     | '/hosts'
     | '/nodes'
     | '/reality'
-    | '/audit'
     | '/services'
     | '/settings'
     | '/users'
@@ -1044,11 +1044,11 @@ export interface FileRouteTypes {
     | ''
     | '/login'
     | '/admins'
+    | '/audit'
     | '/health'
     | '/hosts'
     | '/nodes'
     | '/reality'
-    | '/audit'
     | '/services'
     | '/settings'
     | '/users'
@@ -1083,11 +1083,11 @@ export interface FileRouteTypes {
     | '/_dashboard'
     | '/_auth/login'
     | '/_dashboard/admins'
+    | '/_dashboard/audit'
     | '/_dashboard/health'
     | '/_dashboard/hosts'
     | '/_dashboard/nodes'
     | '/_dashboard/reality'
-    | '/_dashboard/audit'
     | '/_dashboard/services'
     | '/_dashboard/settings'
     | '/_dashboard/users'
@@ -1158,11 +1158,11 @@ export const routeTree = rootRoute
       "filePath": "_dashboard.tsx",
       "children": [
         "/_dashboard/admins",
+        "/_dashboard/audit",
         "/_dashboard/health",
         "/_dashboard/hosts",
         "/_dashboard/nodes",
         "/_dashboard/reality",
-        "/_dashboard/audit",
         "/_dashboard/services",
         "/_dashboard/settings",
         "/_dashboard/users",
@@ -1184,6 +1184,10 @@ export const routeTree = rootRoute
         "/_dashboard/admins/$adminId",
         "/_dashboard/admins/create"
       ]
+    },
+    "/_dashboard/audit": {
+      "filePath": "_dashboard/audit.lazy.tsx",
+      "parent": "/_dashboard"
     },
     "/_dashboard/health": {
       "filePath": "_dashboard/health.lazy.tsx",
@@ -1207,10 +1211,6 @@ export const routeTree = rootRoute
     },
     "/_dashboard/reality": {
       "filePath": "_dashboard/reality.lazy.tsx",
-      "parent": "/_dashboard"
-    },
-    "/_dashboard/audit": {
-      "filePath": "_dashboard/audit.lazy.tsx",
       "parent": "/_dashboard"
     },
     "/_dashboard/services": {
