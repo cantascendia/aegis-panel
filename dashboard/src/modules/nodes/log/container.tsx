@@ -40,11 +40,11 @@ export const LogContainer: FC<LogContainerProps> = ({ node, backend }) => {
         >
           {logs.map((log: string, index: number) => (
             <div key={log} className="w-full">
-              <p className="font-mono text-[0.7rem] text-primary my-1 break-all rounded-sm p-[1px] hover:bg-gray-300 dark:hover:bg-gray-900">
+              <p className="font-mono text-[0.7rem] text-primary my-1 break-all rounded-sm p-[1px] hover:bg-muted">
                 {log}
               </p>
               {index !== logs.length - 1 && (
-                <Separator className="bg-white dark:bg-gray-700" />
+                <Separator className="bg-border" />
               )}
             </div>
           ))}

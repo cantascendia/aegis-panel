@@ -20,6 +20,7 @@ from slowapi.errors import RateLimitExceeded
 # ASGI middleware.
 from slowapi.middleware import SlowAPIMiddleware  # noqa: F401
 
+from app.routes.customer import router as customer_router
 from hardening.health.endpoint import router as health_router
 from hardening.iplimit.endpoint import router as iplimit_router
 from hardening.iplimit.scheduler import install_iplimit_scheduler
@@ -138,6 +139,10 @@ def apply_panel_hardening(app: FastAPI) -> None:
     app.include_router(reality_router)
     app.include_router(health_router)
     app.include_router(audit_router)
+    # Customer-side endpoints (Track B, .claude/rules/forbidden-paths.md):
+    # /api/customers/sub-login, /me. JWT scoped access="customer" so these
+    # tokens cannot pass admin auth and admin tokens cannot pass these.
+    app.include_router(customer_router)
     install_iplimit_scheduler(app)
     install_billing_scheduler(app)
     # Audit log (S-AL Phase 4 retention sweep). validate_startup runs

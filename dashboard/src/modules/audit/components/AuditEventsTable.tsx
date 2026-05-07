@@ -210,7 +210,7 @@ export const AuditEventsTable: FC = () => {
                                 </td>
                                 <td className="px-2 py-1">
                                     {row.actor_username ?? (
-                                        <span className="text-gray-400">
+                                        <span className="text-muted-foreground">
                                             {t("page.audit.actor.anonymous")}
                                         </span>
                                     )}

@@ -22,6 +22,8 @@ lib/
 !deploy/install/lib/
 !scripts/lib/
 !customer-portal/src/lib/
+!docs/design-system-source/project/site/lib/
+!docs/design-system-source/project/ui_kits/marketing-site/
 lib64/
 parts/
 sdist/

@@ -23,6 +23,19 @@ import {
   AccountPage,
   DocsPage,
 } from './lib/PanelPages2.jsx';
+import { isTokenValid } from './lib/customer-auth.js';
+
+// Routes that require a valid customer JWT.
+// Marketing routes, /login, and /signup are open.
+const PROTECTED_PREFIXES = ['/panel', '/dashboard'];
+
+/**
+ * Returns true if the given path requires authentication.
+ * Prefix-match so /panel/account, /panel/traffic, etc. are all covered.
+ */
+function isProtected(path) {
+  return PROTECTED_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + '/') || path.startsWith(prefix));
+}
 
 const NotFound = ({ path }) => (
   <Section pad="120px 0 160px">
@@ -54,7 +67,7 @@ const NotFound = ({ path }) => (
         <Btn variant="primary" to="/">
           Home
         </Btn>
-        <Btn variant="secondary" to="/dashboard">
+        <Btn variant="secondary" to="/panel">
           Dashboard
         </Btn>
       </div>
@@ -63,7 +76,21 @@ const NotFound = ({ path }) => (
 );
 
 const App = () => {
-  const { path } = useRoute();
+  const { path, go } = useRoute();
+
+  // Auth guard: redirect unauthenticated users away from protected routes.
+  // Runs synchronously before route resolution so no protected content flashes.
+  useEffect(() => {
+    if (isProtected(path) && !isTokenValid()) {
+      go('/login');
+    }
+  }, [path, go]);
+
+  // If the current path is protected and the token is invalid, render nothing
+  // while the redirect effect fires (avoids a flash of the protected page).
+  if (isProtected(path) && !isTokenValid()) {
+    return null;
+  }
 
   const route = (() => {
     if (path === '/' || path === '') return { kind: 'marketing', label: '01 Home', el: <HomePage /> };

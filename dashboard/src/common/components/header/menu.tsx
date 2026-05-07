@@ -29,7 +29,7 @@ export const HeaderMenu: FC = () => {
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="secondary"
-                    className="bg-gray-800 text-secondary dark:hover:bg-secondary-foreground dark:hover:text-secondary dark:text-secondary-foreground"
+                    className="bg-card hover:bg-accent dark:hover:bg-secondary-foreground dark:hover:text-secondary dark:text-secondary-foreground"
                     size="icon"
                 >
                     <MenuIcon />

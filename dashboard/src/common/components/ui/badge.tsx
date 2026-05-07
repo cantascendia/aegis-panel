@@ -14,14 +14,18 @@ const badgeVariants = cva(
                     "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
                 destructive:
                     "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+                // AEGIS fork — variants rewritten to use semantic HSL tokens
+                // instead of hardcoded Tailwind palette names. This makes them
+                // theme-aware (light/dark) and inherit any palette retune from
+                // dashboard/src/nilou-theme.css automatically.
                 royal:
-                    "border-transparent text-indigo-200 bg-indigo-700 hover:bg-indigo/80",
+                    "border-transparent text-primary-foreground bg-primary hover:bg-primary/80",
                 positive:
-                    "border-transparent text-emerald-100 bg-emerald-800 hover:bg-emerald/80",
+                    "border-transparent text-success-foreground bg-success hover:bg-success/80",
                 disabled:
-                    "border-transparent bg-gray-400 text-gray-800 hover:bg-gray/80",
+                    "border-transparent bg-muted text-muted-foreground hover:bg-muted/80",
                 warning:
-                    "border-transparent bg-amber-200 text-amber-700 hover:bg-amber/80",
+                    "border-transparent bg-accent/20 text-accent-foreground hover:bg-accent/30",
                 outline: "text-foreground",
             },
         },

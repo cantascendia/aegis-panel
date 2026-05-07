@@ -12,11 +12,15 @@
  *   - findings count summary (issue/total) reflects severity filter
  *
  * The Badge component encodes the variant into a CSS class via cva.
- * We assert on a stable per-variant token (`bg-emerald-800`,
- * `bg-amber-200`, `bg-destructive`) — those tokens come from
- * common/components/ui/badge.tsx and are part of the public design
- * vocabulary, so they're a safer assertion target than the variant
- * prop name (which isn't reflected in the DOM).
+ * We assert on a stable per-variant token (`bg-success`, `bg-accent/20`,
+ * `bg-destructive`) — those tokens come from common/components/ui/badge.tsx
+ * and are part of the public design vocabulary, so they're a safer
+ * assertion target than the variant prop name (which isn't reflected in
+ * the DOM).
+ *
+ * AEGIS fork rebrand (v0.4.6): badge variants migrated from hardcoded
+ * Tailwind palette names (`bg-emerald-800`, `bg-amber-200`) to semantic
+ * HSL tokens so they inherit the Nilou theme. Tests updated to match.
  *
  * Rendering note: AuditTargetRow returns a <tr>, so the test wraps it
  * in <table><tbody> to avoid React's "tr cannot appear as a child of
@@ -98,15 +102,16 @@ describe("AuditTargetRow", () => {
         // page.reality.score.green is the badge label key.
         const badge = screen.getByText("page.reality.score.green");
         expect(badge).toBeInTheDocument();
-        // positive variant ships with bg-emerald-800.
-        expect(badge.className).toMatch(/bg-emerald-800/);
+        // positive variant ships with bg-success (semantic HSL token).
+        expect(badge.className).toMatch(/bg-success/);
     });
 
     it("maps grade=yellow to the warning Badge variant", () => {
         renderRow(makeTarget("yellow", 65, [FINDING_WARN]));
         const badge = screen.getByText("page.reality.score.yellow");
         expect(badge).toBeInTheDocument();
-        expect(badge.className).toMatch(/bg-amber-200/);
+        // warning variant ships with bg-accent/20 (Nilou gold tint).
+        expect(badge.className).toMatch(/bg-accent\/20/);
     });
 
     it("maps grade=red to the destructive Badge variant", () => {

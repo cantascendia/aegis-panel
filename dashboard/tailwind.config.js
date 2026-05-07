@@ -70,6 +70,60 @@ const config = {
                     DEFAULT: "hsl(var(--card))",
                     foreground: "hsl(var(--card-foreground))",
                 },
+                // AEGIS fork — Nilou Network palette overrides on top of
+                // Tailwind defaults. Many upstream Marzneshin components
+                // hardcode `bg-gray-800` / `bg-indigo-700` / `bg-amber-200`
+                // etc instead of semantic tokens, bypassing nilou-theme.css's
+                // HSL var override. We remap the hardcoded palette entries
+                // here so those components also inherit Nilou tones without
+                // needing per-component edits.
+                //
+                // Source of truth: customer-portal/src/styles/tokens.css +
+                // BRAND-GUIDELINES.md §2-3.
+                gray: {
+                    50:  '#f7f1e3',
+                    100: '#efe6cf',
+                    200: '#e8dfca',
+                    300: '#d6c9a8',
+                    400: '#a89878',
+                    500: '#7a6c52',
+                    600: '#5a4f3a',
+                    700: '#3f3729',
+                    800: '#2a2419',
+                    900: '#1a1611',
+                    950: '#0d0b08',
+                },
+                slate: {
+                    50:  '#f7f1e3', 100: '#efe6cf', 200: '#e8dfca',
+                    300: '#d6c9a8', 400: '#a89878', 500: '#7a6c52',
+                    600: '#5a4f3a', 700: '#3f3729', 800: '#2a2419',
+                    900: '#1a1611', 950: '#0d0b08',
+                },
+                zinc: {
+                    50:  '#f7f1e3', 100: '#efe6cf', 200: '#e8dfca',
+                    300: '#d6c9a8', 400: '#a89878', 500: '#7a6c52',
+                    600: '#5a4f3a', 700: '#3f3729', 800: '#2a2419',
+                    900: '#1a1611', 950: '#0d0b08',
+                },
+                // badge variants — semantic remap to Nilou palette
+                // royal (was indigo) → teal family
+                indigo: {
+                    100: '#d8efed', 200: '#a8d8d4', 300: '#7ec5c0',
+                    400: '#5bc0be', 500: '#3a9188', 600: '#2d736b',
+                    700: '#244e48', 800: '#193b35', 900: '#0f2825',
+                },
+                // positive (was emerald) — keep green but warmer
+                emerald: {
+                    100: '#cdebd1', 200: '#a8d9b1', 300: '#7fc28b',
+                    400: '#56a567', 500: '#358a48', 600: '#256d35',
+                    700: '#1b5527', 800: '#1f5d2c', 900: '#0d3216',
+                },
+                // warning (was amber) → Nilou gold
+                amber: {
+                    100: '#f6ecd2', 200: '#efe1bf', 300: '#e3cd96',
+                    400: '#d4b770', 500: '#c9a253', 600: '#a98538',
+                    700: '#9b7a2c', 800: '#6e561e', 900: '#3f3214',
+                },
             },
             borderRadius: {
                 lg: "var(--radius)",
@@ -91,8 +145,12 @@ const config = {
                 "accordion-up": "accordion-up 0.2s ease-out",
             },
             fontFamily: {
-                'font-body': ['Lato'],
-                'font-header': ['Ubuntu'],
+                // AEGIS fork — Nilou Network type stack.
+                // Was Lato/Ubuntu (upstream Marzneshin). Cormorant Garamond
+                // is loaded via dashboard/src/nilou-theme.css @import.
+                'font-body': ['Inter', 'PingFang SC', 'Hiragino Sans', 'system-ui', 'sans-serif'],
+                'font-header': ['Cormorant Garamond', 'Songti SC', 'Georgia', 'serif'],
+                'font-mono': ['JetBrains Mono', 'ui-monospace', 'SF Mono', 'Consolas', 'monospace'],
             }
         },
     },
