@@ -638,5 +638,46 @@
     "selected": "已选择",
     "toggle-column": "切换列",
     "filter-placeholder": "过滤{{name}}"
+  },
+  "nilou": {
+    "overview": {
+      "welcome": "欢迎回来",
+      "sub": "{{users}} 用户 · {{active}} 活跃",
+      "traffic_chart_title": "流量，过去 14 天",
+      "traffic_chart_sub": "上传 + 下载，每日合计（GB）",
+      "chart_loading": "加载流量数据中…",
+      "capacity_title": "容量",
+      "capacity_sub": "活跃 / 总用户比率",
+      "capacity_ring_sub": "{{total}} 中 {{active}} 活跃",
+      "uptime": "运行时间",
+      "recent_activity": "最近活动",
+      "view_all": "查看全部 →",
+      "no_activity": "暂无最近活动",
+      "quick_links": "快捷入口"
+    },
+    "kpi": {
+      "total_users": "总用户数",
+      "all_accounts": "全部账户",
+      "active_users": "活跃用户",
+      "last_24h": "过去 24 小时",
+      "online_nodes": "在线节点",
+      "currently_up": "当前在线",
+      "health_score": "平均健康分",
+      "reality_grade": "Reality 评级",
+      "health_na": "请检查 /health"
+    },
+    "health": {
+      "kpi": {
+        "overall": "综合评分",
+        "online": "在线子系统",
+        "degraded": "降级",
+        "degraded_sub": "部分受损",
+        "last_check": "最后检查"
+      },
+      "subsystems_heading": "子系统状态",
+      "subsystems_down": "个子系统当前已下线，请立即检查面板日志。",
+      "no_subsystems": "暂无子系统数据 — 后端健康探测可能尚未运行。",
+      "last_checked": "最后检查"
+    }
   }
 }

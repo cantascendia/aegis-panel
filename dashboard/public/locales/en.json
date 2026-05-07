@@ -771,5 +771,46 @@
     "unhealthy": "Unhealthy",
     "limited": "Limited",
     "error": "Error"
+  },
+  "nilou": {
+    "overview": {
+      "welcome": "Welcome back",
+      "sub": "{{users}} users · {{active}} active",
+      "traffic_chart_title": "Traffic, last 14 days",
+      "traffic_chart_sub": "Upload + download, daily totals (GB)",
+      "chart_loading": "Loading traffic data…",
+      "capacity_title": "Capacity",
+      "capacity_sub": "Active / total user ratio",
+      "capacity_ring_sub": "{{active}} of {{total}} active",
+      "uptime": "Uptime",
+      "recent_activity": "Recent activity",
+      "view_all": "View all →",
+      "no_activity": "No recent activity",
+      "quick_links": "Quick links"
+    },
+    "kpi": {
+      "total_users": "Total users",
+      "all_accounts": "All accounts",
+      "active_users": "Active users",
+      "last_24h": "Last 24 h",
+      "online_nodes": "Online nodes",
+      "currently_up": "Currently up",
+      "health_score": "Avg health score",
+      "reality_grade": "Reality grade",
+      "health_na": "Run /health check"
+    },
+    "health": {
+      "kpi": {
+        "overall": "Overall score",
+        "online": "Online subsystems",
+        "degraded": "Degraded",
+        "degraded_sub": "Partially impaired",
+        "last_check": "Last check"
+      },
+      "subsystems_heading": "Subsystem status",
+      "subsystems_down": "subsystem(s) are currently DOWN. Check panel logs immediately.",
+      "no_subsystems": "No subsystem data available — backend health probes may not have run yet.",
+      "last_checked": "Last checked"
+    }
   }
 }
