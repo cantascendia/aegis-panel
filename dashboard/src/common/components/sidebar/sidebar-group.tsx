@@ -14,7 +14,7 @@ export const SidebarGroup: FC<SidebarGroupProps> = ({ children, className }) => 
 
     if (!collapsed)
         return (
-            <Label className={cn(className, "text-gray-500 font-header")}>
+            <Label className={cn(className, "text-muted-foreground font-header")}>
                 {children}
             </Label>
         )

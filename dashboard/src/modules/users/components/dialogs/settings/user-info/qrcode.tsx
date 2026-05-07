@@ -27,6 +27,9 @@ export const QRCodeSection: FC<QRCodeProps> = ({ entity }) => {
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col justify-center items-center py-10 w-full h-full">
+                {/* INTENTIONAL bg-white: QR codes need high-contrast white background
+                    for camera scanability. Do NOT theme this — Nilou cream / teal
+                    backgrounds will reduce camera read reliability on dim lighting. */}
                 <QRCode size={150} className="size-2/3 bg-white p-4" value={subscribeQrLink} />
             </CardContent>
         </Card>

@@ -2,8 +2,8 @@ import { Skeleton } from "@marzneshin/common/components";
 
 export const SettingsInfoSkeleton = () => {
     return (
-        <div className="p-5 bg-gray-900 rounded-lg w-96">
-            <h2 className="text-white mb-5">
+        <div className="p-5 bg-muted rounded-lg w-96">
+            <h2 className="text-foreground mb-5">
                 <Skeleton className="h-6 w-24" />
             </h2>
             <div className="mb-2">

@@ -21,7 +21,7 @@ interface GithubRepoProps {
 
 export const GithubRepo: FC<GithubRepoProps> = ({ variant = "full", stargazers_count, full_name, description }) => {
     return (
-        <Button variant="secondary" className="bg-gray-800 border-0 dark:text-primary text-secondary dark:hover:text-secondary dark:hover:bg-primary hover:bg-secondary hover:text-primary p-2" asChild>
+        <Button variant="secondary" className="bg-card border border-border text-foreground hover:bg-accent hover:text-accent-foreground dark:text-primary dark:hover:text-secondary dark:hover:bg-primary p-2" asChild>
             <Card>
                 <a href={projectInfo.github} target="_blank">
                     <CardContent className="hstack size-fit p-0 gap-2 items-center">

@@ -29,7 +29,7 @@ export const DeleteConfirmation: FC<DeleteConfirmationProps> = ({
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="flex flex-row gap-3 items-center text-destructive">
-                        <ExclamationTriangleIcon className="p-2 w-10 h-10 bg-red-200 rounded-md border-2 border-destructive" />
+                        <ExclamationTriangleIcon className="p-2 w-10 h-10 bg-destructive/15 rounded-md border-2 border-destructive" />
                         {t("delete-confirmation.title")}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
