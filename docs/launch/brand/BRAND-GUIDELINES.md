@@ -108,6 +108,24 @@ not based on any existing IP. 1024x1024 square.
 5. **致敬性创作**:允许视觉灵感与画风相似(包括与原神角色相似的发型 / 服装风格 / 姿态),prompt 中无需声明 "not based on existing IP";仅不直接复用素材文件
 6. **AI 生图允许**(包括 image-to-image,但不以官方素材文件作为输入)
 
+### 5.1 屋号カナ表記標準(D-020、2026-05-08 SEALED)
+
+**所有日本語 KYC / 公文書 / 商標登録 で 屋号フリガナ = `ニィロウ ネットワーク`**(小書きィ あり)
+
+- 開業届 e-Tax 提出済(2026/5/7、品川税務署、受付番号 `20260507224845548217`)
+- 楽天 モバイルチョイス"050"申込済(2026/5/8)
+- 全下流 KYC で同一カナ統一(整合性 max)
+
+**Acknowledged collision risk**:原神角色「妮露」公式日本語声優読み「ニィロウ」と同一 → 商標 / 不正競争防止法紛争で「悪意の借用」傍証になる可能性あり
+
+**緩和策**(本ガイドライン本文 §5「✅ 允许」 と並んで強制):
+1. **商標登録**(Phase B、月収 30 万超 or 客户 10+ 達成時)— 第 9 類「ダウンロード可能なソフトウェア」+ 第 42 類「ソフトウェアの開発・運用」(SaaS 区分、miHoYo の第 9/41 類ゲーム区分とは異区分)
+2. **legal.html trademark notice 強化**:Persian lotus 語源 reference + 不正競争防止法 第 2 条 1 項 1/2 号 disclaimer
+3. **視覚差別化**:幾何学 lotus + アラベスク + 非ゲーム業種(SaaS hosting)で「混同惹起」主張を緩和
+4. **新規 brand asset 制作時**:asset metadata に「ニィロウ」「妮露」を tag 単独使用しない(BRAND-GUIDELINES §5「❌ 严禁」第 2 条準拠)
+
+**詳細**:`docs/ai-cto/DECISIONS.md` D-020 + `docs/launch/BRAND-NAMING-DECISION.md` §2.1.5
+
 ### 风险升级
 
 如果 logo 被举报 / 收到 DMCA / 商标投诉:

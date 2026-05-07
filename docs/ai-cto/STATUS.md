@@ -1,11 +1,117 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-06 wave-12 (customer-portal P2 SPEC DRAFT,等用户 SEAL TBD-6/8/10)
+> 最后更新:2026-05-08 wave-14 (商业行政 launch-B Day 2 — 050 番号申請 + 屋号カナ SEALED + brand defense)
 > 更新频率:每 3 轮或重大节点
 
 ---
 
 ## 当前轮次
+
+**wave-14 launch-B 商业行政 Day 2**(2026-05-08,**050 番号申請 + 屋号カナ SEALED + brand defense docs**):
+
+- **楽天 モバイルチョイス"050" 申請**:✅ 提出完了(個人事業主証明 = 受信通知 + 開業届控え 結合 PDF + 在留カード両面)
+  - プラン:ベーシック ¥100/月
+  - 契約住所:自宅(千葉県千葉市稲毛区小中台町533番地1 MITSUBA ハイツ403号室)— 在留カード一致
+  - 住所異なるチェック:☐(在留カード ≡ 楽天契約住所、賃貸借契約書 不要)
+  - 審査:1-3 営業日後 050 番号発番
+- **D-020 屋号フリガナ SEALED**:`ニィロウ ネットワーク`(operator product vision priority、CTO 铁律 #1)
+  - 開業届 e-Tax 既に法定登録済(受付番号 20260507224845548217)→ 訂正不可、全下流 KYC で統一
+  - **Acknowledged risk**:原神角色「妮露」公式読みと同一(miHoYo 商標権 / 不正競争防止法 主張余地)
+  - **緩和策**:商標登録(Phase B、第 9/42 類 SaaS = miHoYo の第 9/41 類ゲーム とは異区分)+ legal.html trademark notice 強化 + Persian lotus 語源 disclosure 強化
+- **Brand defense PR**(本 PR ship):
+  - `DECISIONS.md` D-020 追加(屋号カナ SEALED 完整 ADR)
+  - `BRAND-NAMING-DECISION.md` §2.1.5 日本語カナ表記 SEALED 段追加
+  - `BRAND-GUIDELINES.md` §5.1 屋号カナ標準 + collision risk 緩和策 4 件 列举
+
+### 商业行政依存链路 Day 2 状態
+
+```
+✅ GMO 虚拟办公室              opex 月額 ¥3,300〜
+✅ 開業届 e-Tax 提出            (2026/5/7、品川税務署、ニィロウ ネットワーク legal record)
+✅ 特商法表記 三语公開           (PR #249)
+✅ 住信SBI ネット銀行 申請       (2026/5/7、審査 1-3 営業日)
+✅ 楽天 モバイルチョイス"050" 申請 (2026/5/8、審査 1-3 営業日)
+✅ D-020 屋号カナ SEALED        (本 PR、project memory + brand docs 同期)
+🔄 開業届控え PDF 正式版          税務署受理印付き、1-3 営業日
+🔄 銀行口座 開通                  審査結果メール、1-3 営業日
+🔄 050 番号 発番                  楽天審査通過後、1-3 営業日
+⏳ legal.html trademark notice 強化  follow-up PR(Persian lotus 語源 + 不正競争防止法 disclaimer)
+⏳ j-platpat 商標先行検索         operator 5 分作業(妮露 / ニィロウ / Nilou 全分類)
+⏳ Paddle / LS / Stripe 申請      銀行 + 開業届控え 双就位後(5/10-5/12 予測)
+   → Phase B 商業化決済通路完工
+```
+
+### Active workstreams(launch-B 並行)
+
+| Workstream | Status | 完了予定 |
+|---|---|---|
+| 開業届控え PDF 正式版取得 | 🔄 審査中 | 5/8-5/10 |
+| 住信SBI 銀行口座 開通 | 🔄 審査中 | 5/8-5/10 |
+| 楽天 050 番号 発番 | 🔄 審査中 | 5/9-5/11 |
+| legal.html trademark notice 強化 | ⏳ next PR | 今夜 / 明日 |
+| j-platpat 商標先行検索 | ⏳ operator | 任意、5 分 |
+| 050 番号取得後 → 特商法表記 直公開化 PR | ⏳ blocked on 050 発番 | 1-3 営業日後 |
+| Paddle merchant 申請 | ⏳ blocked on 銀行+控え | 5/10-5/12 |
+| Lemon Squeezy merchant 申請 | ⏳ 並行 | 同上 |
+| Stripe Japan 個人事業主 申請 | ⏳ 並行 | 同上 |
+| customer-portal P2 SPEC SEAL | ⏳ blocked on operator(TBD-6/8/10) | TBD |
+
+---
+
+## 历史轮次
+
+**wave-13 launch-B 商业行政 Day 1**(2026-05-07,**operator 商业体系正式启动 + 法律合规闭环**):
+
+- **GMO 虚拟办公室**:✅ 生效 — 〒141-0021 東京都品川区上大崎3丁目14番34号 プラスワン402(納税地特例として開業届に登録)
+- **開業届 e-Tax 提出**:✅ freee 開業 → 提出完了(品川税務署管轄)
+  - 屋号:`Nilou Network`(カナ:ニロウ ネットワーク,IP red line — Genshin VAの「ニィロウ」読みを意図的に回避)
+  - 仕事の概要:`ソフトウェア開発・販売、クラウドホスティング、ウェブ制作、ITコンサルティング、AI関連サービス、デジタルコンテンツ販売`(broad-but-defensible IT 全域,将来追加届出不要)
+  - 青色申告承認申請書 同時提出(55 万円控除狙い)
+  - 受領 PDF 取得:1-3 営業日後
+- **PR #249 法律页填**:✅ 三语 9 placeholder fields 全实填(運営責任者 / 所在地 / 電話)— 電話は特商法第 11 条第 3 号代替開示で書面要求対応(050 IP 番号取得後直公開へ更新予定)
+- **住信SBI ネット銀行 申請**:✅ オンライン口座開設 提出(eKYC + 在留カード readout)
+  - 在留資格:技人国(operator confirmed Case A:在職中 + 副業として個人事業)
+  - 職業欄:**「会社員」+ 副業開示**(在留資格と整合性確保 — 「自営業 only」だと入管 trigger リスクのため避けた)
+  - 利用目的:給与受取 + 事業性収入 + 海外送金受取(Paddle / Stripe)
+  - 審査:1-3 営業日
+  - **2026/8/3 → ドコモSMTBネット銀行 改称予告**:今日開設口座は自動 migrate、SWIFT NTSSJPJT 維持(operator 行動不要)
+- **三语 footer legal link**:✅ 全 3 lang 自動的に `../legal.html` 链接済み(Paddle/LS audit 合规)
+
+### 商业行政依存链路
+
+```
+✅ GMO 虚拟办公室              (opex 月額 ¥3,300〜)
+✅ 開業届 e-Tax 提出            (sunk cost 0)
+✅ 特商法表記 三语公開           (sunk cost 0)
+🔄 開業届控え PDF                審査 1-3 営業日
+🔄 銀行口座 開設                  審査 1-3 営業日
+⏳ 050 IP 番号(SMARTalk)         operator 任意(¥0 月額、特商法直公開化)
+⏳ Paddle / LS / Stripe 申請       銀行 + 開業届控え 双就位後
+   → Phase B 商業化決済通路完工
+```
+
+### 法律合規メモ
+
+- **技人国 + 個人事業 整合性**:Case A(在職中 + 副業)継続。副業所得が本業給与超えたら経営・管理ビザ移行検討(3 ヶ月猶予あり、現時点 trial 段階で問題なし)
+- **特商法第 11 条第 1 号**:operator 法定姓名(陸 浩洋 / Lu Haoyang)公開済み — 個人事業主の宿命、opt-out 不可
+- **特商法第 11 条第 3 号**:電話番号「書面要求対応」の代替開示で当面通用、050 番号取得後直公開へ
+- **IP 红线 §5**:屋号カナ「ニロウ」を採用、原神角色「ニィロウ」と意図的に区別 — miHoYo 商標権切離ライン維持
+
+### Active workstreams(launch-B 並行)
+
+| Workstream | Status | 完了予定 |
+|---|---|---|
+| 開業届控え PDF 取得 | 🔄 審査中 | 5/8-5/10 |
+| 銀行口座 開通 | 🔄 審査中 | 5/8-5/10 |
+| 050 IP 番号取得(任意) | ⏳ operator 選択 | 即日 |
+| Paddle merchant 申請 | ⏳ blocked on 銀行+控え | 5/10-5/12 |
+| Lemon Squeezy merchant 申請 | ⏳ 並行 | 同上 |
+| Stripe Japan 個人事業主 申請 | ⏳ 並行 | 同上 |
+| customer-portal P2 SPEC SEAL | ⏳ blocked on operator(TBD-6/8/10) | TBD |
+
+---
+
+## 历史轮次
 
 **wave-12 customer-portal P2 SPEC**(2026-05-06,**Spec-Driven 起草 + 10 TBD + 7 已 CTO 倾向 SEAL**):
 
