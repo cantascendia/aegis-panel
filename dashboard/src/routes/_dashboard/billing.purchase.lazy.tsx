@@ -1,8 +1,21 @@
+/**
+ * /billing/purchase — Admin manual checkout on behalf of a user. Wave-B2 Nilou rewrite.
+ *
+ * Layout change: replaced <Page title=…> wrapper with PanelHead + fragment.
+ * All checkout logic (UserSelector, PlansGrid, CartSummary, CheckoutPaymentPicker,
+ * useCheckout, useUserPlans, useUserChannels) is preserved untouched —
+ * forbidden-path rule prohibits modifying mutations or pricing logic.
+ *
+ * Forbidden-path note: billing UI per .claude/rules/forbidden-paths.md.
+ * PR must carry the `requires-double-review` label.
+ */
+
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 
-import { Loading, Page } from "@marzneshin/common/components";
+import { Loading } from "@marzneshin/common/components";
+import { NilouCard, PanelHead } from "@marzneshin/common/components/nilou";
 import { SudoRoute } from "@marzneshin/libs/sudo-routes";
 import {
     CartSummary,
@@ -42,7 +55,7 @@ import type {
  * because checkout creates a real money record.
  */
 
-const BillingCheckoutPage: FC = () => {
+export const BillingCheckoutPage: FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
@@ -121,76 +134,114 @@ const BillingCheckoutPage: FC = () => {
     if (loadingPlans || loadingChannels) return <Loading />;
     if (plansErr || channelsErr || !plans || !channels) {
         return (
-            <Page title={t("page.billing.purchase.title")}>
-                <div className="text-sm text-destructive p-3 rounded-md bg-destructive/10">
-                    {t("page.billing.purchase.load_error")}
-                </div>
-            </Page>
+            <>
+                <PanelHead
+                    title={t("page.billing.purchase.title")}
+                    sub={t("page.billing.purchase.user_section_title")}
+                />
+                <NilouCard>
+                    <div
+                        style={{
+                            fontSize: "0.9rem",
+                            color: "hsl(var(--destructive))",
+                            padding: "12px",
+                            borderRadius: 8,
+                            background: "hsl(var(--destructive) / 0.1)",
+                        }}
+                    >
+                        {t("page.billing.purchase.load_error")}
+                    </div>
+                </NilouCard>
+            </>
         );
     }
 
     return (
-        <Page
-            title={t("page.billing.purchase.title")}
-            className="sm:w-screen md:w-full"
-        >
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-                <div className="flex flex-col gap-6">
-                    <section className="flex flex-col gap-2">
-                        <h2 className="text-xl font-semibold">
-                            {t("page.billing.purchase.user_section_title")}
-                        </h2>
-                        <UserSelector
-                            selected={pickedUser}
-                            onSelect={setPickedUser}
-                        />
-                    </section>
+        <>
+            <PanelHead
+                title={t("page.billing.purchase.title")}
+                sub={t("page.billing.purchase.user_section_title")}
+            />
 
-                    <section>
-                        <h2 className="text-xl font-semibold mb-3">
-                            {t("page.billing.purchase.plans_title")}
-                        </h2>
-                        <PlansGrid
-                            plans={plans}
-                            cart={cart}
-                            onAdd={addFixedPlan}
-                        />
-                    </section>
-                    <FlexibleAddonCalculator
-                        plans={plans}
-                        onAdd={addFlexibleLine}
-                    />
-                    {cart.length > 0 && pickedUser && (
-                        <section className="flex flex-col gap-3">
-                            <h2 className="text-xl font-semibold">
-                                {t("page.billing.purchase.pay_title")}
-                            </h2>
-                            <CheckoutPaymentPicker
-                                channels={channels}
-                                onPay={onPay}
-                                pending={checkout.isPending}
+            <div
+                style={{
+                    maxWidth: 720,
+                    width: "100%",
+                }}
+            >
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+                    <div className="flex flex-col gap-6">
+                        <NilouCard>
+                            <section className="flex flex-col gap-2">
+                                <h2 className="text-xl font-semibold">
+                                    {t("page.billing.purchase.user_section_title")}
+                                </h2>
+                                <UserSelector
+                                    selected={pickedUser}
+                                    onSelect={setPickedUser}
+                                />
+                            </section>
+                        </NilouCard>
+
+                        <NilouCard>
+                            <section>
+                                <h2 className="text-xl font-semibold mb-3">
+                                    {t("page.billing.purchase.plans_title")}
+                                </h2>
+                                <PlansGrid
+                                    plans={plans}
+                                    cart={cart}
+                                    onAdd={addFixedPlan}
+                                />
+                            </section>
+                            <FlexibleAddonCalculator
+                                plans={plans}
+                                onAdd={addFlexibleLine}
                             />
-                        </section>
-                    )}
-                    {cart.length > 0 && !pickedUser && (
-                        <div className="text-sm text-muted-foreground p-3 rounded-md bg-muted">
-                            {t("page.billing.purchase.user_selector.required_before_pay")}
-                        </div>
-                    )}
+                        </NilouCard>
+
+                        {cart.length > 0 && pickedUser && (
+                            <NilouCard>
+                                <section className="flex flex-col gap-3">
+                                    <h2 className="text-xl font-semibold">
+                                        {t("page.billing.purchase.pay_title")}
+                                    </h2>
+                                    <CheckoutPaymentPicker
+                                        channels={channels}
+                                        onPay={onPay}
+                                        pending={checkout.isPending}
+                                    />
+                                </section>
+                            </NilouCard>
+                        )}
+                        {cart.length > 0 && !pickedUser && (
+                            <div
+                                style={{
+                                    fontSize: "0.875rem",
+                                    color: "hsl(var(--muted-foreground))",
+                                    padding: "12px",
+                                    borderRadius: 8,
+                                    background: "hsl(var(--muted))",
+                                }}
+                            >
+                                {t("page.billing.purchase.user_selector.required_before_pay")}
+                            </div>
+                        )}
+                    </div>
+                    <CartSummary
+                        lines={cart}
+                        plans={plans}
+                        onRemove={removeLine}
+                        onCheckout={() => {
+                            /* Picker handles actual mutation; this
+                             * cart-summary button is a hint to scroll
+                             * to the picker on mobile. Wire later. */
+                        }}
+                        checkoutPending={checkout.isPending}
+                    />
                 </div>
-                <CartSummary
-                    lines={cart}
-                    plans={plans}
-                    onRemove={removeLine}
-                    onCheckout={() => {
-                        /* Picker handles actual mutation; this
-                         * cart-summary button is a hint to scroll
-                         * to the picker on mobile. Wire later. */
-                    }}
-                    checkoutPending={checkout.isPending}
-                />
             </div>
-        </Page>
+        </>
     );
 };
 

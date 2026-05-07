@@ -716,6 +716,13 @@
             },
             "subsystems_heading": "子系统状态",
             "last_checked": "最后检查"
+        },
+        "billing": {
+            "kpi": {
+                "mrr": "月收入(30天)",
+                "unpaid": "待付款",
+                "paid_total": "已付总计"
+            }
         }
     },
     "filter": "筛选",

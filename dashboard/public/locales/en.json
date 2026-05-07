@@ -849,6 +849,13 @@
             },
             "subsystems_heading": "Subsystem status",
             "last_checked": "Last checked"
+        },
+        "billing": {
+            "kpi": {
+                "mrr": "MRR (30d)",
+                "unpaid": "Unpaid",
+                "paid_total": "Paid total"
+            }
         }
     },
     "filter": "Filter",
