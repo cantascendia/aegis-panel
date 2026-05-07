@@ -40,6 +40,43 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
 
 
+def _mount_customer_portal(app: FastAPI) -> None:
+    """Mount customer-portal SPA at /portal/ + redirect / → /portal/.
+
+    Fork-only (D-018, wave-11 P1 PR #240). Vite base in
+    customer-portal/vite.config.js is `/portal/`, so the build outputs
+    asset paths like `/portal/static/...` — they only resolve when
+    panel mounts `customer-portal/dist` under `/portal`.
+
+    Requires CI to have run `pnpm build` before docker build (see
+    .github/workflows/package.yml). Dist is absent in dev (DEBUG mode)
+    so we guard with isdir() and silently skip.
+
+    Root redirect: registered BEFORE upstream `@app.get("/")` in
+    marzneshin.py because apply_panel_hardening() fires first; first-
+    registered route wins in Starlette routing, so the upstream
+    3D-scene `home_page()` becomes unreachable. Dashboard is still
+    accessible at the randomized `DASHBOARD_PATH`.
+    """
+    import os
+
+    from starlette.responses import RedirectResponse
+    from starlette.staticfiles import StaticFiles
+
+    if not os.path.isdir("customer-portal/dist"):
+        return
+
+    @app.get("/", include_in_schema=False)
+    def _root_to_portal() -> RedirectResponse:
+        return RedirectResponse(url="/portal/", status_code=307)
+
+    app.mount(
+        "/portal",
+        StaticFiles(directory="customer-portal/dist", html=True),
+        name="customer-portal",
+    )
+
+
 def apply_panel_hardening(app: FastAPI) -> None:
     """Install rate limiting + self-owned routes on `app`.
 
@@ -111,3 +148,5 @@ def apply_panel_hardening(app: FastAPI) -> None:
     # in this same block in a future PR.
     validate_audit_startup()
     install_audit_scheduler(app)
+
+    _mount_customer_portal(app)

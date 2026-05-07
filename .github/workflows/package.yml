@@ -68,6 +68,15 @@ jobs:
         run: npm run build --if-present -- --outDir 'dist' --assetsDir 'static'
         working-directory: ./dashboard/
 
+      # customer-portal (fork-only, D-018 lifted ban). Vite base=/portal/
+      # so panel mounts dist/ under /portal/ via hardening hook.
+      - name: Install customer-portal deps
+        run: pnpm install
+        working-directory: ./customer-portal/
+      - name: Build customer-portal
+        run: pnpm build
+        working-directory: ./customer-portal/
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
