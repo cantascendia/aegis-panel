@@ -1,6 +1,9 @@
 // Panel pages part 2: Traffic, Plans, Billing, Tickets, Invite, Account, Docs
-import React, { useState } from 'react';
+// P2 (Wave-P1): AccountPage wired to GET /api/customers/me.
+import React, { useState, useEffect } from 'react';
 import { Btn, Icon, Pill } from './Atoms.jsx';
+import { getMe } from './customer-api.js';
+import { clearToken } from './customer-auth.js';
 import { PanelShell, PanelHead, Card, CardHeader, iconBtn } from './PanelShell.jsx';
 import { KPI, BigChart } from './PanelPages1.jsx';
 import { PLANS } from './MarketingSections.jsx';
@@ -223,47 +226,157 @@ const InvitePage = () => (
   </PanelShell>
 );
 
-const AccountPage = () => (
-  <PanelShell active="/panel/account">
-    <PanelHead title="Account" sub="Profile, security, and API access." />
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-      <Card>
-        <CardHeader title="Profile" />
-        <FieldGroup label="Display name"><input style={inputCss} defaultValue="Liu Wei" /></FieldGroup>
-        <FieldGroup label="Email"><input style={inputCss} defaultValue="liu.wei@nilou-demo.network" /></FieldGroup>
-        <FieldGroup label="Time zone">
-          <select style={inputCss} defaultValue="Asia/Tokyo"><option>Asia/Tokyo</option><option>Asia/Shanghai</option><option>Asia/Hong_Kong</option><option>UTC</option></select>
-        </FieldGroup>
-        <Btn variant="primary">Save changes</Btn>
-      </Card>
-      <Card>
-        <CardHeader title="Security" />
-        <FieldGroup label="Current password"><input type="password" style={inputCss} placeholder="••••••••" /></FieldGroup>
-        <FieldGroup label="New password"><input type="password" style={inputCss} placeholder="••••••••••••" /></FieldGroup>
-        <div style={{ padding: 14, background: 'var(--surface-alt)', borderRadius: 8, marginBottom: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontWeight: 600, color: 'var(--brand-navy)', fontSize: '0.92rem' }}>Two-factor authentication</div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 2 }}>Off — strongly recommended</div>
-          </div>
-          <Btn variant="secondary" style={{ padding: '7px 14px', fontSize: '0.84rem' }}>Enable</Btn>
+/**
+ * AccountPage — P2 real /me wiring (Wave-P1).
+ *
+ * Fetches GET /api/customers/me on mount and replaces the P1 mock username
+ * and account data with real values from the backend.
+ *
+ * States:
+ * - loading: skeleton placeholder shown while fetch is in-flight
+ * - error: fallback message + re-login link (e.g. expired token → 401)
+ * - data: real CustomerMeResponse fields rendered in the same Card layout
+ *
+ * Visual layout is PRESERVED from P1 — same grid, same Cards, same FieldGroup
+ * styling. Only Profile field values and the data source changed.
+ */
+const AccountPage = () => {
+  const [me, setMe] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMe()
+      .then((data) => { if (!cancelled) { setMe(data); setLoading(false); } })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err && err.detail ? err.detail : 'Could not load your account.');
+          setLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleLogout = () => {
+    clearToken();
+    window.location.hash = '/login';
+  };
+
+  const skeletonBar = (w = '60%') => (
+    <div style={{ height: 16, width: w, background: 'var(--border-soft)', borderRadius: 4, marginBottom: 4 }} />
+  );
+
+  return (
+    <PanelShell active="/panel/account">
+      <PanelHead
+        title="Account"
+        sub="Profile and API access."
+        actions={
+          <Btn variant="ghost" onClick={handleLogout} style={{ fontSize: '0.86rem', color: 'var(--text-muted)' }}>
+            <Icon name="logout" size={15} /> Sign out
+          </Btn>
+        }
+      />
+
+      {error && (
+        <div
+          role="alert"
+          style={{
+            marginBottom: 18, padding: '14px 18px', borderRadius: 8,
+            background: 'rgba(224,120,86,0.10)', border: '1px solid rgba(224,120,86,0.35)',
+            color: 'var(--accent-coral, #c0522e)', fontSize: '0.92rem',
+          }}
+        >
+          {error} — <a href="#/login" style={{ color: 'inherit', fontWeight: 600 }}>Re-login</a>
         </div>
-        <Btn variant="primary">Update security</Btn>
-      </Card>
-    </div>
-    <Card>
-      <CardHeader title="API access" sub="For automation and integration with your own tools." action={<Btn variant="secondary" style={{ padding: '7px 14px', fontSize: '0.84rem' }}><Icon name="plus" size={14}/> New token</Btn>} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 110px 90px', gap: 12, padding: '12px 14px', background: 'var(--surface-alt)', borderRadius: 8, alignItems: 'center', fontSize: '0.86rem' }}>
-        <div>
-          <div style={{ fontWeight: 600, color: 'var(--brand-navy)' }}>Stash · iPhone</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>nlt_••••••••••a8f2</div>
-        </div>
-        <div style={{ color: 'var(--text-secondary)' }}>Read-only</div>
-        <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}>Apr 24</div>
-        <button style={{ ...iconBtn, color: 'var(--accent-coral)' }}>Revoke</button>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+        <Card>
+          <CardHeader title="Profile" />
+          {loading ? (
+            <div style={{ padding: '8px 0' }}>
+              {skeletonBar('55%')}
+              {skeletonBar('75%')}
+              {skeletonBar('45%')}
+            </div>
+          ) : (
+            <>
+              <FieldGroup label="Username">
+                <input style={inputCss} readOnly value={me ? me.username : ''} />
+              </FieldGroup>
+              <FieldGroup label="Status">
+                <input
+                  style={inputCss}
+                  readOnly
+                  value={me ? (me.is_active ? 'Active' : 'Inactive') : ''}
+                />
+              </FieldGroup>
+              {me && me.expire_date && (
+                <FieldGroup label="Expires">
+                  <input
+                    style={inputCss}
+                    readOnly
+                    value={new Date(me.expire_date).toLocaleDateString()}
+                  />
+                </FieldGroup>
+              )}
+              {me && me.note && (
+                <FieldGroup label="Note">
+                  <input style={inputCss} readOnly value={me.note} />
+                </FieldGroup>
+              )}
+            </>
+          )}
+        </Card>
+        <Card>
+          <CardHeader title="Data usage" />
+          {loading ? (
+            <div style={{ padding: '8px 0' }}>
+              {skeletonBar('60%')}
+              {skeletonBar('40%')}
+            </div>
+          ) : (
+            me && (
+              <>
+                <FieldGroup label="Used traffic">
+                  <input
+                    style={inputCss}
+                    readOnly
+                    value={`${(me.used_traffic / 1_073_741_824).toFixed(2)} GB`}
+                  />
+                </FieldGroup>
+                <FieldGroup label="Data limit">
+                  <input
+                    style={inputCss}
+                    readOnly
+                    value={
+                      me.data_limit
+                        ? `${(me.data_limit / 1_073_741_824).toFixed(2)} GB`
+                        : 'Unlimited'
+                    }
+                  />
+                </FieldGroup>
+                {me.data_limit_reset_strategy && (
+                  <FieldGroup label="Reset strategy">
+                    <input style={inputCss} readOnly value={me.data_limit_reset_strategy} />
+                  </FieldGroup>
+                )}
+              </>
+            )
+          )}
+        </Card>
       </div>
-    </Card>
-  </PanelShell>
-);
+      <Card>
+        <CardHeader title="API access" sub="For automation and integration with your own tools." action={<Btn variant="secondary" style={{ padding: '7px 14px', fontSize: '0.84rem' }}><Icon name="plus" size={14}/> New token</Btn>} />
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '14px 0' }}>
+          API token management coming in P3.
+        </div>
+      </Card>
+    </PanelShell>
+  );
+};
 
 const DocsPage = () => (
   <PanelShell active="/panel/docs">

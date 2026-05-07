@@ -1,6 +1,10 @@
 // Auth pages: Login, Signup
+// Forbidden-path: §32.1 — every edit here requires double-sign + codex cross-review.
+// P2 wires: LoginPage now calls POST /api/customers/sub-login (Wave-P1).
 import React, { useState } from 'react';
 import { useRoute, Link, LotusMark, Btn } from './Atoms.jsx';
+import { subLogin } from './customer-api.js';
+import { setToken } from './customer-auth.js';
 
 const AuthShell = ({ title, accent, sub, children, footer }) => (
   <div style={{
@@ -42,35 +46,107 @@ const FieldGroup = ({ label, hint, children, style = {} }) => (
   </label>
 );
 
-// ⚠️ P1 mock onSubmit — DO NOT wire `fetch(/api/admins/token)` directly here
-// without (1) await + .ok check, (2) error branch that keeps the user on /login
-// + clears password, (3) token-store call, (4) is_sudo banner read.
-// See SPEC-customer-portal-p2.md §1.3 deliverable C and PORTAL-RELIABILITY.md §2.
-// The eval `006-customer-portal-p2-spec-driven.yaml` will catch a partial wire.
-// This file is a §32.1 forbidden path — every edit here triggers double-sign.
+/**
+ * LoginPage — P2 real wiring.
+ *
+ * Accepts a subscription URL (the customer's existing sub URL) and exchanges
+ * it for a 15-min JWT via POST /api/customers/sub-login.
+ *
+ * Security checklist (per SPEC-customer-portal-p2.md §1.3-C and
+ * PORTAL-RELIABILITY.md §2):
+ * 1. Awaits fetch + checks .ok before storing token.
+ * 2. Error branch keeps user on /login + shows inline error.
+ * 3. Token stored via setToken() (customer-auth.js), not raw localStorage.
+ * 4. No admin token path — this only accepts sub URLs, not email/password.
+ *
+ * Visual layout is PRESERVED from P1 — same Cormorant title, same Card,
+ * same button styling. Only form content and onSubmit changed.
+ */
 const LoginPage = () => {
   const { go } = useRoute();
+  const [subUrl, setSubUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    // Client-side guard: sub URL must be at least 9 chars (scheme + host minimum)
+    if (subUrl.trim().length < 9) {
+      setError('Please enter your subscription URL.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await subLogin(subUrl.trim());
+      setToken(data.access_token);
+      go('/panel');
+    } catch (err) {
+      // Keep user on login page; clear sub URL for security; show detail.
+      setSubUrl('');
+      setError(
+        err && err.detail
+          ? err.detail
+          : 'Login failed. Please check your subscription URL and try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <AuthShell title="Welcome back," accent="lotus." sub="Sign in to your dashboard."
-      footer={<>Don&apos;t have an account? <Link to="/signup" style={{ color: 'var(--brand-teal)', fontWeight: 600 }}>Create one</Link></>}>
-      <form onSubmit={(e) => { e.preventDefault(); go('/dashboard'); /* P1-MOCK-BYPASS — see warning above */ }}>
-        <FieldGroup label="Email"><input type="email" defaultValue="liu.wei@nilou-demo.network" style={inputCss} /></FieldGroup>
-        <FieldGroup label="Password"><input type="password" defaultValue="••••••••••" style={inputCss} /></FieldGroup>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.86rem', marginBottom: 20 }}>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', cursor: 'pointer' }}>
-            <input type="checkbox" defaultChecked style={{ accentColor: 'var(--brand-teal)' }} /> Remember me
-          </label>
-          <a style={{ color: 'var(--brand-teal)', fontWeight: 500 }}>Forgot password?</a>
-        </div>
-        <Btn variant="primary" type="submit" full>Sign in</Btn>
+    <AuthShell
+      title="Welcome back,"
+      accent="lotus."
+      sub="Paste your subscription URL to sign in."
+      footer={<>Don&apos;t have an account? <Link to="/signup" style={{ color: 'var(--brand-teal)', fontWeight: 600 }}>Create one</Link></>}
+    >
+      <form onSubmit={handleSubmit}>
+        <FieldGroup
+          label="Subscription URL"
+          hint="Starts with https://nilou.network/sub/…"
+        >
+          <textarea
+            value={subUrl}
+            onChange={(e) => setSubUrl(e.target.value)}
+            placeholder="https://nilou.network/sub/username/key"
+            rows={3}
+            style={{
+              ...inputCss,
+              resize: 'vertical',
+              lineHeight: 1.5,
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.84rem',
+            }}
+            disabled={loading}
+            required
+          />
+        </FieldGroup>
+
+        {error && (
+          <div
+            role="alert"
+            style={{
+              marginBottom: 16,
+              padding: '10px 14px',
+              borderRadius: 6,
+              background: 'rgba(224,120,86,0.10)',
+              border: '1px solid rgba(224,120,86,0.35)',
+              color: 'var(--accent-coral, #c0522e)',
+              fontSize: '0.88rem',
+              lineHeight: 1.45,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <Btn variant="primary" type="submit" full disabled={loading}>
+          {loading ? 'Signing in…' : 'Sign in'}
+        </Btn>
       </form>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-        <div style={{ height: 1, background: 'var(--border-soft)', flex: 1 }} /> or <div style={{ height: 1, background: 'var(--border-soft)', flex: 1 }} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <Btn variant="secondary"><span style={{ fontSize: '1.1em' }}>G</span> Google</Btn>
-        <Btn variant="secondary"><span style={{ fontSize: '1.1em' }}>⌘</span> GitHub</Btn>
-      </div>
     </AuthShell>
   );
 };
