@@ -98,3 +98,38 @@ export async function getMyInvoices() {
 export async function getAvailablePlans() {
   return _getWithGraceful404('/api/billing/plans', { plans: [] });
 }
+
+// ---------------------------------------------------------------------------
+// Display helpers (used by panel pages — shipped here so PanelPages1 can
+// import alongside getMe / getMyTraffic).
+// ---------------------------------------------------------------------------
+
+/**
+ * Format bytes as human-readable string (e.g. "38.6 GB", "452 MB").
+ * Mirrors the design package's pretty-bytes-style output.
+ *
+ * @param {number} bytes
+ * @returns {string}
+ */
+export function formatBytes(bytes) {
+  if (bytes == null || isNaN(bytes)) return '—';
+  if (bytes === 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const exp = Math.min(Math.floor(Math.log(Math.abs(bytes)) / Math.log(1024)), units.length - 1);
+  const value = bytes / Math.pow(1024, exp);
+  // 1 decimal for ≥1 GB, integer for smaller units.
+  const decimals = exp >= 3 && value < 100 ? 1 : 0;
+  return `${value.toFixed(decimals)} ${units[exp]}`;
+}
+
+/**
+ * Compute usage percentage as integer 0-100, clamped.
+ *
+ * @param {number} used
+ * @param {number} limit
+ * @returns {number} 0-100
+ */
+export function trafficPercent(used, limit) {
+  if (!limit || limit <= 0) return 0;
+  return Math.min(100, Math.max(0, Math.round((used / limit) * 100)));
+}
