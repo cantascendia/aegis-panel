@@ -116,6 +116,27 @@
                 "copy": "Copy Certificate",
                 "error": "Certificate Unavailable",
                 "copied": "Certificate Copied"
+            },
+            "subtitle": "Manage panel configuration and system behaviour.",
+            "section": {
+                "general": {
+                    "sub": "Subscription rules, URL prefix and update interval."
+                },
+                "reality": {
+                    "sub": "Health probe schedule and audit log retention."
+                },
+                "notifications": {
+                    "sub": "SMTP relay, Telegram bot token, and alert thresholds."
+                },
+                "maintenance": {
+                    "sub": "TLS certificate and database maintenance operations."
+                }
+            },
+            "reality": {
+                "placeholder": "Reality probe interval and audit retention settings will appear here (backend P2)."
+            },
+            "notifications": {
+                "placeholder": "SMTP and Telegram notification configuration will appear here (backend P2)."
             }
         },
         "login": {
@@ -128,7 +149,9 @@
                 "error": {
                     "is-required": "Password is required"
                 }
-            }
+            },
+            "title": "Welcome back",
+            "sub": "Operator access"
         },
         "nodes": {
             "nodes-usage-widget": {
