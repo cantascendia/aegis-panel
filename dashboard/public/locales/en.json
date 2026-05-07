@@ -161,8 +161,6 @@
             "connection_backend": "Connection Backend",
             "connection_backend_desc": "Used for the remote connection",
             "certificate-alert": {
-                "title": "Nodes Certificate Configuration",
-                "desc": "If you aim to configure your nodes certificate, checkout settings page.",
                 "click": "Click Here"
             },
             "add": "Add node",
@@ -841,8 +839,6 @@
                 "last_check": "Last check"
             },
             "subsystems_heading": "Subsystem status",
-            "subsystems_down": "subsystem(s) are currently DOWN. Check panel logs immediately.",
-            "no_subsystems": "No subsystem data available — backend health probes may not have run yet.",
             "last_checked": "Last checked"
         }
     },

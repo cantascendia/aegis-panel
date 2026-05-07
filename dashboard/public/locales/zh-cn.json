@@ -129,8 +129,6 @@
             "connection_backend": "连接后端",
             "connection_backend_desc": "用于远程连接",
             "certificate-alert": {
-                "title": "配置节点证书",
-                "desc": "如果您希望配置节点证书，请查看设置页面。",
                 "click": "点击此处"
             },
             "add": "新建节点",
@@ -708,8 +706,6 @@
                 "last_check": "最后检查"
             },
             "subsystems_heading": "子系统状态",
-            "subsystems_down": "个子系统当前已下线，请立即检查面板日志。",
-            "no_subsystems": "暂无子系统数据 — 后端健康探测可能尚未运行。",
             "last_checked": "最后检查"
         }
     },
