@@ -5,6 +5,61 @@
 
 ---
 
+## D-020 | 2026-05-08 | 屋号フリガナ「ニィロウ ネットワーク」 SEALED — operator product vision priority
+
+**状态**:**ACTIVE** — operator(陸 浩洋)直接決定 + CTO 警告含意识 acceptance 経由
+
+**決定**:
+
+1. **屋号フリガナ標準**:`ニィロウ ネットワーク`(小書きィ あり)を全文書/全 KYC で統一使用
+   - 開業届 e-Tax 提出済み(受付番号 20260507224845548217、品川税務署、2026/5/7) — already records this reading
+   - 楽天 モバイルチョイス"050"申込(2026/5/8 提出済) — same reading
+   - 住信SBI ネット銀行 申込(2026/5/7) — 個人名義カナのみ、屋号フリガナは銀行 form で問われず影響なし
+   - 将来的な屋号付き口座 / Paddle / Lemon Squeezy / Stripe / 商標登録 — 全て「ニィロウ ネットワーク」で統一
+2. **CTO 推奨「ニロウ」案 撤回**:過去のチャット中で議論されていた「ニロウ ネットワーク」(IP 距離取り狙い、原神角色読み「ニィロウ」と差別化)はこの決定で 廃案
+3. **Brand 文書更新**:
+   - `docs/launch/BRAND-NAMING-DECISION.md` に Japanese katakana reading セクション追加 + SEALED 明記
+   - `docs/launch/brand/BRAND-GUIDELINES.md` §X カナ標準を「ニィロウ ネットワーク」固定
+   - `marketing/nilou-network/legal.html` の trademark notice 強化(Persian lotus 語源 + 不正競争防止法 第 2 条 1 項 1/2 号 disclaimer)
+
+**Why**:
+
+- **operator product vision priority**(CTO 铁律 #1):品牌読みは operator 最終決定権
+- **国税庁公式記録 既に確定**:開業届 e-Tax 受付完了 = ニィロウ で legal record 蓄積済、訂正届を出しても過去 PDF 履歴は消えない
+- **税務 / 銀行 / 楽天 KYC 通過に影響なし**:屋号フリガナは商標 / 法的識別子ではない、これら審査は屋号読みを照合しない
+- **修正しても下流が複雑化**:楽天 form 提出済(陳旧データ matched 開業届の「ニィロウ」)、後で「ニロウ」に変えると整合性破綻 → 統一の利益 > 訂正の利益
+
+**Acknowledged risks**:
+
+| リスク | 強度 | 対策 |
+|---|---|---|
+| miHoYo 商標権紛争で「悪意の借用」傍証になる(国税庁公式記録 = 原神角色読みと一致) | 🟡 中 | 商標登録(Phase B) + Persian lotus 語源 disclosure 強化 |
+| 不正競争防止法 第 2 条 1 項 1/2 号(混同惹起 / 著名表示冒用)該当の主張余地 | 🟡 中 | 区分(SaaS = 第 9 / 42 類)≠ miHoYo 区分(ゲーム = 第 9 / 41 類)で 共存可能性高、+ disclaimer |
+| BRAND-NAMING-DECISION.md「明確区別」防衛線 一部後退 | 🟡 中 | カナ以外の差別化要素(Persian lotus 視覚 / 幾何学 motif / 異業種)を強化 |
+| 商標登録時の類似審査でハネられる可能性 | 🟢 低-中 | 事前に j-platpat (https://www.j-platpat.inpit.go.jp/) で「ニィロウ」「妮露」「Nilou」全分類検索 → 第 9/42 類で先行登録なければ進める、あれば surrogate name 検討 |
+
+**How to apply**:
+
+1. **既存文書整合性**:本 PR で BRAND-NAMING-DECISION.md / BRAND-GUIDELINES.md / DECISIONS.md(本文) / STATUS.md 更新
+2. **legal.html 強化**:Persian lotus 語源 reference(オックスフォード辞典 / Wikipedia-grade source)+ 不正競争防止法 disclaimer 強化(別 follow-up PR)
+3. **商標登録 (Phase B)**:月収 30 万円超 or 客户 10+ 達成時に行政書士相談、第 9 / 42 類で「Nilou Network」+ フリガナ「ニィロウ ネットワーク」出願
+4. **j-platpat 事前検索**:operator が今夜 / 明日中に 5 分で実施 → 結果を本決定 footnote に追記
+5. **新規 KYC でフリガナ字段あれば**:すべて「ニィロウ ネットワーク」記載
+
+**推翻条件**:
+
+- miHoYo から正式な侵害警告書が到達 → 即座に商標訂正届(税务署)+ 屋号変更検討 → 別 ADR で記録
+- 商標登録時、特許庁が「ニィロウ」読みで先行登録(妮露 / ニィロウ等)を検出して拒絶 → surrogate kana(例: ニロウ / ニル)へ変更検討、別 ADR
+- operator 自身による撤回意思 → 本決定 supersede
+
+**関連**:
+- `docs/launch/BRAND-NAMING-DECISION.md`(品牌命名 ADR、本決定で Japanese katakana セクション SEALED)
+- `docs/launch/brand/BRAND-GUIDELINES.md` §5 IP 法律红线(本決定で カナ規則 確定)
+- `marketing/nilou-network/legal.html`(trademark notice 後続強化)
+- 開業届 e-Tax 受付番号 `20260507224845548217`(2026/5/7、品川税務署、ニィロウ ネットワーク 法定登録済)
+
+---
+
 ## D-018 | 2026-05-06 | customer-portal 解禁(推翻 D-016) — 商业化 Phase B 启用用户自助门户
 
 **状态**:**ACTIVE** — CTO + senior engineer 双签通过(2026-05-06)
