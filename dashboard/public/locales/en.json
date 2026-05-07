@@ -1,851 +1,860 @@
 {
-    "name": "Name",
-    "info": "Info",
-    "status": "Status",
-    "address": "Address",
-    "users": "Users",
-    "nodes": "Nodes",
-    "services": "Services",
-    "hosts": "Hosts",
-    "username": "Username",
-    "password": "Password",
-    "inbounds": "Inbounds",
-    "submit": "Submit",
-    "login": "Login",
-    "edit": "Edit",
-    "actions": "Actions",
-    "settings": "Settings",
-    "logs": "Logs",
-    "note": "Note",
-    "config": "Config",
-    "tag": "Tag",
-    "protocol": "Protocol",
-    "online": "Online",
-    "offline": "Offline",
-    "not_connected": "Not Connected",
-    "apply": "Apply",
-    "open": "Open",
-    "delete": "Delete",
-    "port": "Port",
-    "create": "Create",
-    "path": "Path",
-    "host": "Host",
-    "alpn": "ALPN",
-    "security": "Security",
-    "user_info": "User Info",
-    "admin_info": "Admin Info",
-    "subscription": "Subscription",
-    "subscription_link": "Subscription Link",
-    "fingerprint": "Fingerprint",
-    "mux": "Mux",
-    "fragment": "Fragment",
-    "enable": "Enable",
-    "enabled": "Enabled",
-    "activated": "Activated",
-    "unlimited": "Unlimited",
-    "left": "Left",
-    "reached": "Reached",
-    "inactive": "Inactive",
-    "active": "Active",
-    "disable": "Disable",
-    "close": "Close",
-    "save": "Save",
-    "days": "Days",
-    "home": "Home",
-    "cancel": "Cancel",
-    "dark": "Dark",
-    "light": "Light",
-    "system": "System",
-    "disabled": "Disabled",
-    "advanced-options": "Advanced Options",
-    "language": "Language",
-    "theme": "Theme",
-    "pattern": "Pattern",
-    "result": "Result",
-    "deselect": "Deselect",
-    "view": "View",
-    "certificate": "Certificate",
-    "valid": "Valid",
-    "finished": "Finished",
-    "expired": "Expired",
-    "change": "Change",
-    "admins": "Admins",
-    "normal": "Normal",
-    "sudo": "Sudo",
-    "owner": "Owner",
-    "running": "Running",
-    "down": "Down",
-    "weight": "Weight",
-    "support-us": {
-        "title": "Support Us",
-        "desc": "Marzneshin is free and open-source software (FOSS), join us and show your support by donating.",
-        "donate": "Donate"
+  "name": "Name",
+  "info": "Info",
+  "status": "Status",
+  "address": "Address",
+  "users": "Users",
+  "nodes": "Nodes",
+  "services": "Services",
+  "hosts": "Hosts",
+  "username": "Username",
+  "password": "Password",
+  "inbounds": "Inbounds",
+  "submit": "Submit",
+  "login": "Login",
+  "edit": "Edit",
+  "actions": "Actions",
+  "settings": "Settings",
+  "logs": "Logs",
+  "note": "Note",
+  "config": "Config",
+  "tag": "Tag",
+  "protocol": "Protocol",
+  "online": "Online",
+  "offline": "Offline",
+  "not_connected": "Not Connected",
+  "apply": "Apply",
+  "open": "Open",
+  "delete": "Delete",
+  "port": "Port",
+  "create": "Create",
+  "path": "Path",
+  "host": "Host",
+  "alpn": "ALPN",
+  "security": "Security",
+  "user_info": "User Info",
+  "admin_info": "Admin Info",
+  "subscription": "Subscription",
+  "subscription_link": "Subscription Link",
+  "fingerprint": "Fingerprint",
+  "mux": "Mux",
+  "fragment": "Fragment",
+  "enable": "Enable",
+  "enabled": "Enabled",
+  "activated": "Activated",
+  "unlimited": "Unlimited",
+  "left": "Left",
+  "reached": "Reached",
+  "inactive": "Inactive",
+  "active": "Active",
+  "disable": "Disable",
+  "close": "Close",
+  "save": "Save",
+  "days": "Days",
+  "home": "Home",
+  "cancel": "Cancel",
+  "dark": "Dark",
+  "light": "Light",
+  "system": "System",
+  "disabled": "Disabled",
+  "advanced-options": "Advanced Options",
+  "language": "Language",
+  "theme": "Theme",
+  "pattern": "Pattern",
+  "result": "Result",
+  "deselect": "Deselect",
+  "view": "View",
+  "certificate": "Certificate",
+  "valid": "Valid",
+  "finished": "Finished",
+  "expired": "Expired",
+  "change": "Change",
+  "admins": "Admins",
+  "normal": "Normal",
+  "sudo": "Sudo",
+  "owner": "Owner",
+  "running": "Running",
+  "down": "Down",
+  "weight": "Weight",
+  "support-us": {
+    "title": "Support Us",
+    "desc": "Marzneshin is free and open-source software (FOSS), join us and show your support by donating.",
+    "donate": "Donate"
+  },
+  "page": {
+    "home": {
+      "users-stats": {
+        "desc": "Overview of user's statuses"
+      },
+      "total-traffics": {
+        "title": "Total System Traffic",
+        "desc": "Traffics combined from all nodes"
+      }
     },
-    "page": {
-        "home": {
-            "users-stats": {
-                "desc": "Overview of user's statuses"
-            },
-            "total-traffics": {
-                "title": "Total System Traffic",
-                "desc": "Traffics combined from all nodes"
-            }
-        },
-        "settings": {
-            "subscription-settings": {
-                "template-on-acceptance": "Template on Acceptance",
-                "placeholder-remark": "Placeholder Remark",
-                "placeholder-if-disabled": "Placeholder if Disabled",
-                "shuffle-configs": "Shuffle Configs",
-                "url-prefix": "URL Prefix",
-                "profile-title": "Profile Title",
-                "support-link": "Support Link",
-                "update-interval": "Update Interval",
-                "add-rule": "Add Rule",
-                "reset-local-changes": "Reset Changes",
-                "title": "Subscription",
-                "description": "Manage and customize subscription settings with configurable rules and update options.",
-                "subscription-title": "Subscription Rules",
-                "subscription-desc": "Add your subscription rules in order of priority.",
-                "alert": {
-                    "title": "No rules",
-                    "desc": "No rules have been defined for subscription"
-                }
-            },
-            "certificate": {
-                "copy": "Copy Certificate",
-                "error": "Certificate Unavailable",
-                "copied": "Certificate Copied"
-            }
-        },
-        "login": {
-            "username": {
-                "error": {
-                    "isRequired": "Username is required"
-                }
-            },
-            "password": {
-                "error": {
-                    "is-required": "Password is required"
-                }
-            }
-        },
-        "nodes": {
-            "nodes-usage-widget": {
-                "title": "Node Traffic Usage",
-                "desc": "Total traffic usage on this node"
-            },
-            "settings": {
-                "no-backend-alert": {
-                    "title": "No backend is configured for this node",
-                    "desc": "Please take required measures and configure a backend for this node."
-                },
-                "title": "Nodes Settings",
-                "detail": "Details",
-                "log-container": {
-                    "title": "Xray logs"
-                }
-            },
-            "dialogs": {
-                "creation": {
-                    "title": "Add Node"
-                },
-                "deletion": {
-                    "title": "Remove Node"
-                },
-                "edition": {
-                    "title": "Edit Node"
-                }
-            },
-            "usage_coefficient": "Usage Coefficient",
-            "connection_backend": "Connection Backend",
-            "connection_backend_desc": "Used for the remote connection",
-            "certificate-alert": {
-                "title": "Nodes Certificate Configuration",
-                "desc": "If you aim to configure your nodes certificate, checkout settings page.",
-                "click": "Click Here"
-            },
-            "add": "Add node",
-            "col": {
-                "hostname": "Hostname",
-                "latency": "Latency",
-                "load": "Load",
-                "mult": "Mult",
-                "protocol": "Protocol",
-                "region": "Region"
-            },
-            "empty": "No nodes match the current filter.",
-            "filter": {
-                "all": "All"
-            },
-            "premium": "Premium",
-            "sub": "Marznode VPS instances powering the data plane.",
-            "sync": "Sync"
-        },
-        "services": {
-            "settings": {
-                "title": "Service Settings",
-                "detail": "Details"
-            },
-            "dialogs": {
-                "creation": {
-                    "title": "Create Service"
-                },
-                "deletion": {
-                    "title": "Remove Service"
-                },
-                "edition": {
-                    "title": "Edit Service"
-                }
-            },
-            "add": "Add service",
-            "kpi": {
-                "active": "Active",
-                "total": "Total services"
-            }
-        },
-        "users": {
-            "created_at": "Created At",
-            "no_use": "No Use",
-            "data_limit_reached": "Data Limit Reached",
-            "sub_updated_at": "Last subscription update",
-            "sub_last_user_agent": "Last User Agent",
-            "traffic_reset_at": "Last traffic reset",
-            "lifetime_used_traffic": "Lifetime Used Traffic",
-            "note-placeholder": "Additional information about user",
-            "data_limit": "Data Limit",
-            "traffic": "Traffic",
-            "used_traffic": "Used Traffic",
-            "data_limit_reset_strategy": "Data Reset Period",
-            "online_at": "Last Use",
-            "expire_date": "Expire Date",
-            "unlimited": "Unlimited",
-            "never": "Never",
-            "limited": "Limited",
-            "data_limit_method": "Data Limit",
-            "fixed_date": "Fixed Date",
-            "expire_method": "Expiration",
-            "expiring_week": "Expiring this week",
-            "over_quota": "Over quota",
-            "add_user": "Add user",
-            "on_first_use": "On first use",
-            "reset_usage": "Reset Usage",
-            "revoke_subscription": "Revoke Subscription",
-            "usage_duration": "Usage Duration",
-            "activation_deadline": "Activation Deadline",
-            "nodes-usage": "Nodes Usage",
-            "settings": {
-                "nodes-usage": {
-                    "last-days": "Last {{count}} days",
-                    "last-months": "Last {{count}} months",
-                    "last-hours": "Last {{count}} hours",
-                    "title": "User Nodes Usage",
-                    "desc": "The amount of user usage on each node in time."
-                },
-                "subscription_link": {
-                    "copied": "Subscription Link Copied",
-                    "copy": "Subscription Link",
-                    "error": "Unable to copy Subscription Link"
-                }
-            },
-            "services-alert": {
-                "title": "No Service found",
-                "desc": "Make sure you create services to enable your users with inbounds to connect with.",
-                "click": "Click Here"
-            },
-            "dialogs": {
-                "edition": {
-                    "title": "Edit User"
-                },
-                "creation": {
-                    "title": "Create User"
-                },
-                "deletion": {
-                    "title": "Remove User"
-                },
-                "mutation": {
-                    "note": {
-                        "desc": "Leave a note about your user"
-                    }
-                }
-            }
-        },
-        "admins": {
-            "total": "Total admins",
-            "sudo": "Sudo",
-            "enabled": "Enabled",
-            "create_admin": "Create admin",
-            "disable_users": "Disable users",
-            "enable_users": "Enable users",
-            "permission": "Permission",
-            "dialogs": {
-                "creation": {
-                    "title": "Create admin"
-                },
-                "edition": {
-                    "title": "Edit admin"
-                },
-                "deletion": {
-                    "title": "Delete admin"
-                }
-            },
-            "modify-users-access": "Modify users access",
-            "subscription-url-prefix": "Subscription URL prefix",
-            "sudo-privilage": "Sudo privilage",
-            "all-services-access": "All services access",
-            "users-data-usage": "Users Data Usage"
-        },
-        "hosts": {
-            "xmux-settings": "Xmux Settings",
-            "split-http-settings": "Split HTTP Settings",
-            "no-grpc-header": "No GRPC Header",
-            "early-data": "Early Data",
-            "http_headers": "HTTP Headers",
-            "no-http-headers": "No HTTP headers",
-            "mux-settings": "Mux Settings",
-            "dns-servers": "DNS Servers",
-            "obfuscation-password": "Obfuscation Password",
-            "server-public-key": "Server public key",
-            "tls-config": "TLS Config",
-            "network-settings": "Network Settings",
-            "security-settings": "Security Settings",
-            "allowed-ips": "Allowed Ips",
-            "allowed-ips-placeholder": "127.0.0.1,...",
-            "camouflage-settings": "Camouflage Settings",
-            "fragment": {
-                "interval": "Interval",
-                "length": "Length",
-                "packets": "Packets",
-                "length-error": "Length can not exceed 32 char and must be number-number",
-                "interval-error": "Interval can not exceed 32 char and must be number-number",
-                "packets-error": "Packets can not exceed 32 char and must be number-number or be tlshello"
-            },
-            "noise": {
-                "interval": "Interval",
-                "length": "Length",
-                "packets": "Packets",
-                "length-error": "Length can not exceed 32 char and must be number-number",
-                "interval-error": "Interval can not exceed 32 char and must be number-number",
-                "packets-error": "Packets can not exceed 32 char and must be number-number or be tlshello"
-            },
-            "popover-guide": {
-                "title": "Using this setting, you are able to assign specific address for each inbound.",
-                "desc": "Use these variables to make it dynamic",
-                "username": "Username of the user",
-                "dataUsage": "Current usage of the user",
-                "remainingData": "Remaining data of the user",
-                "dataLimit": "Data limit of the user",
-                "remainingDays": "Remaining days of the user",
-                "expireDate": "Expiry date of the user",
-                "jalaliExpireDate": "Expiry date of the user in jalali calendar",
-                "remainingTime": "Remaining time of the user",
-                "statusEmoji": "User status as an emoji (✅,⌛,🪫,❌,🔌)",
-                "proxyProtocol": "Proxy protocol (e.g. VMess)",
-                "proxyMethod": "Proxy transport method (e.g. ws)",
-                "currentServer": "Marzneshin server ip address",
-                "security": "Security Layer",
-                "host": "Request Host",
-                "port": "Port",
-                "path": "Path",
-                "sni": "SNI",
-                "advancedOptions": "Advanced options",
-                "addHost": "Add host",
-                "savedSuccess": "Host has been saved successfully",
-                "loading": "loading...",
-                "apply": "Apply",
-                "port.info": "By default, the inbound port is advertised to the user. You can set a custom port in case this host forwards traffic from another port to your inbound. For example, the server may forward traffic from port 8443 to the default port of your inbound server.",
-                "path.info": "Set a path for host users, useful behind a reverse proxy.",
-                "sni.info": "By default, a host uses the SNI from the inbound. You can set a custom SNI in case this host is a server that has a different SNI. For example, the server may receive traffic with a different SSL certificate, perform SSL termination, and forward it to your inbound server.",
-                "host.info": "By default, if a request host is set in the Xray config, this host is used. However, you can set a custom request host here if needed.",
-                "security.info": "If the middleware server of this host uses a different security layer than the inbound's default, you can set a custom security layer here.",
-                "alpn": "ALPN",
-                "fingerprint": "Fingerprint",
-                "host.multiHost": "To set multiple addresses, separate them with <badge>,</badge> Each time an address is chosen randomly.",
-                "host.wildcard": "Use <badge>*</badge> to generate a random string (works for wildcard domain names)"
-            },
-            "mux": {
-                "title": "Connection multiplexing",
-                "desc": "Currently supported by v2rayng while using custom config"
-            },
-            "no-inbound-selection-alert": {
-                "title": "No inbound is selected",
-                "desc": "You must select an inbound in order to add a host."
-            },
-            "settings": {
-                "title": "Host Settings"
-            },
-            "allowinsecure": "Allow Insecure",
-            "dialogs": {
-                "edition": {
-                    "title": "Edit Host"
-                },
-                "creation": {
-                    "title": "Add Host"
-                },
-                "deletion": {
-                    "title": "Remove Host"
-                },
-                "mutation": {
-                    "allowinsecure": {
-                        "alert": "Due to security concerns, it's not recommended to enable Allow Insecure"
-                    }
-                }
-            },
-            "kpi": {
-                "active": "Active",
-                "disabled": "Disabled",
-                "total": "Total hosts"
-            }
-        },
-        "billing": {
-            "plans": {
-                "title": "Plans",
-                "subtitle": "Products your users can purchase. Fixed = GB+days bundle; flexible = per-unit addon.",
-                "empty": "No plans yet. Click 'New plan' to configure your first product.",
-                "load_error": "Failed to load plans",
-                "create_button": "New plan",
-                "col": {
-                    "code": "Code",
-                    "name": "Name",
-                    "kind": "Kind",
-                    "shape": "Shape",
-                    "price": "Price",
-                    "enabled": "Status"
-                },
-                "status": {
-                    "on": "On",
-                    "off": "Off"
-                },
-                "kind": {
-                    "fixed": "Fixed (GB + days bundle)",
-                    "flexible_traffic": "Flexible traffic (per-GB addon)",
-                    "flexible_duration": "Flexible duration (per-day addon)",
-                    "fixed_short": "Fixed",
-                    "flexible_traffic_short": "Traffic addon",
-                    "flexible_duration_short": "Duration addon"
-                },
-                "field": {
-                    "operator_code": "Operator code",
-                    "operator_code_lock": "Code is immutable after creation.",
-                    "display_name_en": "Display name (en)",
-                    "kind": "Kind",
-                    "kind_lock": "Kind is immutable after creation.",
-                    "data_limit_gb": "Data limit (GB)",
-                    "duration_days": "Duration (days)",
-                    "price_cny": "Price (CNY)",
-                    "enabled": "Enabled"
-                },
-                "dialog": {
-                    "create_title": "Create plan",
-                    "edit_title": "Edit plan",
-                    "desc": "Fixed plans bundle GB + days; flexible plans are priced per unit (GB or day).",
-                    "saving": "Saving..."
-                },
-                "toast": {
-                    "create_success": "Plan {{code}} created",
-                    "create_error": "Create failed: {{code}}",
-                    "update_success": "Plan {{code}} updated",
-                    "update_error": "Update failed"
-                }
-            },
-            "channels": {
-                "title": "Payment channels",
-                "subtitle": "EPay 码商 aggregators. Multiple enabled at once = failover.",
-                "empty": "No channels configured yet. Click 'New channel' to add your first 码商.",
-                "load_error": "Failed to load channels",
-                "create_button": "New channel",
-                "col": {
-                    "code": "Code",
-                    "name": "Name",
-                    "merchant_id": "Merchant ID",
-                    "priority": "Priority",
-                    "enabled": "Status"
-                },
-                "status": {
-                    "on": "On",
-                    "off": "Off"
-                },
-                "field": {
-                    "channel_code": "Channel code",
-                    "channel_code_lock": "Code is immutable after creation.",
-                    "display_name": "Display name",
-                    "gateway_url": "Gateway URL",
-                    "merchant_id": "Merchant ID",
-                    "priority": "Priority",
-                    "secret_key": "Secret key",
-                    "secret_key_rotate_placeholder": "Leave blank to keep current",
-                    "secret_key_rotate_hint": "Providing a value rotates the secret; blank keeps the existing key.",
-                    "enabled": "Enabled"
-                },
-                "dialog": {
-                    "create_title": "New payment channel",
-                    "edit_title": "Edit payment channel",
-                    "desc": "Configure one EPay 码商. Multiple channels run in parallel; disable a broken one and the next enabled one takes over.",
-                    "saving": "Saving..."
-                },
-                "toast": {
-                    "create_success": "Channel {{code}} created",
-                    "create_error": "Create failed: {{code}}",
-                    "update_success": "Channel {{code}} updated",
-                    "update_error": "Update failed"
-                }
-            },
-            "invoices": {
-                "title": "Invoices",
-                "subtitle": "User orders and the state-machine path each one took.",
-                "empty": "No invoices yet. Users will create these by checking out a plan once the user-facing flow ships (A.4).",
-                "load_error": "Failed to load invoices",
-                "filter": {
-                    "state": "State",
-                    "state_any": "Any state",
-                    "user_id": "User ID"
-                },
-                "col": {
-                    "id": "ID",
-                    "user_id": "User",
-                    "state": "State",
-                    "provider": "Provider",
-                    "total": "Total",
-                    "created_at": "Created"
-                },
-                "detail": {
-                    "title": "Invoice",
-                    "desc": "Invoice summary, lines, and audit trail. Actions at the bottom when non-terminal.",
-                    "load_error": "Failed to load invoice",
-                    "user_id": "User",
-                    "state": "State",
-                    "provider": "Provider",
-                    "total": "Total",
-                    "created_at": "Created",
-                    "expires_at": "Expires",
-                    "paid_at": "Paid at",
-                    "applied_at": "Applied at",
-                    "trc20_memo": "TRC20 memo",
-                    "trc20_amount": "Expected TRC20 amount",
-                    "lines_title": "Lines",
-                    "lines_empty": "No line items.",
-                    "events_title": "Audit trail",
-                    "events_empty": "No events recorded."
-                },
-                "action": {
-                    "apply_manual": "Apply manually",
-                    "applying": "Applying...",
-                    "cancel": "Cancel invoice",
-                    "cancelling": "Cancelling...",
-                    "note_label": "Admin note",
-                    "note_placeholder": "VIP granted; refund issued out-of-band; etc.",
-                    "note_hint": "Required. Appears verbatim in the audit trail for forensics."
-                },
-                "toast": {
-                    "apply_success": "Invoice #{{id}} applied",
-                    "apply_error": "Apply failed",
-                    "cancel_success": "Invoice #{{id}} cancelled",
-                    "cancel_error": "Cancel failed"
-                }
-            },
-            "purchase": {
-                "title": "Customer Checkout",
-                "plans_title": "Plans",
-                "pay_title": "Payment",
-                "user_section_title": "Customer",
-                "empty_plans": "No plans available yet. Please check back later.",
-                "load_error": "Failed to load plans or payment channels.",
-                "user_selector": {
-                    "label": "Pick a customer (VPN user)",
-                    "placeholder": "Type username...",
-                    "searching": "Searching...",
-                    "no_results": "No users found.",
-                    "clear": "Clear",
-                    "selected_hint": "Selected: {{username}} (#{{id}})",
-                    "required_before_pay": "Pick a customer above before continuing to payment."
-                },
-                "plan_card": {
-                    "add_to_cart": "Add to cart",
-                    "already_added": "Added"
-                },
-                "addon": {
-                    "title": "Extras",
-                    "subtitle": "Add extra traffic or days on top of a base plan.",
-                    "quantity": "Quantity",
-                    "unit_gb": "GB",
-                    "unit_day": "day",
-                    "add": "Add"
-                },
-                "cart": {
-                    "title": "Cart",
-                    "empty": "Your cart is empty.",
-                    "remove": "Remove line",
-                    "total": "Total",
-                    "checkout": "Checkout",
-                    "checkout_pending": "Creating invoice..."
-                },
-                "picker": {
-                    "epay_tab": "Alipay / WeChat",
-                    "trc20_tab": "USDT (TRC20)",
-                    "epay_empty": "No 易支付 channel configured.",
-                    "trc20_desc": "Send USDT on the TRON network to the displayed address. Your payment is detected automatically.",
-                    "pay_epay": "Pay with 易支付",
-                    "pay_trc20": "Pay with USDT",
-                    "paying": "Redirecting..."
-                },
-                "trc20": {
-                    "title": "USDT (TRC20) payment",
-                    "loading": "Loading invoice...",
-                    "load_error": "Failed to load invoice",
-                    "countdown": "Expires in",
-                    "amount_label": "Exact amount (send this)",
-                    "memo_label": "Memo (include in tx)",
-                    "instructions": "Send the EXACT amount to the operator's TRC20 address with the memo above. Your payment is matched automatically within a minute of confirmation.",
-                    "paid_waiting_apply": "Payment received. Activating your plan now...",
-                    "applied": "Plan activated. Enjoy.",
-                    "terminal_failure": "This invoice is no longer active. Please start a new purchase.",
-                    "copy": "Copy",
-                    "copied": "Copied"
-                },
-                "state": {
-                    "created": "Created",
-                    "pending": "Pending",
-                    "awaiting_payment": "Waiting for payment",
-                    "paid": "Paid",
-                    "applied": "Activated",
-                    "expired": "Expired",
-                    "cancelled": "Cancelled",
-                    "failed": "Failed"
-                },
-                "toast": {
-                    "checkout_success": "Invoice #{{id}} created",
-                    "checkout_error": "Checkout failed"
-                }
-            }
-        },
-        "health": {
-            "title": "Health",
-            "subtitle": "Live status of the panel and its self-developed subsystems.",
-            "refresh": "Refresh",
-            "loading": "Loading health report...",
-            "version": "Version",
-            "uptime": "Uptime",
-            "overall": {
-                "green": "Healthy",
-                "yellow": "Degraded",
-                "red": "Down",
-                "unknown": "Unknown"
-            },
-            "subsystem": {
-                "db": "Database",
-                "billing_scheduler": "Billing scheduler",
-                "iplimit_scheduler": "IP limiter scheduler",
-                "trc20": "USDT (TRC20) provider",
-                "reality_seeds": "Reality audit seeds",
-                "sni_seeds": "SNI selector seeds"
-            },
-            "column": {
-                "name": "Subsystem",
-                "status": "Status",
-                "latency": "Latency",
-                "detail": "Detail"
-            },
-            "error": {
-                "load_failed": "Failed to load health report.",
-                "unauthorized": "You must be a sudo admin to view the extended health report."
-            }
-        },
-        "audit": {
-            "title": "Audit log",
-            "loading": "Loading audit events...",
-            "error": "Failed to load: {{message}}",
-            "empty": "No audit events match the current filters.",
-            "filter": {
-                "actor": "Actor",
-                "action": "Action",
-                "reset": "Reset",
-                "result": {
-                    "label": "Result",
-                    "all": "All",
-                    "success": "Success",
-                    "denied": "Denied",
-                    "failure": "Failure"
-                }
-            },
-            "action": {
-                "refresh": "Refresh"
-            },
-            "actor": {
-                "anonymous": "(anonymous)"
-            },
-            "column": {
-                "ts": "When",
-                "actor": "Actor",
-                "action": "Action",
-                "result": "Result",
-                "status": "HTTP",
-                "ip": "IP"
-            },
-            "pagination": {
-                "prev": "Previous",
-                "next": "Next"
-            }
-        },
-        "reality": {
-            "title": "Reality audit",
-            "subtitle": "Score your panel's Reality config against the 2026 hardening checklist (cold SNI, same ASN, non-standard port, shortId compliance, short connIdle).",
-            "run": "Run audit",
-            "rerun": "Re-run audit",
-            "running": "Running audit...",
-            "empty": "Click \"Run audit\" to score the panel's current Reality configuration.",
-            "no_targets": "No Reality inbounds found in the panel database.",
-            "summary": {
-                "total": "Total",
-                "green": "Green",
-                "yellow": "Yellow",
-                "red": "Red",
-                "worst": "Worst score",
-                "audited_at": "Audited at"
-            },
-            "score": {
-                "green": "Green",
-                "yellow": "Yellow",
-                "red": "Red"
-            },
-            "column": {
-                "host": "Host",
-                "sni": "SNI",
-                "port": "Port",
-                "score": "Score",
-                "grade": "Grade",
-                "findings": "Issues"
-            },
-            "check": {
-                "sni_coldness": "SNI coldness",
-                "asn_match": "ASN match",
-                "port_canonical": "Port canonicality",
-                "shortid_compliance": "shortId compliance",
-                "timeout_config": "connIdle / timeouts"
-            },
-            "finding": {
-                "remediation": "Fix",
-                "empty": "No findings emitted for this target."
-            },
-            "target": {
-                "expand": "Show findings",
-                "collapse": "Hide findings"
-            },
-            "error": {
-                "unauthorized": "You must be a sudo admin to run a Reality audit.",
-                "timeout": "Audit timed out (likely a slow ASN WHOIS lookup). Try again, or omit the ASN to skip ASN matching.",
-                "failed": "Reality audit failed. See panel logs for details."
-            }
+    "settings": {
+      "subscription-settings": {
+        "template-on-acceptance": "Template on Acceptance",
+        "placeholder-remark": "Placeholder Remark",
+        "placeholder-if-disabled": "Placeholder if Disabled",
+        "shuffle-configs": "Shuffle Configs",
+        "url-prefix": "URL Prefix",
+        "profile-title": "Profile Title",
+        "support-link": "Support Link",
+        "update-interval": "Update Interval",
+        "add-rule": "Add Rule",
+        "reset-local-changes": "Reset Changes",
+        "title": "Subscription",
+        "description": "Manage and customize subscription settings with configurable rules and update options.",
+        "subscription-title": "Subscription Rules",
+        "subscription-desc": "Add your subscription rules in order of priority.",
+        "alert": {
+          "title": "No rules",
+          "desc": "No rules have been defined for subscription"
         }
+      },
+      "certificate": {
+        "copy": "Copy Certificate",
+        "error": "Certificate Unavailable",
+        "copied": "Certificate Copied"
+      },
+      "subtitle": "Manage panel configuration and system behaviour.",
+      "section": {
+        "general": "General",
+        "general.sub": "Subscription rules, URL prefix and update interval.",
+        "reality": "Reality",
+        "reality.sub": "Health probe schedule and audit log retention.",
+        "notifications": "Email / Notifications",
+        "notifications.sub": "SMTP relay, Telegram bot token, and alert thresholds.",
+        "maintenance": "Maintenance",
+        "maintenance.sub": "TLS certificate and database maintenance operations."
+      },
+      "reality": {
+        "placeholder": "Reality probe interval and audit retention settings will appear here (backend P2)."
+      },
+      "notifications": {
+        "placeholder": "SMTP and Telegram notification configuration will appear here (backend P2)."
+      }
     },
-    "events": {
-        "delete": {
-            "error": "Failed to remove {{name}}",
-            "success": {
-                "title": "{{name}} has been successfully removed",
-                "desc": ""
-            }
+    "login": {
+      "title": "Welcome back",
+      "sub": "Operator access"
+    },
+    "nodes": {
+      "nodes-usage-widget": {
+        "title": "Node Traffic Usage",
+        "desc": "Total traffic usage on this node"
+      },
+      "settings": {
+        "no-backend-alert": {
+          "title": "No backend is configured for this node",
+          "desc": "Please take required measures and configure a backend for this node."
         },
-        "create": {
-            "error": "Failed to create {{name}}",
-            "success": {
-                "title": "{{name}} is successfully created",
-                "desc": ""
-            }
-        },
-        "update": {
-            "error": "Failed to update {{name}}",
-            "success": {
-                "title": "{{name}} is successfully updated",
-                "desc": ""
-            }
-        },
-        "user_revoke": {
-            "error": "Failed to revoke {{name}} subscription",
-            "success": {
-                "title": "{{name}} is successfully created",
-                "desc": ""
-            }
-        },
-        "user_reset": {
-            "error": "Failed to reset {{name}} data usage",
-            "success": {
-                "title": "{{name}} data usage has been successfully reset",
-                "desc": ""
-            }
-        },
-        "user_status": {
-            "error": "Failed to toggle {{name}} enable status",
-            "success": {
-                "title": "{{name}} enable status has been successfully updated",
-                "desc": ""
-            }
+        "title": "Nodes Settings",
+        "detail": "Details",
+        "log-container": {
+          "title": "Xray logs"
         }
+      },
+      "dialogs": {
+        "creation": {
+          "title": "Add Node"
+        },
+        "deletion": {
+          "title": "Remove Node"
+        },
+        "edition": {
+          "title": "Edit Node"
+        }
+      },
+      "usage_coefficient": "Usage Coefficient",
+      "connection_backend": "Connection Backend",
+      "connection_backend_desc": "Used for the remote connection",
+      "certificate-alert": {
+        "title": "Nodes Certificate Configuration",
+        "desc": "If you aim to configure your nodes certificate, checkout settings page.",
+        "click": "Click Here"
+      },
+      "add": "Add node",
+      "col": {
+        "hostname": "Hostname",
+        "latency": "Latency",
+        "load": "Load",
+        "mult": "Mult",
+        "protocol": "Protocol",
+        "region": "Region"
+      },
+      "empty": "No nodes match the current filter.",
+      "filter": {
+        "all": "All"
+      },
+      "premium": "Premium",
+      "sub": "Marznode VPS instances powering the data plane.",
+      "sync": "Sync"
     },
-    "delete-confirmation": {
-        "title": "Are you sure of this?",
-        "desc": "This action cannot be undone."
-    },
-    "table": {
-        "no-result-found": "No results found.",
-        "row-per-page": "Rows per page",
-        "no-result": "No result",
-        "selected": "Selected",
-        "toggle-column": "Toggle columns",
-        "filter-placeholder": "Filter {{name}}"
-    },
-    "statuses": {
+    "services": {
+      "settings": {
+        "title": "Service Settings",
+        "detail": "Details"
+      },
+      "dialogs": {
+        "creation": {
+          "title": "Create Service"
+        },
+        "deletion": {
+          "title": "Remove Service"
+        },
+        "edition": {
+          "title": "Edit Service"
+        }
+      },
+      "add": "Add service",
+      "kpi": {
         "active": "Active",
-        "connected": "Connected",
-        "healthy": "Healthy",
-        "disabled": "Disabled",
-        "expired": "Expired",
-        "on_hold": "On Hold",
-        "connecting": "Connecting",
-        "unhealthy": "Unhealthy",
-        "limited": "Limited",
-        "error": "Error"
+        "total": "Total services"
+      }
     },
-    "nilou": {
-        "overview": {
-            "welcome": "Welcome back",
-            "sub": "{{users}} users · {{active}} active",
-            "traffic_chart_title": "Traffic, last 14 days",
-            "traffic_chart_sub": "Upload + download, daily totals (GB)",
-            "chart_loading": "Loading traffic data…",
-            "capacity_title": "Capacity",
-            "capacity_sub": "Active / total user ratio",
-            "capacity_ring_sub": "{{active}} of {{total}} active",
-            "uptime": "Uptime",
-            "recent_activity": "Recent activity",
-            "view_all": "View all →",
-            "no_activity": "No recent activity",
-            "quick_links": "Quick links"
+    "users": {
+      "created_at": "Created At",
+      "no_use": "No Use",
+      "data_limit_reached": "Data Limit Reached",
+      "sub_updated_at": "Last subscription update",
+      "sub_last_user_agent": "Last User Agent",
+      "traffic_reset_at": "Last traffic reset",
+      "lifetime_used_traffic": "Lifetime Used Traffic",
+      "note-placeholder": "Additional information about user",
+      "data_limit": "Data Limit",
+      "traffic": "Traffic",
+      "used_traffic": "Used Traffic",
+      "data_limit_reset_strategy": "Data Reset Period",
+      "online_at": "Last Use",
+      "expire_date": "Expire Date",
+      "unlimited": "Unlimited",
+      "never": "Never",
+      "limited": "Limited",
+      "data_limit_method": "Data Limit",
+      "fixed_date": "Fixed Date",
+      "expire_method": "Expiration",
+      "expiring_week": "Expiring this week",
+      "over_quota": "Over quota",
+      "add_user": "Add user",
+      "on_first_use": "On first use",
+      "reset_usage": "Reset Usage",
+      "revoke_subscription": "Revoke Subscription",
+      "usage_duration": "Usage Duration",
+      "activation_deadline": "Activation Deadline",
+      "nodes-usage": "Nodes Usage",
+      "settings": {
+        "nodes-usage": {
+          "last-days": "Last {{count}} days",
+          "last-months": "Last {{count}} months",
+          "last-hours": "Last {{count}} hours",
+          "title": "User Nodes Usage",
+          "desc": "The amount of user usage on each node in time."
         },
-        "kpi": {
-            "total_users": "Total users",
-            "all_accounts": "All accounts",
-            "active_users": "Active users",
-            "last_24h": "Last 24 h",
-            "online_nodes": "Online nodes",
-            "currently_up": "Currently up",
-            "health_score": "Avg health score",
-            "reality_grade": "Reality grade",
-            "health_na": "Run /health check"
-        },
-        "health": {
-            "kpi": {
-                "overall": "Overall score",
-                "online": "Online subsystems",
-                "degraded": "Degraded",
-                "degraded_sub": "Partially impaired",
-                "last_check": "Last check"
-            },
-            "subsystems_heading": "Subsystem status",
-            "subsystems_down": "subsystem(s) are currently DOWN. Check panel logs immediately.",
-            "no_subsystems": "No subsystem data available — backend health probes may not have run yet.",
-            "last_checked": "Last checked"
+        "subscription_link": {
+          "copied": "Subscription Link Copied",
+          "copy": "Subscription Link",
+          "error": "Unable to copy Subscription Link"
         }
+      },
+      "services-alert": {
+        "title": "No Service found",
+        "desc": "Make sure you create services to enable your users with inbounds to connect with.",
+        "click": "Click Here"
+      },
+      "dialogs": {
+        "edition": {
+          "title": "Edit User"
+        },
+        "creation": {
+          "title": "Create User"
+        },
+        "deletion": {
+          "title": "Remove User"
+        },
+        "mutation": {
+          "note": {
+            "desc": "Leave a note about your user"
+          }
+        }
+      }
     },
-    "filter": "Filter",
-    "total": "Total"
+    "admins": {
+      "total": "Total admins",
+      "sudo": "Sudo",
+      "enabled": "Enabled",
+      "create_admin": "Create admin",
+      "disable_users": "Disable users",
+      "enable_users": "Enable users",
+      "permission": "Permission",
+      "dialogs": {
+        "creation": {
+          "title": "Create admin"
+        },
+        "edition": {
+          "title": "Edit admin"
+        },
+        "deletion": {
+          "title": "Delete admin"
+        }
+      },
+      "modify-users-access": "Modify users access",
+      "subscription-url-prefix": "Subscription URL prefix",
+      "sudo-privilage": "Sudo privilage",
+      "all-services-access": "All services access",
+      "users-data-usage": "Users Data Usage"
+    },
+    "hosts": {
+      "xmux-settings": "Xmux Settings",
+      "split-http-settings": "Split HTTP Settings",
+      "no-grpc-header": "No GRPC Header",
+      "early-data": "Early Data",
+      "http_headers": "HTTP Headers",
+      "no-http-headers": "No HTTP headers",
+      "mux-settings": "Mux Settings",
+      "dns-servers": "DNS Servers",
+      "obfuscation-password": "Obfuscation Password",
+      "server-public-key": "Server public key",
+      "tls-config": "TLS Config",
+      "network-settings": "Network Settings",
+      "security-settings": "Security Settings",
+      "allowed-ips": "Allowed Ips",
+      "allowed-ips-placeholder": "127.0.0.1,...",
+      "camouflage-settings": "Camouflage Settings",
+      "fragment": {
+        "interval": "Interval",
+        "length": "Length",
+        "packets": "Packets",
+        "length-error": "Length can not exceed 32 char and must be number-number",
+        "interval-error": "Interval can not exceed 32 char and must be number-number",
+        "packets-error": "Packets can not exceed 32 char and must be number-number or be tlshello"
+      },
+      "noise": {
+        "interval": "Interval",
+        "length": "Length",
+        "packets": "Packets",
+        "length-error": "Length can not exceed 32 char and must be number-number",
+        "interval-error": "Interval can not exceed 32 char and must be number-number",
+        "packets-error": "Packets can not exceed 32 char and must be number-number or be tlshello"
+      },
+      "popover-guide": {
+        "title": "Using this setting, you are able to assign specific address for each inbound.",
+        "desc": "Use these variables to make it dynamic",
+        "username": "Username of the user",
+        "dataUsage": "Current usage of the user",
+        "remainingData": "Remaining data of the user",
+        "dataLimit": "Data limit of the user",
+        "remainingDays": "Remaining days of the user",
+        "expireDate": "Expiry date of the user",
+        "jalaliExpireDate": "Expiry date of the user in jalali calendar",
+        "remainingTime": "Remaining time of the user",
+        "statusEmoji": "User status as an emoji (✅,⌛,🪫,❌,🔌)",
+        "proxyProtocol": "Proxy protocol (e.g. VMess)",
+        "proxyMethod": "Proxy transport method (e.g. ws)",
+        "currentServer": "Marzneshin server ip address",
+        "security": "Security Layer",
+        "host": "Request Host",
+        "port": "Port",
+        "path": "Path",
+        "sni": "SNI",
+        "advancedOptions": "Advanced options",
+        "addHost": "Add host",
+        "savedSuccess": "Host has been saved successfully",
+        "loading": "loading...",
+        "apply": "Apply",
+        "port.info": "By default, the inbound port is advertised to the user. You can set a custom port in case this host forwards traffic from another port to your inbound. For example, the server may forward traffic from port 8443 to the default port of your inbound server.",
+        "path.info": "Set a path for host users, useful behind a reverse proxy.",
+        "sni.info": "By default, a host uses the SNI from the inbound. You can set a custom SNI in case this host is a server that has a different SNI. For example, the server may receive traffic with a different SSL certificate, perform SSL termination, and forward it to your inbound server.",
+        "host.info": "By default, if a request host is set in the Xray config, this host is used. However, you can set a custom request host here if needed.",
+        "security.info": "If the middleware server of this host uses a different security layer than the inbound's default, you can set a custom security layer here.",
+        "alpn": "ALPN",
+        "fingerprint": "Fingerprint",
+        "host.multiHost": "To set multiple addresses, separate them with <badge>,</badge> Each time an address is chosen randomly.",
+        "host.wildcard": "Use <badge>*</badge> to generate a random string (works for wildcard domain names)"
+      },
+      "mux": {
+        "title": "Connection multiplexing",
+        "desc": "Currently supported by v2rayng while using custom config"
+      },
+      "no-inbound-selection-alert": {
+        "title": "No inbound is selected",
+        "desc": "You must select an inbound in order to add a host."
+      },
+      "settings": {
+        "title": "Host Settings"
+      },
+      "allowinsecure": "Allow Insecure",
+      "dialogs": {
+        "edition": {
+          "title": "Edit Host"
+        },
+        "creation": {
+          "title": "Add Host"
+        },
+        "deletion": {
+          "title": "Remove Host"
+        },
+        "mutation": {
+          "allowinsecure": {
+            "alert": "Due to security concerns, it's not recommended to enable Allow Insecure"
+          }
+        }
+      },
+      "kpi": {
+        "active": "Active",
+        "disabled": "Disabled",
+        "total": "Total hosts"
+      }
+    },
+    "billing": {
+      "plans": {
+        "title": "Plans",
+        "subtitle": "Products your users can purchase. Fixed = GB+days bundle; flexible = per-unit addon.",
+        "empty": "No plans yet. Click 'New plan' to configure your first product.",
+        "load_error": "Failed to load plans",
+        "create_button": "New plan",
+        "col": {
+          "code": "Code",
+          "name": "Name",
+          "kind": "Kind",
+          "shape": "Shape",
+          "price": "Price",
+          "enabled": "Status"
+        },
+        "status": {
+          "on": "On",
+          "off": "Off"
+        },
+        "kind": {
+          "fixed": "Fixed (GB + days bundle)",
+          "flexible_traffic": "Flexible traffic (per-GB addon)",
+          "flexible_duration": "Flexible duration (per-day addon)",
+          "fixed_short": "Fixed",
+          "flexible_traffic_short": "Traffic addon",
+          "flexible_duration_short": "Duration addon"
+        },
+        "field": {
+          "operator_code": "Operator code",
+          "operator_code_lock": "Code is immutable after creation.",
+          "display_name_en": "Display name (en)",
+          "kind": "Kind",
+          "kind_lock": "Kind is immutable after creation.",
+          "data_limit_gb": "Data limit (GB)",
+          "duration_days": "Duration (days)",
+          "price_cny": "Price (CNY)",
+          "enabled": "Enabled"
+        },
+        "dialog": {
+          "create_title": "Create plan",
+          "edit_title": "Edit plan",
+          "desc": "Fixed plans bundle GB + days; flexible plans are priced per unit (GB or day).",
+          "saving": "Saving..."
+        },
+        "toast": {
+          "create_success": "Plan {{code}} created",
+          "create_error": "Create failed: {{code}}",
+          "update_success": "Plan {{code}} updated",
+          "update_error": "Update failed"
+        }
+      },
+      "channels": {
+        "title": "Payment channels",
+        "subtitle": "EPay 码商 aggregators. Multiple enabled at once = failover.",
+        "empty": "No channels configured yet. Click 'New channel' to add your first 码商.",
+        "load_error": "Failed to load channels",
+        "create_button": "New channel",
+        "col": {
+          "code": "Code",
+          "name": "Name",
+          "merchant_id": "Merchant ID",
+          "priority": "Priority",
+          "enabled": "Status"
+        },
+        "status": {
+          "on": "On",
+          "off": "Off"
+        },
+        "field": {
+          "channel_code": "Channel code",
+          "channel_code_lock": "Code is immutable after creation.",
+          "display_name": "Display name",
+          "gateway_url": "Gateway URL",
+          "merchant_id": "Merchant ID",
+          "priority": "Priority",
+          "secret_key": "Secret key",
+          "secret_key_rotate_placeholder": "Leave blank to keep current",
+          "secret_key_rotate_hint": "Providing a value rotates the secret; blank keeps the existing key.",
+          "enabled": "Enabled"
+        },
+        "dialog": {
+          "create_title": "New payment channel",
+          "edit_title": "Edit payment channel",
+          "desc": "Configure one EPay 码商. Multiple channels run in parallel; disable a broken one and the next enabled one takes over.",
+          "saving": "Saving..."
+        },
+        "toast": {
+          "create_success": "Channel {{code}} created",
+          "create_error": "Create failed: {{code}}",
+          "update_success": "Channel {{code}} updated",
+          "update_error": "Update failed"
+        }
+      },
+      "invoices": {
+        "title": "Invoices",
+        "subtitle": "User orders and the state-machine path each one took.",
+        "empty": "No invoices yet. Users will create these by checking out a plan once the user-facing flow ships (A.4).",
+        "load_error": "Failed to load invoices",
+        "filter": {
+          "state": "State",
+          "state_any": "Any state",
+          "user_id": "User ID"
+        },
+        "col": {
+          "id": "ID",
+          "user_id": "User",
+          "state": "State",
+          "provider": "Provider",
+          "total": "Total",
+          "created_at": "Created"
+        },
+        "detail": {
+          "title": "Invoice",
+          "desc": "Invoice summary, lines, and audit trail. Actions at the bottom when non-terminal.",
+          "load_error": "Failed to load invoice",
+          "user_id": "User",
+          "state": "State",
+          "provider": "Provider",
+          "total": "Total",
+          "created_at": "Created",
+          "expires_at": "Expires",
+          "paid_at": "Paid at",
+          "applied_at": "Applied at",
+          "trc20_memo": "TRC20 memo",
+          "trc20_amount": "Expected TRC20 amount",
+          "lines_title": "Lines",
+          "lines_empty": "No line items.",
+          "events_title": "Audit trail",
+          "events_empty": "No events recorded."
+        },
+        "action": {
+          "apply_manual": "Apply manually",
+          "applying": "Applying...",
+          "cancel": "Cancel invoice",
+          "cancelling": "Cancelling...",
+          "note_label": "Admin note",
+          "note_placeholder": "VIP granted; refund issued out-of-band; etc.",
+          "note_hint": "Required. Appears verbatim in the audit trail for forensics."
+        },
+        "toast": {
+          "apply_success": "Invoice #{{id}} applied",
+          "apply_error": "Apply failed",
+          "cancel_success": "Invoice #{{id}} cancelled",
+          "cancel_error": "Cancel failed"
+        }
+      },
+      "purchase": {
+        "title": "Customer Checkout",
+        "plans_title": "Plans",
+        "pay_title": "Payment",
+        "user_section_title": "Customer",
+        "empty_plans": "No plans available yet. Please check back later.",
+        "load_error": "Failed to load plans or payment channels.",
+        "user_selector": {
+          "label": "Pick a customer (VPN user)",
+          "placeholder": "Type username...",
+          "searching": "Searching...",
+          "no_results": "No users found.",
+          "clear": "Clear",
+          "selected_hint": "Selected: {{username}} (#{{id}})",
+          "required_before_pay": "Pick a customer above before continuing to payment."
+        },
+        "plan_card": {
+          "add_to_cart": "Add to cart",
+          "already_added": "Added"
+        },
+        "addon": {
+          "title": "Extras",
+          "subtitle": "Add extra traffic or days on top of a base plan.",
+          "quantity": "Quantity",
+          "unit_gb": "GB",
+          "unit_day": "day",
+          "add": "Add"
+        },
+        "cart": {
+          "title": "Cart",
+          "empty": "Your cart is empty.",
+          "remove": "Remove line",
+          "total": "Total",
+          "checkout": "Checkout",
+          "checkout_pending": "Creating invoice..."
+        },
+        "picker": {
+          "epay_tab": "Alipay / WeChat",
+          "trc20_tab": "USDT (TRC20)",
+          "epay_empty": "No 易支付 channel configured.",
+          "trc20_desc": "Send USDT on the TRON network to the displayed address. Your payment is detected automatically.",
+          "pay_epay": "Pay with 易支付",
+          "pay_trc20": "Pay with USDT",
+          "paying": "Redirecting..."
+        },
+        "trc20": {
+          "title": "USDT (TRC20) payment",
+          "loading": "Loading invoice...",
+          "load_error": "Failed to load invoice",
+          "countdown": "Expires in",
+          "amount_label": "Exact amount (send this)",
+          "memo_label": "Memo (include in tx)",
+          "instructions": "Send the EXACT amount to the operator's TRC20 address with the memo above. Your payment is matched automatically within a minute of confirmation.",
+          "paid_waiting_apply": "Payment received. Activating your plan now...",
+          "applied": "Plan activated. Enjoy.",
+          "terminal_failure": "This invoice is no longer active. Please start a new purchase.",
+          "copy": "Copy",
+          "copied": "Copied"
+        },
+        "state": {
+          "created": "Created",
+          "pending": "Pending",
+          "awaiting_payment": "Waiting for payment",
+          "paid": "Paid",
+          "applied": "Activated",
+          "expired": "Expired",
+          "cancelled": "Cancelled",
+          "failed": "Failed"
+        },
+        "toast": {
+          "checkout_success": "Invoice #{{id}} created",
+          "checkout_error": "Checkout failed"
+        }
+      }
+    },
+    "health": {
+      "title": "Health",
+      "subtitle": "Live status of the panel and its self-developed subsystems.",
+      "refresh": "Refresh",
+      "loading": "Loading health report...",
+      "version": "Version",
+      "uptime": "Uptime",
+      "overall": {
+        "green": "Healthy",
+        "yellow": "Degraded",
+        "red": "Down",
+        "unknown": "Unknown"
+      },
+      "subsystem": {
+        "db": "Database",
+        "billing_scheduler": "Billing scheduler",
+        "iplimit_scheduler": "IP limiter scheduler",
+        "trc20": "USDT (TRC20) provider",
+        "reality_seeds": "Reality audit seeds",
+        "sni_seeds": "SNI selector seeds"
+      },
+      "column": {
+        "name": "Subsystem",
+        "status": "Status",
+        "latency": "Latency",
+        "detail": "Detail"
+      },
+      "error": {
+        "load_failed": "Failed to load health report.",
+        "unauthorized": "You must be a sudo admin to view the extended health report."
+      }
+    },
+    "audit": {
+      "title": "Audit log",
+      "loading": "Loading audit events...",
+      "error": "Failed to load: {{message}}",
+      "empty": "No audit events match the current filters.",
+      "filter": {
+        "actor": "Actor",
+        "action": "Action",
+        "reset": "Reset",
+        "result": {
+          "label": "Result",
+          "all": "All",
+          "success": "Success",
+          "denied": "Denied",
+          "failure": "Failure"
+        }
+      },
+      "action": {
+        "refresh": "Refresh"
+      },
+      "actor": {
+        "anonymous": "(anonymous)"
+      },
+      "column": {
+        "ts": "When",
+        "actor": "Actor",
+        "action": "Action",
+        "result": "Result",
+        "status": "HTTP",
+        "ip": "IP"
+      },
+      "pagination": {
+        "prev": "Previous",
+        "next": "Next"
+      }
+    },
+    "reality": {
+      "title": "Reality audit",
+      "subtitle": "Score your panel's Reality config against the 2026 hardening checklist (cold SNI, same ASN, non-standard port, shortId compliance, short connIdle).",
+      "run": "Run audit",
+      "rerun": "Re-run audit",
+      "running": "Running audit...",
+      "empty": "Click \"Run audit\" to score the panel's current Reality configuration.",
+      "no_targets": "No Reality inbounds found in the panel database.",
+      "summary": {
+        "total": "Total",
+        "green": "Green",
+        "yellow": "Yellow",
+        "red": "Red",
+        "worst": "Worst score",
+        "audited_at": "Audited at"
+      },
+      "score": {
+        "green": "Green",
+        "yellow": "Yellow",
+        "red": "Red"
+      },
+      "column": {
+        "host": "Host",
+        "sni": "SNI",
+        "port": "Port",
+        "score": "Score",
+        "grade": "Grade",
+        "findings": "Issues"
+      },
+      "check": {
+        "sni_coldness": "SNI coldness",
+        "asn_match": "ASN match",
+        "port_canonical": "Port canonicality",
+        "shortid_compliance": "shortId compliance",
+        "timeout_config": "connIdle / timeouts"
+      },
+      "finding": {
+        "remediation": "Fix",
+        "empty": "No findings emitted for this target."
+      },
+      "target": {
+        "expand": "Show findings",
+        "collapse": "Hide findings"
+      },
+      "error": {
+        "unauthorized": "You must be a sudo admin to run a Reality audit.",
+        "timeout": "Audit timed out (likely a slow ASN WHOIS lookup). Try again, or omit the ASN to skip ASN matching.",
+        "failed": "Reality audit failed. See panel logs for details."
+      }
+    }
+  },
+  "events": {
+    "delete": {
+      "error": "Failed to remove {{name}}",
+      "success": {
+        "title": "{{name}} has been successfully removed",
+        "desc": ""
+      }
+    },
+    "create": {
+      "error": "Failed to create {{name}}",
+      "success": {
+        "title": "{{name}} is successfully created",
+        "desc": ""
+      }
+    },
+    "update": {
+      "error": "Failed to update {{name}}",
+      "success": {
+        "title": "{{name}} is successfully updated",
+        "desc": ""
+      }
+    },
+    "user_revoke": {
+      "error": "Failed to revoke {{name}} subscription",
+      "success": {
+        "title": "{{name}} is successfully created",
+        "desc": ""
+      }
+    },
+    "user_reset": {
+      "error": "Failed to reset {{name}} data usage",
+      "success": {
+        "title": "{{name}} data usage has been successfully reset",
+        "desc": ""
+      }
+    },
+    "user_status": {
+      "error": "Failed to toggle {{name}} enable status",
+      "success": {
+        "title": "{{name}} enable status has been successfully updated",
+        "desc": ""
+      }
+    }
+  },
+  "delete-confirmation": {
+    "title": "Are you sure of this?",
+    "desc": "This action cannot be undone."
+  },
+  "table": {
+    "no-result-found": "No results found.",
+    "row-per-page": "Rows per page",
+    "no-result": "No result",
+    "selected": "Selected",
+    "toggle-column": "Toggle columns",
+    "filter-placeholder": "Filter {{name}}"
+  },
+  "statuses": {
+    "active": "Active",
+    "connected": "Connected",
+    "healthy": "Healthy",
+    "disabled": "Disabled",
+    "expired": "Expired",
+    "on_hold": "On Hold",
+    "connecting": "Connecting",
+    "unhealthy": "Unhealthy",
+    "limited": "Limited",
+    "error": "Error"
+  },
+  "nilou": {
+    "overview": {
+      "welcome": "Welcome back",
+      "sub": "{{users}} users · {{active}} active",
+      "traffic_chart_title": "Traffic, last 14 days",
+      "traffic_chart_sub": "Upload + download, daily totals (GB)",
+      "chart_loading": "Loading traffic data…",
+      "capacity_title": "Capacity",
+      "capacity_sub": "Active / total user ratio",
+      "capacity_ring_sub": "{{active}} of {{total}} active",
+      "uptime": "Uptime",
+      "recent_activity": "Recent activity",
+      "view_all": "View all →",
+      "no_activity": "No recent activity",
+      "quick_links": "Quick links"
+    },
+    "kpi": {
+      "total_users": "Total users",
+      "all_accounts": "All accounts",
+      "active_users": "Active users",
+      "last_24h": "Last 24 h",
+      "online_nodes": "Online nodes",
+      "currently_up": "Currently up",
+      "health_score": "Avg health score",
+      "reality_grade": "Reality grade",
+      "health_na": "Run /health check"
+    },
+    "health": {
+      "kpi": {
+        "overall": "Overall score",
+        "online": "Online subsystems",
+        "degraded": "Degraded",
+        "degraded_sub": "Partially impaired",
+        "last_check": "Last check"
+      },
+      "subsystems_heading": "Subsystem status",
+      "subsystems_down": "subsystem(s) are currently DOWN. Check panel logs immediately.",
+      "no_subsystems": "No subsystem data available — backend health probes may not have run yet.",
+      "last_checked": "Last checked"
+    }
+  },
+  "filter": "Filter",
+  "total": "Total"
 }

@@ -1,718 +1,739 @@
 {
-    "name": "名称",
-    "info": "信息",
-    "status": "状态",
-    "address": "地址",
-    "users": "用户",
-    "nodes": "节点",
-    "services": "服务",
-    "hosts": "主机",
-    "username": "用户名",
-    "password": "密码",
-    "inbounds": "入站",
-    "submit": "提交",
-    "login": "登录",
-    "edit": "编辑",
-    "actions": "操作",
-    "settings": "设置",
-    "logs": "日志",
-    "note": "备注",
-    "config": "配置",
-    "tag": "标签",
-    "protocol": "协议",
-    "online": "在线",
-    "offline": "离线",
-    "not_connected": "未连接",
-    "apply": "应用",
-    "open": "打开",
-    "delete": "删除",
-    "port": "端口",
-    "create": "创建",
-    "path": "路径",
-    "host": "主机",
-    "alpn": "ALPN",
-    "security": "安全",
-    "user_info": "用户信息",
-    "admin_info": "管理员信息",
-    "subscription": "订阅",
-    "fingerprint": "指纹",
-    "mux": "多路复用",
-    "fragment": "分片",
-    "enabled": "已启用",
-    "activated": "已激活",
-    "unlimited": "无限制",
-    "left": "剩余",
-    "reached": "已达到",
-    "inactive": "未激活",
-    "active": "激活",
-    "close": "关闭",
-    "save": "保存",
-    "days": "天",
-    "home": "首页",
-    "cancel": "取消",
-    "view": "查看",
-    "certificate": "证书",
-    "valid": "有效",
-    "finished": "已完成",
-    "expired": "已过期",
-    "change": "更改",
-    "admins": "管理员",
-    "normal": "普通",
-    "sudo": "超级管理员",
-    "owner": "所有者",
-    "running": "运行中",
-    "down": "停止",
-    "weight": "权重",
-    "support-us": {
-        "title": "支持我们",
-        "desc": "Marzneshin 是一个免费的开源软件（FOSS），加入我们，通过捐款表达您的支持。",
-        "donate": "捐款"
+  "name": "名称",
+  "info": "信息",
+  "status": "状态",
+  "address": "地址",
+  "users": "用户",
+  "nodes": "节点",
+  "services": "服务",
+  "hosts": "主机",
+  "username": "用户名",
+  "password": "密码",
+  "inbounds": "入站",
+  "submit": "提交",
+  "login": "登录",
+  "edit": "编辑",
+  "actions": "操作",
+  "settings": "设置",
+  "logs": "日志",
+  "note": "备注",
+  "config": "配置",
+  "tag": "标签",
+  "protocol": "协议",
+  "online": "在线",
+  "offline": "离线",
+  "not_connected": "未连接",
+  "apply": "应用",
+  "open": "打开",
+  "delete": "删除",
+  "port": "端口",
+  "create": "创建",
+  "path": "路径",
+  "host": "主机",
+  "alpn": "ALPN",
+  "security": "安全",
+  "user_info": "用户信息",
+  "admin_info": "管理员信息",
+  "subscription": "订阅",
+  "fingerprint": "指纹",
+  "mux": "多路复用",
+  "fragment": "分片",
+  "enabled": "已启用",
+  "activated": "已激活",
+  "unlimited": "无限制",
+  "left": "剩余",
+  "reached": "已达到",
+  "inactive": "未激活",
+  "active": "激活",
+  "close": "关闭",
+  "save": "保存",
+  "days": "天",
+  "home": "首页",
+  "cancel": "取消",
+  "view": "查看",
+  "certificate": "证书",
+  "valid": "有效",
+  "finished": "已完成",
+  "expired": "已过期",
+  "change": "更改",
+  "admins": "管理员",
+  "normal": "普通",
+  "sudo": "超级管理员",
+  "owner": "所有者",
+  "running": "运行中",
+  "down": "停止",
+  "weight": "权重",
+  "support-us": {
+    "title": "支持我们",
+    "desc": "Marzneshin 是一个免费的开源软件（FOSS），加入我们，通过捐款表达您的支持。",
+    "donate": "捐款"
+  },
+  "page": {
+    "home": {
+      "users-stats": {
+        "desc": "用户状态概览"
+      },
+      "total-traffics": {
+        "title": "系统总流量",
+        "desc": "所有节点的总数据流量"
+      }
     },
-    "page": {
-        "home": {
-            "users-stats": {
-                "desc": "用户状态概览"
-            },
-            "total-traffics": {
-                "title": "系统总流量",
-                "desc": "所有节点的总数据流量"
-            }
-        },
-        "settings": {
-            "subscription-settings": {
-                "template-on-acceptance": "接受时的模板",
-                "placeholder-remark": "备注占位符",
-                "placeholder-if-disabled": "禁用时的占位符",
-                "shuffle-configs": "随机配置",
-                "url-prefix": "URL前缀",
-                "profile-title": "配置文件标题",
-                "support-link": "支持链接",
-                "update-interval": "更新间隔",
-                "add-rule": "添加规则",
-                "reset-local-changes": "重置本地更改",
-                "title": "订阅",
-                "description": "管理和自定义订阅设置，包含可调整的规则和更新选项。",
-                "subscription-title": "订阅规则",
-                "subscription-desc": "按优先级添加订阅规则。",
-                "alert": {
-                    "title": "无规则",
-                    "desc": "未定义订阅规则"
-                }
-            },
-            "certificate": {
-                "copy": "复制证书",
-                "error": "证书不可用",
-                "copied": "证书已复制"
-            }
-        },
-        "nodes": {
-            "nodes-usage-widget": {
-                "title": "节点流量使用",
-                "desc": "该节点的总数据流量使用情况"
-            },
-            "settings": {
-                "no-backend-alert": {
-                    "title": "此节点未配置后端",
-                    "desc": "请采取必要措施为此节点配置后端。"
-                },
-                "detail": "详情"
-            },
-            "dialogs": {
-                "creation": {
-                    "title": "添加节点"
-                },
-                "edition": {
-                    "title": "编辑节点"
-                }
-            },
-            "usage_coefficient": "使用系数",
-            "connection_backend": "连接后端",
-            "connection_backend_desc": "用于远程连接",
-            "certificate-alert": {
-                "title": "配置节点证书",
-                "desc": "如果您希望配置节点证书，请查看设置页面。",
-                "click": "点击此处"
-            },
-            "add": "新建节点",
-            "col": {
-                "hostname": "主机名",
-                "latency": "延迟",
-                "load": "负载",
-                "mult": "倍率",
-                "protocol": "协议",
-                "region": "地区"
-            },
-            "empty": "当前筛选条件下没有节点。",
-            "filter": {
-                "all": "全部"
-            },
-            "premium": "高级",
-            "sub": "承载数据面的 Marznode VPS 实例。",
-            "sync": "同步"
-        },
-        "services": {
-            "dialogs": {
-                "creation": {
-                    "title": "创建服务"
-                },
-                "edition": {
-                    "title": "编辑服务"
-                }
-            },
-            "add": "新建服务",
-            "kpi": {
-                "active": "活跃",
-                "total": "服务总数"
-            }
-        },
-        "users": {
-            "created_at": "创建日期",
-            "no_use": "未使用",
-            "data_limit_reached": "已达到数据限制",
-            "sub_updated_at": "订阅最后更新",
-            "sub_last_user_agent": "最后用户代理",
-            "traffic_reset_at": "最后流量重置",
-            "lifetime_used_traffic": "终身使用流量",
-            "note-placeholder": "用户附加信息",
-            "traffic": "流量",
-            "used_traffic": "已使用流量",
-            "data_limit_reset_strategy": "数据重置周期",
-            "online_at": "最后使用时间",
-            "expire_date": "到期日期",
-            "unlimited": "无限制",
-            "never": "永不",
-            "data_limit_method": "数据限制",
-            "fixed_date": "固定日期",
-            "expire_method": "到期方式",
-            "on_first_use": "首次使用时",
-            "reset_usage": "重置使用量",
-            "revoke_subscription": "取消订阅",
-            "usage_duration": "使用时长",
-            "nodes-usage": "节点使用",
-            "settings": {
-                "subscription_link": {
-                    "copied": "订阅链接已复制",
-                    "copy": "订阅链接",
-                    "error": "无法复制订阅链接"
-                }
-            },
-            "services-alert": {
-                "title": "未找到服务",
-                "desc": "请确保创建服务以启用用户连接入站。",
-                "click": "点击此处"
-            },
-            "dialogs": {
-                "edition": {
-                    "title": "编辑用户"
-                }
-            },
-            "add_user": "新建用户",
-            "expiring_week": "本周到期",
-            "over_quota": "超出配额"
-        },
-        "admins": {
-            "disable_users": "禁用用户",
-            "enable_users": "启用用户",
-            "permission": "权限",
-            "modify-users-access": "修改用户访问",
-            "subscription-url-prefix": "订阅URL前缀",
-            "sudo-privilage": "超级管理员权限",
-            "all-services-access": "访问所有服务",
-            "users-data-usage": "用户数据使用量",
-            "create_admin": "新建管理员",
-            "enabled": "已启用",
-            "sudo": "超级管理员",
-            "total": "管理员总数"
-        },
-        "hosts": {
-            "xmux-settings": "Xmux设置",
-            "split-http-settings": "分拆HTTP设置",
-            "early-data": "早期数据",
-            "http_headers": "HTTP头部",
-            "no-http-headers": "无HTTP头部",
-            "mux-settings": "多路复用设置",
-            "dns-servers": "DNS服务器",
-            "obfuscation-password": "混淆密码",
-            "server-public-key": "服务器公钥",
-            "tls-config": "TLS配置",
-            "network-settings": "网络设置",
-            "security-settings": "安全设置",
-            "allowed-ips": "允许的IP地址",
-            "allowed-ips-placeholder": "127.0.0.1,...",
-            "camouflage-settings": "伪装设置",
-            "fragment": {
-                "interval": "间隔",
-                "length": "长度",
-                "packets": "数据包",
-                "length-error": "长度不能超过32个字符，且必须为数字-数字格式",
-                "interval-error": "间隔不能超过32个字符，且必须为数字-数字格式",
-                "packets-error": "数据包不能超过32个字符，且必须为数字-数字格式或tlshello"
-            },
-            "mux": {
-                "title": "连接多路复用",
-                "desc": "目前由v2rayng支持，使用自定义配置时"
-            },
-            "no-inbound-selection-alert": {
-                "title": "未选择入站",
-                "desc": "必须选择入站才能添加主机。"
-            },
-            "allowinsecure": "允许不安全连接",
-            "dialogs": {
-                "edition": {
-                    "title": "编辑主机"
-                },
-                "creation": {
-                    "title": "添加主机"
-                },
-                "mutation": {
-                    "allowinsecure": {
-                        "alert": "出于安全考虑，不建议启用允许不安全连接"
-                    }
-                }
-            },
-            "kpi": {
-                "active": "活跃",
-                "disabled": "已禁用",
-                "total": "主机总数"
-            }
-        },
-        "billing": {
-            "plans": {
-                "title": "套餐",
-                "subtitle": "你卖给用户的产品。fixed = GB+天数的打包;flexible = 按单位计价的加购。",
-                "empty": "还没有套餐。点 '新建套餐' 配置第一个产品。",
-                "load_error": "加载套餐失败",
-                "create_button": "新建套餐",
-                "col": {
-                    "code": "代号",
-                    "name": "名称",
-                    "kind": "类型",
-                    "shape": "形态",
-                    "price": "价格",
-                    "enabled": "状态"
-                },
-                "status": {
-                    "on": "开",
-                    "off": "关"
-                },
-                "kind": {
-                    "fixed": "固定(GB + 天数 打包)",
-                    "flexible_traffic": "按 GB 加购",
-                    "flexible_duration": "按天加购",
-                    "fixed_short": "固定",
-                    "flexible_traffic_short": "流量加购",
-                    "flexible_duration_short": "时长加购"
-                },
-                "field": {
-                    "operator_code": "运营代号",
-                    "operator_code_lock": "创建后不可改。",
-                    "display_name_en": "显示名(英)",
-                    "kind": "类型",
-                    "kind_lock": "创建后不可改。",
-                    "data_limit_gb": "流量上限(GB)",
-                    "duration_days": "时长(天)",
-                    "price_cny": "价格(元)",
-                    "enabled": "启用"
-                },
-                "dialog": {
-                    "create_title": "新建套餐",
-                    "edit_title": "编辑套餐",
-                    "desc": "固定套餐包含 GB + 天数;按量套餐按单位(GB 或天)定价。",
-                    "saving": "保存中..."
-                },
-                "toast": {
-                    "create_success": "套餐 {{code}} 已创建",
-                    "create_error": "创建失败:{{code}}",
-                    "update_success": "套餐 {{code}} 已更新",
-                    "update_error": "更新失败"
-                }
-            },
-            "channels": {
-                "title": "支付通道",
-                "subtitle": "易支付码商聚合。多个通道同时启用 = 故障切换。",
-                "empty": "还没配通道。点 '新建通道' 添加第一家码商。",
-                "load_error": "加载通道失败",
-                "create_button": "新建通道",
-                "col": {
-                    "code": "代号",
-                    "name": "名称",
-                    "merchant_id": "商户 ID",
-                    "priority": "优先级",
-                    "enabled": "状态"
-                },
-                "status": {
-                    "on": "开",
-                    "off": "关"
-                },
-                "field": {
-                    "channel_code": "通道代号",
-                    "channel_code_lock": "创建后不可改。",
-                    "display_name": "显示名",
-                    "gateway_url": "网关 URL",
-                    "merchant_id": "商户 ID",
-                    "priority": "优先级",
-                    "secret_key": "密钥",
-                    "secret_key_rotate_placeholder": "留空保持当前密钥",
-                    "secret_key_rotate_hint": "填入新值即轮换密钥;留空保持现有密钥不变。",
-                    "enabled": "启用"
-                },
-                "dialog": {
-                    "create_title": "新建支付通道",
-                    "edit_title": "编辑支付通道",
-                    "desc": "配置一家易支付码商。多通道并行运行;某一家挂了禁用它,下一家自动接管。",
-                    "saving": "保存中..."
-                },
-                "toast": {
-                    "create_success": "通道 {{code}} 已创建",
-                    "create_error": "创建失败:{{code}}",
-                    "update_success": "通道 {{code}} 已更新",
-                    "update_error": "更新失败"
-                }
-            },
-            "invoices": {
-                "title": "订单",
-                "subtitle": "用户订单与各自走过的状态机路径。",
-                "empty": "还没订单。等 A.4 上线后,用户下单会自动生成。",
-                "load_error": "加载订单失败",
-                "filter": {
-                    "state": "状态",
-                    "state_any": "全部状态",
-                    "user_id": "用户 ID"
-                },
-                "col": {
-                    "id": "ID",
-                    "user_id": "用户",
-                    "state": "状态",
-                    "provider": "通道",
-                    "total": "金额",
-                    "created_at": "创建时间"
-                },
-                "detail": {
-                    "title": "订单",
-                    "desc": "订单摘要、明细、审计日志。非终态时,底部有操作按钮。",
-                    "load_error": "加载订单失败",
-                    "user_id": "用户",
-                    "state": "状态",
-                    "provider": "通道",
-                    "total": "金额",
-                    "created_at": "创建时间",
-                    "expires_at": "过期时间",
-                    "paid_at": "支付时间",
-                    "applied_at": "生效时间",
-                    "trc20_memo": "TRC20 备注",
-                    "trc20_amount": "预期 TRC20 金额",
-                    "lines_title": "明细",
-                    "lines_empty": "无明细。",
-                    "events_title": "审计日志",
-                    "events_empty": "无事件。"
-                },
-                "action": {
-                    "apply_manual": "手工生效",
-                    "applying": "生效中...",
-                    "cancel": "取消订单",
-                    "cancelling": "取消中...",
-                    "note_label": "管理员备注",
-                    "note_placeholder": "VIP 赠送;已另路退款;等等。",
-                    "note_hint": "必填。原样写入审计日志供事后追查。"
-                },
-                "toast": {
-                    "apply_success": "订单 #{{id}} 已生效",
-                    "apply_error": "生效失败",
-                    "cancel_success": "订单 #{{id}} 已取消",
-                    "cancel_error": "取消失败"
-                }
-            },
-            "purchase": {
-                "title": "客户结账",
-                "plans_title": "套餐",
-                "pay_title": "支付",
-                "user_section_title": "客户",
-                "empty_plans": "暂无可购买套餐,请稍后再看。",
-                "load_error": "套餐或支付通道加载失败。",
-                "user_selector": {
-                    "label": "选择客户(VPN 用户)",
-                    "placeholder": "输入用户名搜索...",
-                    "searching": "搜索中...",
-                    "no_results": "未找到匹配的用户。",
-                    "clear": "清除",
-                    "selected_hint": "已选: {{username}} (#{{id}})",
-                    "required_before_pay": "请先在上方选择客户,再继续支付。"
-                },
-                "plan_card": {
-                    "add_to_cart": "加入购物车",
-                    "already_added": "已加入"
-                },
-                "addon": {
-                    "title": "加量选项",
-                    "subtitle": "在主套餐之上追加流量或天数。",
-                    "quantity": "数量",
-                    "unit_gb": "GB",
-                    "unit_day": "天",
-                    "add": "加入"
-                },
-                "cart": {
-                    "title": "购物车",
-                    "empty": "购物车为空。",
-                    "remove": "移除",
-                    "total": "合计",
-                    "checkout": "去结账",
-                    "checkout_pending": "正在创建订单..."
-                },
-                "picker": {
-                    "epay_tab": "支付宝 / 微信",
-                    "trc20_tab": "USDT (TRC20)",
-                    "epay_empty": "未配置易支付通道。",
-                    "trc20_desc": "向下方地址在 TRON 网络转账 USDT,系统自动识别到账。",
-                    "pay_epay": "使用易支付付款",
-                    "pay_trc20": "使用 USDT 付款",
-                    "paying": "跳转中..."
-                },
-                "trc20": {
-                    "title": "USDT (TRC20) 付款",
-                    "loading": "订单加载中...",
-                    "load_error": "订单加载失败",
-                    "countdown": "剩余时间",
-                    "amount_label": "精确金额(按此发送)",
-                    "memo_label": "备注(随交易发送)",
-                    "instructions": "向运营商的 TRC20 地址发送**精确金额**并带上备注。确认后 1 分钟内系统自动匹配。",
-                    "paid_waiting_apply": "已收到付款,正在开通套餐...",
-                    "applied": "套餐已开通,祝使用愉快。",
-                    "terminal_failure": "此订单已失效,请重新下单。",
-                    "copy": "复制",
-                    "copied": "已复制"
-                },
-                "state": {
-                    "created": "已创建",
-                    "pending": "处理中",
-                    "awaiting_payment": "等待付款",
-                    "paid": "已付款",
-                    "applied": "已生效",
-                    "expired": "已过期",
-                    "cancelled": "已取消",
-                    "failed": "失败"
-                },
-                "toast": {
-                    "checkout_success": "订单 #{{id}} 已创建",
-                    "checkout_error": "结账失败"
-                }
-            }
-        },
-        "health": {
-            "title": "运行状态",
-            "subtitle": "面板与自研子系统的实时健康状态。",
-            "refresh": "刷新",
-            "loading": "正在加载健康报告...",
-            "version": "版本",
-            "uptime": "运行时长",
-            "overall": {
-                "green": "正常",
-                "yellow": "降级",
-                "red": "故障",
-                "unknown": "未知"
-            },
-            "subsystem": {
-                "db": "数据库",
-                "billing_scheduler": "计费调度器",
-                "iplimit_scheduler": "IP 限制调度器",
-                "trc20": "USDT (TRC20) 通道",
-                "reality_seeds": "Reality 审计种子",
-                "sni_seeds": "SNI 候选种子"
-            },
-            "column": {
-                "name": "子系统",
-                "status": "状态",
-                "latency": "延迟",
-                "detail": "详情"
-            },
-            "error": {
-                "load_failed": "加载健康报告失败。",
-                "unauthorized": "查看扩展健康报告需要超级管理员权限。"
-            }
-        },
-        "audit": {
-            "title": "审计日志",
-            "loading": "正在加载审计事件...",
-            "error": "加载失败: {{message}}",
-            "empty": "当前筛选条件下无审计事件。",
-            "filter": {
-                "actor": "操作者",
-                "action": "动作",
-                "reset": "重置",
-                "result": {
-                    "label": "结果",
-                    "all": "全部",
-                    "success": "成功",
-                    "denied": "拒绝",
-                    "failure": "失败"
-                }
-            },
-            "action": {
-                "refresh": "刷新"
-            },
-            "actor": {
-                "anonymous": "（匿名）"
-            },
-            "column": {
-                "ts": "时间",
-                "actor": "操作者",
-                "action": "动作",
-                "result": "结果",
-                "status": "HTTP",
-                "ip": "IP"
-            },
-            "pagination": {
-                "prev": "上一页",
-                "next": "下一页"
-            }
-        },
-        "reality": {
-            "title": "Reality 审计",
-            "subtitle": "按 2026 加固清单（冷门 SNI、同 ASN、非标准端口、shortId 合规、短 connIdle）为面板的 Reality 配置打分。",
-            "run": "运行审计",
-            "rerun": "重新运行审计",
-            "running": "审计运行中...",
-            "empty": "点击「运行审计」对当前面板的 Reality 配置打分。",
-            "no_targets": "面板数据库中没有 Reality 入站。",
-            "summary": {
-                "total": "总计",
-                "green": "绿",
-                "yellow": "黄",
-                "red": "红",
-                "worst": "最低分",
-                "audited_at": "审计时间"
-            },
-            "score": {
-                "green": "绿",
-                "yellow": "黄",
-                "red": "红"
-            },
-            "column": {
-                "host": "主机",
-                "sni": "SNI",
-                "port": "端口",
-                "score": "得分",
-                "grade": "等级",
-                "findings": "问题"
-            },
-            "check": {
-                "sni_coldness": "SNI 冷门度",
-                "asn_match": "ASN 同质性",
-                "port_canonical": "端口非标准性",
-                "shortid_compliance": "shortId 合规",
-                "timeout_config": "connIdle / 超时"
-            },
-            "finding": {
-                "remediation": "修复",
-                "empty": "此目标无发现项。"
-            },
-            "target": {
-                "expand": "展开发现项",
-                "collapse": "折叠发现项"
-            },
-            "error": {
-                "unauthorized": "运行 Reality 审计需要超级管理员权限。",
-                "timeout": "审计超时（可能 ASN WHOIS 查询缓慢）。请重试，或省略 ASN 以跳过 ASN 校验。",
-                "failed": "Reality 审计失败。请查看面板日志获取详情。"
-            }
+    "settings": {
+      "subscription-settings": {
+        "template-on-acceptance": "接受时的模板",
+        "placeholder-remark": "备注占位符",
+        "placeholder-if-disabled": "禁用时的占位符",
+        "shuffle-configs": "随机配置",
+        "url-prefix": "URL前缀",
+        "profile-title": "配置文件标题",
+        "support-link": "支持链接",
+        "update-interval": "更新间隔",
+        "add-rule": "添加规则",
+        "reset-local-changes": "重置本地更改",
+        "title": "订阅",
+        "description": "管理和自定义订阅设置，包含可调整的规则和更新选项。",
+        "subscription-title": "订阅规则",
+        "subscription-desc": "按优先级添加订阅规则。",
+        "alert": {
+          "title": "无规则",
+          "desc": "未定义订阅规则"
         }
+      },
+      "certificate": {
+        "copy": "复制证书",
+        "error": "证书不可用",
+        "copied": "证书已复制"
+      },
+      "subtitle": "管理面板配置与系统行为。",
+      "section": {
+        "general": "常规",
+        "general.sub": "订阅规则、URL 前缀与更新间隔。",
+        "reality": "Reality",
+        "reality.sub": "健康探测计划与审计日志保留策略。",
+        "notifications": "邮件 / 通知",
+        "notifications.sub": "SMTP 中继、Telegram 机器人令牌与告警阈值。",
+        "maintenance": "维护",
+        "maintenance.sub": "TLS 证书与数据库维护操作。"
+      },
+      "reality": {
+        "placeholder": "Reality 探测间隔与审计保留设置将在此显示（后端 P2）。"
+      },
+      "notifications": {
+        "placeholder": "SMTP 与 Telegram 通知配置将在此显示（后端 P2）。"
+      }
     },
-    "events": {
-        "delete": {
-            "error": "删除{{name}}失败",
-            "success": {
-                "title": "{{name}}已成功删除",
-                "desc": ""
-            }
+    "nodes": {
+      "nodes-usage-widget": {
+        "title": "节点流量使用",
+        "desc": "该节点的总数据流量使用情况"
+      },
+      "settings": {
+        "no-backend-alert": {
+          "title": "此节点未配置后端",
+          "desc": "请采取必要措施为此节点配置后端。"
         },
-        "create": {
-            "error": "创建{{name}}失败",
-            "success": {
-                "title": "{{name}}已成功创建",
-                "desc": ""
-            }
+        "detail": "详情"
+      },
+      "dialogs": {
+        "creation": {
+          "title": "添加节点"
         },
-        "update": {
-            "error": "更新{{name}}失败",
-            "success": {
-                "title": "{{name}}已成功更新",
-                "desc": ""
-            }
-        },
-        "user_revoke": {
-            "error": "取消{{name}}的订阅失败",
-            "success": {
-                "title": "{{name}}已成功创建",
-                "desc": ""
-            }
-        },
-        "user_reset": {
-            "error": "重置{{name}}的数据使用量失败",
-            "success": {
-                "title": "{{name}}的数据使用量已成功重置",
-                "desc": ""
-            }
-        },
-        "user_status": {
-            "error": "切换{{name}}的激活状态失败",
-            "success": {
-                "title": "{{name}}的激活状态已成功更新",
-                "desc": ""
-            }
+        "edition": {
+          "title": "编辑节点"
         }
+      },
+      "usage_coefficient": "使用系数",
+      "connection_backend": "连接后端",
+      "connection_backend_desc": "用于远程连接",
+      "certificate-alert": {
+        "title": "配置节点证书",
+        "desc": "如果您希望配置节点证书，请查看设置页面。",
+        "click": "点击此处"
+      },
+      "add": "新建节点",
+      "col": {
+        "hostname": "主机名",
+        "latency": "延迟",
+        "load": "负载",
+        "mult": "倍率",
+        "protocol": "协议",
+        "region": "地区"
+      },
+      "empty": "当前筛选条件下没有节点。",
+      "filter": {
+        "all": "全部"
+      },
+      "premium": "高级",
+      "sub": "承载数据面的 Marznode VPS 实例。",
+      "sync": "同步"
     },
-    "delete-confirmation": {
-        "title": "您确定要执行此操作吗？",
-        "desc": "此操作不可撤销。"
-    },
-    "table": {
-        "no-result-found": "未找到结果。",
-        "row-per-page": "每页行数",
-        "no-result": "无结果",
-        "selected": "已选择",
-        "toggle-column": "切换列",
-        "filter-placeholder": "过滤{{name}}"
-    },
-    "nilou": {
-        "overview": {
-            "welcome": "欢迎回来",
-            "sub": "{{users}} 用户 · {{active}} 活跃",
-            "traffic_chart_title": "流量，过去 14 天",
-            "traffic_chart_sub": "上传 + 下载，每日合计（GB）",
-            "chart_loading": "加载流量数据中…",
-            "capacity_title": "容量",
-            "capacity_sub": "活跃 / 总用户比率",
-            "capacity_ring_sub": "{{total}} 中 {{active}} 活跃",
-            "uptime": "运行时间",
-            "recent_activity": "最近活动",
-            "view_all": "查看全部 →",
-            "no_activity": "暂无最近活动",
-            "quick_links": "快捷入口"
+    "services": {
+      "dialogs": {
+        "creation": {
+          "title": "创建服务"
         },
-        "kpi": {
-            "total_users": "总用户数",
-            "all_accounts": "全部账户",
-            "active_users": "活跃用户",
-            "last_24h": "过去 24 小时",
-            "online_nodes": "在线节点",
-            "currently_up": "当前在线",
-            "health_score": "平均健康分",
-            "reality_grade": "Reality 评级",
-            "health_na": "请检查 /health"
-        },
-        "health": {
-            "kpi": {
-                "overall": "综合评分",
-                "online": "在线子系统",
-                "degraded": "降级",
-                "degraded_sub": "部分受损",
-                "last_check": "最后检查"
-            },
-            "subsystems_heading": "子系统状态",
-            "subsystems_down": "个子系统当前已下线，请立即检查面板日志。",
-            "no_subsystems": "暂无子系统数据 — 后端健康探测可能尚未运行。",
-            "last_checked": "最后检查"
+        "edition": {
+          "title": "编辑服务"
         }
+      },
+      "add": "新建服务",
+      "kpi": {
+        "active": "活跃",
+        "total": "服务总数"
+      }
     },
-    "filter": "筛选",
-    "total": "总计"
+    "users": {
+      "created_at": "创建日期",
+      "no_use": "未使用",
+      "data_limit_reached": "已达到数据限制",
+      "sub_updated_at": "订阅最后更新",
+      "sub_last_user_agent": "最后用户代理",
+      "traffic_reset_at": "最后流量重置",
+      "lifetime_used_traffic": "终身使用流量",
+      "note-placeholder": "用户附加信息",
+      "traffic": "流量",
+      "used_traffic": "已使用流量",
+      "data_limit_reset_strategy": "数据重置周期",
+      "online_at": "最后使用时间",
+      "expire_date": "到期日期",
+      "unlimited": "无限制",
+      "never": "永不",
+      "data_limit_method": "数据限制",
+      "fixed_date": "固定日期",
+      "expire_method": "到期方式",
+      "on_first_use": "首次使用时",
+      "reset_usage": "重置使用量",
+      "revoke_subscription": "取消订阅",
+      "usage_duration": "使用时长",
+      "nodes-usage": "节点使用",
+      "settings": {
+        "subscription_link": {
+          "copied": "订阅链接已复制",
+          "copy": "订阅链接",
+          "error": "无法复制订阅链接"
+        }
+      },
+      "services-alert": {
+        "title": "未找到服务",
+        "desc": "请确保创建服务以启用用户连接入站。",
+        "click": "点击此处"
+      },
+      "dialogs": {
+        "edition": {
+          "title": "编辑用户"
+        }
+      },
+      "add_user": "新建用户",
+      "expiring_week": "本周到期",
+      "over_quota": "超出配额"
+    },
+    "admins": {
+      "disable_users": "禁用用户",
+      "enable_users": "启用用户",
+      "permission": "权限",
+      "modify-users-access": "修改用户访问",
+      "subscription-url-prefix": "订阅URL前缀",
+      "sudo-privilage": "超级管理员权限",
+      "all-services-access": "访问所有服务",
+      "users-data-usage": "用户数据使用量",
+      "create_admin": "新建管理员",
+      "enabled": "已启用",
+      "sudo": "超级管理员",
+      "total": "管理员总数"
+    },
+    "hosts": {
+      "xmux-settings": "Xmux设置",
+      "split-http-settings": "分拆HTTP设置",
+      "early-data": "早期数据",
+      "http_headers": "HTTP头部",
+      "no-http-headers": "无HTTP头部",
+      "mux-settings": "多路复用设置",
+      "dns-servers": "DNS服务器",
+      "obfuscation-password": "混淆密码",
+      "server-public-key": "服务器公钥",
+      "tls-config": "TLS配置",
+      "network-settings": "网络设置",
+      "security-settings": "安全设置",
+      "allowed-ips": "允许的IP地址",
+      "allowed-ips-placeholder": "127.0.0.1,...",
+      "camouflage-settings": "伪装设置",
+      "fragment": {
+        "interval": "间隔",
+        "length": "长度",
+        "packets": "数据包",
+        "length-error": "长度不能超过32个字符，且必须为数字-数字格式",
+        "interval-error": "间隔不能超过32个字符，且必须为数字-数字格式",
+        "packets-error": "数据包不能超过32个字符，且必须为数字-数字格式或tlshello"
+      },
+      "mux": {
+        "title": "连接多路复用",
+        "desc": "目前由v2rayng支持，使用自定义配置时"
+      },
+      "no-inbound-selection-alert": {
+        "title": "未选择入站",
+        "desc": "必须选择入站才能添加主机。"
+      },
+      "allowinsecure": "允许不安全连接",
+      "dialogs": {
+        "edition": {
+          "title": "编辑主机"
+        },
+        "creation": {
+          "title": "添加主机"
+        },
+        "mutation": {
+          "allowinsecure": {
+            "alert": "出于安全考虑，不建议启用允许不安全连接"
+          }
+        }
+      },
+      "kpi": {
+        "active": "活跃",
+        "disabled": "已禁用",
+        "total": "主机总数"
+      }
+    },
+    "billing": {
+      "plans": {
+        "title": "套餐",
+        "subtitle": "你卖给用户的产品。fixed = GB+天数的打包;flexible = 按单位计价的加购。",
+        "empty": "还没有套餐。点 '新建套餐' 配置第一个产品。",
+        "load_error": "加载套餐失败",
+        "create_button": "新建套餐",
+        "col": {
+          "code": "代号",
+          "name": "名称",
+          "kind": "类型",
+          "shape": "形态",
+          "price": "价格",
+          "enabled": "状态"
+        },
+        "status": {
+          "on": "开",
+          "off": "关"
+        },
+        "kind": {
+          "fixed": "固定(GB + 天数 打包)",
+          "flexible_traffic": "按 GB 加购",
+          "flexible_duration": "按天加购",
+          "fixed_short": "固定",
+          "flexible_traffic_short": "流量加购",
+          "flexible_duration_short": "时长加购"
+        },
+        "field": {
+          "operator_code": "运营代号",
+          "operator_code_lock": "创建后不可改。",
+          "display_name_en": "显示名(英)",
+          "kind": "类型",
+          "kind_lock": "创建后不可改。",
+          "data_limit_gb": "流量上限(GB)",
+          "duration_days": "时长(天)",
+          "price_cny": "价格(元)",
+          "enabled": "启用"
+        },
+        "dialog": {
+          "create_title": "新建套餐",
+          "edit_title": "编辑套餐",
+          "desc": "固定套餐包含 GB + 天数;按量套餐按单位(GB 或天)定价。",
+          "saving": "保存中..."
+        },
+        "toast": {
+          "create_success": "套餐 {{code}} 已创建",
+          "create_error": "创建失败:{{code}}",
+          "update_success": "套餐 {{code}} 已更新",
+          "update_error": "更新失败"
+        }
+      },
+      "channels": {
+        "title": "支付通道",
+        "subtitle": "易支付码商聚合。多个通道同时启用 = 故障切换。",
+        "empty": "还没配通道。点 '新建通道' 添加第一家码商。",
+        "load_error": "加载通道失败",
+        "create_button": "新建通道",
+        "col": {
+          "code": "代号",
+          "name": "名称",
+          "merchant_id": "商户 ID",
+          "priority": "优先级",
+          "enabled": "状态"
+        },
+        "status": {
+          "on": "开",
+          "off": "关"
+        },
+        "field": {
+          "channel_code": "通道代号",
+          "channel_code_lock": "创建后不可改。",
+          "display_name": "显示名",
+          "gateway_url": "网关 URL",
+          "merchant_id": "商户 ID",
+          "priority": "优先级",
+          "secret_key": "密钥",
+          "secret_key_rotate_placeholder": "留空保持当前密钥",
+          "secret_key_rotate_hint": "填入新值即轮换密钥;留空保持现有密钥不变。",
+          "enabled": "启用"
+        },
+        "dialog": {
+          "create_title": "新建支付通道",
+          "edit_title": "编辑支付通道",
+          "desc": "配置一家易支付码商。多通道并行运行;某一家挂了禁用它,下一家自动接管。",
+          "saving": "保存中..."
+        },
+        "toast": {
+          "create_success": "通道 {{code}} 已创建",
+          "create_error": "创建失败:{{code}}",
+          "update_success": "通道 {{code}} 已更新",
+          "update_error": "更新失败"
+        }
+      },
+      "invoices": {
+        "title": "订单",
+        "subtitle": "用户订单与各自走过的状态机路径。",
+        "empty": "还没订单。等 A.4 上线后,用户下单会自动生成。",
+        "load_error": "加载订单失败",
+        "filter": {
+          "state": "状态",
+          "state_any": "全部状态",
+          "user_id": "用户 ID"
+        },
+        "col": {
+          "id": "ID",
+          "user_id": "用户",
+          "state": "状态",
+          "provider": "通道",
+          "total": "金额",
+          "created_at": "创建时间"
+        },
+        "detail": {
+          "title": "订单",
+          "desc": "订单摘要、明细、审计日志。非终态时,底部有操作按钮。",
+          "load_error": "加载订单失败",
+          "user_id": "用户",
+          "state": "状态",
+          "provider": "通道",
+          "total": "金额",
+          "created_at": "创建时间",
+          "expires_at": "过期时间",
+          "paid_at": "支付时间",
+          "applied_at": "生效时间",
+          "trc20_memo": "TRC20 备注",
+          "trc20_amount": "预期 TRC20 金额",
+          "lines_title": "明细",
+          "lines_empty": "无明细。",
+          "events_title": "审计日志",
+          "events_empty": "无事件。"
+        },
+        "action": {
+          "apply_manual": "手工生效",
+          "applying": "生效中...",
+          "cancel": "取消订单",
+          "cancelling": "取消中...",
+          "note_label": "管理员备注",
+          "note_placeholder": "VIP 赠送;已另路退款;等等。",
+          "note_hint": "必填。原样写入审计日志供事后追查。"
+        },
+        "toast": {
+          "apply_success": "订单 #{{id}} 已生效",
+          "apply_error": "生效失败",
+          "cancel_success": "订单 #{{id}} 已取消",
+          "cancel_error": "取消失败"
+        }
+      },
+      "purchase": {
+        "title": "客户结账",
+        "plans_title": "套餐",
+        "pay_title": "支付",
+        "user_section_title": "客户",
+        "empty_plans": "暂无可购买套餐,请稍后再看。",
+        "load_error": "套餐或支付通道加载失败。",
+        "user_selector": {
+          "label": "选择客户(VPN 用户)",
+          "placeholder": "输入用户名搜索...",
+          "searching": "搜索中...",
+          "no_results": "未找到匹配的用户。",
+          "clear": "清除",
+          "selected_hint": "已选: {{username}} (#{{id}})",
+          "required_before_pay": "请先在上方选择客户,再继续支付。"
+        },
+        "plan_card": {
+          "add_to_cart": "加入购物车",
+          "already_added": "已加入"
+        },
+        "addon": {
+          "title": "加量选项",
+          "subtitle": "在主套餐之上追加流量或天数。",
+          "quantity": "数量",
+          "unit_gb": "GB",
+          "unit_day": "天",
+          "add": "加入"
+        },
+        "cart": {
+          "title": "购物车",
+          "empty": "购物车为空。",
+          "remove": "移除",
+          "total": "合计",
+          "checkout": "去结账",
+          "checkout_pending": "正在创建订单..."
+        },
+        "picker": {
+          "epay_tab": "支付宝 / 微信",
+          "trc20_tab": "USDT (TRC20)",
+          "epay_empty": "未配置易支付通道。",
+          "trc20_desc": "向下方地址在 TRON 网络转账 USDT,系统自动识别到账。",
+          "pay_epay": "使用易支付付款",
+          "pay_trc20": "使用 USDT 付款",
+          "paying": "跳转中..."
+        },
+        "trc20": {
+          "title": "USDT (TRC20) 付款",
+          "loading": "订单加载中...",
+          "load_error": "订单加载失败",
+          "countdown": "剩余时间",
+          "amount_label": "精确金额(按此发送)",
+          "memo_label": "备注(随交易发送)",
+          "instructions": "向运营商的 TRC20 地址发送**精确金额**并带上备注。确认后 1 分钟内系统自动匹配。",
+          "paid_waiting_apply": "已收到付款,正在开通套餐...",
+          "applied": "套餐已开通,祝使用愉快。",
+          "terminal_failure": "此订单已失效,请重新下单。",
+          "copy": "复制",
+          "copied": "已复制"
+        },
+        "state": {
+          "created": "已创建",
+          "pending": "处理中",
+          "awaiting_payment": "等待付款",
+          "paid": "已付款",
+          "applied": "已生效",
+          "expired": "已过期",
+          "cancelled": "已取消",
+          "failed": "失败"
+        },
+        "toast": {
+          "checkout_success": "订单 #{{id}} 已创建",
+          "checkout_error": "结账失败"
+        }
+      }
+    },
+    "health": {
+      "title": "运行状态",
+      "subtitle": "面板与自研子系统的实时健康状态。",
+      "refresh": "刷新",
+      "loading": "正在加载健康报告...",
+      "version": "版本",
+      "uptime": "运行时长",
+      "overall": {
+        "green": "正常",
+        "yellow": "降级",
+        "red": "故障",
+        "unknown": "未知"
+      },
+      "subsystem": {
+        "db": "数据库",
+        "billing_scheduler": "计费调度器",
+        "iplimit_scheduler": "IP 限制调度器",
+        "trc20": "USDT (TRC20) 通道",
+        "reality_seeds": "Reality 审计种子",
+        "sni_seeds": "SNI 候选种子"
+      },
+      "column": {
+        "name": "子系统",
+        "status": "状态",
+        "latency": "延迟",
+        "detail": "详情"
+      },
+      "error": {
+        "load_failed": "加载健康报告失败。",
+        "unauthorized": "查看扩展健康报告需要超级管理员权限。"
+      }
+    },
+    "audit": {
+      "title": "审计日志",
+      "loading": "正在加载审计事件...",
+      "error": "加载失败: {{message}}",
+      "empty": "当前筛选条件下无审计事件。",
+      "filter": {
+        "actor": "操作者",
+        "action": "动作",
+        "reset": "重置",
+        "result": {
+          "label": "结果",
+          "all": "全部",
+          "success": "成功",
+          "denied": "拒绝",
+          "failure": "失败"
+        }
+      },
+      "action": {
+        "refresh": "刷新"
+      },
+      "actor": {
+        "anonymous": "（匿名）"
+      },
+      "column": {
+        "ts": "时间",
+        "actor": "操作者",
+        "action": "动作",
+        "result": "结果",
+        "status": "HTTP",
+        "ip": "IP"
+      },
+      "pagination": {
+        "prev": "上一页",
+        "next": "下一页"
+      }
+    },
+    "reality": {
+      "title": "Reality 审计",
+      "subtitle": "按 2026 加固清单（冷门 SNI、同 ASN、非标准端口、shortId 合规、短 connIdle）为面板的 Reality 配置打分。",
+      "run": "运行审计",
+      "rerun": "重新运行审计",
+      "running": "审计运行中...",
+      "empty": "点击「运行审计」对当前面板的 Reality 配置打分。",
+      "no_targets": "面板数据库中没有 Reality 入站。",
+      "summary": {
+        "total": "总计",
+        "green": "绿",
+        "yellow": "黄",
+        "red": "红",
+        "worst": "最低分",
+        "audited_at": "审计时间"
+      },
+      "score": {
+        "green": "绿",
+        "yellow": "黄",
+        "red": "红"
+      },
+      "column": {
+        "host": "主机",
+        "sni": "SNI",
+        "port": "端口",
+        "score": "得分",
+        "grade": "等级",
+        "findings": "问题"
+      },
+      "check": {
+        "sni_coldness": "SNI 冷门度",
+        "asn_match": "ASN 同质性",
+        "port_canonical": "端口非标准性",
+        "shortid_compliance": "shortId 合规",
+        "timeout_config": "connIdle / 超时"
+      },
+      "finding": {
+        "remediation": "修复",
+        "empty": "此目标无发现项。"
+      },
+      "target": {
+        "expand": "展开发现项",
+        "collapse": "折叠发现项"
+      },
+      "error": {
+        "unauthorized": "运行 Reality 审计需要超级管理员权限。",
+        "timeout": "审计超时（可能 ASN WHOIS 查询缓慢）。请重试，或省略 ASN 以跳过 ASN 校验。",
+        "failed": "Reality 审计失败。请查看面板日志获取详情。"
+      }
+    },
+    "login": {
+      "title": "欢迎回来",
+      "sub": "运营商访问"
+    }
+  },
+  "events": {
+    "delete": {
+      "error": "删除{{name}}失败",
+      "success": {
+        "title": "{{name}}已成功删除",
+        "desc": ""
+      }
+    },
+    "create": {
+      "error": "创建{{name}}失败",
+      "success": {
+        "title": "{{name}}已成功创建",
+        "desc": ""
+      }
+    },
+    "update": {
+      "error": "更新{{name}}失败",
+      "success": {
+        "title": "{{name}}已成功更新",
+        "desc": ""
+      }
+    },
+    "user_revoke": {
+      "error": "取消{{name}}的订阅失败",
+      "success": {
+        "title": "{{name}}已成功创建",
+        "desc": ""
+      }
+    },
+    "user_reset": {
+      "error": "重置{{name}}的数据使用量失败",
+      "success": {
+        "title": "{{name}}的数据使用量已成功重置",
+        "desc": ""
+      }
+    },
+    "user_status": {
+      "error": "切换{{name}}的激活状态失败",
+      "success": {
+        "title": "{{name}}的激活状态已成功更新",
+        "desc": ""
+      }
+    }
+  },
+  "delete-confirmation": {
+    "title": "您确定要执行此操作吗？",
+    "desc": "此操作不可撤销。"
+  },
+  "table": {
+    "no-result-found": "未找到结果。",
+    "row-per-page": "每页行数",
+    "no-result": "无结果",
+    "selected": "已选择",
+    "toggle-column": "切换列",
+    "filter-placeholder": "过滤{{name}}"
+  },
+  "nilou": {
+    "overview": {
+      "welcome": "欢迎回来",
+      "sub": "{{users}} 用户 · {{active}} 活跃",
+      "traffic_chart_title": "流量，过去 14 天",
+      "traffic_chart_sub": "上传 + 下载，每日合计（GB）",
+      "chart_loading": "加载流量数据中…",
+      "capacity_title": "容量",
+      "capacity_sub": "活跃 / 总用户比率",
+      "capacity_ring_sub": "{{total}} 中 {{active}} 活跃",
+      "uptime": "运行时间",
+      "recent_activity": "最近活动",
+      "view_all": "查看全部 →",
+      "no_activity": "暂无最近活动",
+      "quick_links": "快捷入口"
+    },
+    "kpi": {
+      "total_users": "总用户数",
+      "all_accounts": "全部账户",
+      "active_users": "活跃用户",
+      "last_24h": "过去 24 小时",
+      "online_nodes": "在线节点",
+      "currently_up": "当前在线",
+      "health_score": "平均健康分",
+      "reality_grade": "Reality 评级",
+      "health_na": "请检查 /health"
+    },
+    "health": {
+      "kpi": {
+        "overall": "综合评分",
+        "online": "在线子系统",
+        "degraded": "降级",
+        "degraded_sub": "部分受损",
+        "last_check": "最后检查"
+      },
+      "subsystems_heading": "子系统状态",
+      "subsystems_down": "个子系统当前已下线，请立即检查面板日志。",
+      "no_subsystems": "暂无子系统数据 — 后端健康探测可能尚未运行。",
+      "last_checked": "最后检查"
+    }
+  },
+  "filter": "筛选",
+  "total": "总计"
 }
