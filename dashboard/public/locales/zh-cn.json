@@ -563,7 +563,13 @@
             "pagination": {
                 "prev": "上一页",
                 "next": "下一页"
-            }
+            },
+            "kpi": {
+                "total": "总事件数",
+                "failures": "失败（24 小时）",
+                "today": "今日"
+            },
+            "sub": "所有管理员操作"
         },
         "reality": {
             "title": "Reality 审计",
@@ -613,6 +619,9 @@
                 "unauthorized": "运行 Reality 审计需要超级管理员权限。",
                 "timeout": "审计超时（可能 ASN WHOIS 查询缓慢）。请重试，或省略 ASN 以跳过 ASN 校验。",
                 "failed": "Reality 审计失败。请查看面板日志获取详情。"
+            },
+            "kpi": {
+                "sub": "每目标发现分数"
             }
         }
     },

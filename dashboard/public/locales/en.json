@@ -684,7 +684,13 @@
             "pagination": {
                 "prev": "Previous",
                 "next": "Next"
-            }
+            },
+            "kpi": {
+                "total": "Total events",
+                "failures": "Failures (24 h)",
+                "today": "Today"
+            },
+            "sub": "All admin operations"
         },
         "reality": {
             "title": "Reality audit",
@@ -734,6 +740,9 @@
                 "unauthorized": "You must be a sudo admin to run a Reality audit.",
                 "timeout": "Audit timed out (likely a slow ASN WHOIS lookup). Try again, or omit the ASN to skip ASN matching.",
                 "failed": "Reality audit failed. See panel logs for details."
+            },
+            "kpi": {
+                "sub": "Per-target finding scores"
             }
         }
     },
