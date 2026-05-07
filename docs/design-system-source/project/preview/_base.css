@@ -1,0 +1,39 @@
+@import url('../colors_and_type.css');
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.card {
+  width: 700px;
+  padding: 24px;
+  box-sizing: border-box;
+  background: var(--surface);
+}
+.row { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
+.col { display: flex; flex-direction: column; gap: 8px; }
+.swatch {
+  width: 100%;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 10px;
+  box-sizing: border-box;
+  font-family: var(--font-body);
+  color: var(--text-on-dark);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.swatch .name { font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 10px; }
+.swatch .hex { font-family: var(--font-mono); opacity: 0.85; }
+.tile-h { height: 78px; }
+.tile-h-sm { height: 56px; }
+.label-light { color: var(--text-primary); }
+.label-light .hex { color: var(--text-secondary); }

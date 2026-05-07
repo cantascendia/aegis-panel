@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nilou Network — Managed open-source proxy infrastructure</title>
+  <link rel="icon" type="image/png" href="../assets/project-icon.png" />
+  <link rel="stylesheet" href="../colors_and_type.css" />
+  <style>
+    html, body { margin: 0; padding: 0; background: var(--surface); color: var(--text-primary); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { text-decoration: none; }
+    button { font-family: var(--font-body); }
+    input, select, textarea { font-family: var(--font-body); }
+    @keyframes lotus-breathe { 0%, 100% { transform: scale(1); opacity: 0.92; } 50% { transform: scale(1.03); opacity: 1; } }
+    @keyframes ripple { 0% { transform: scale(0.6); opacity: 0.55; } 100% { transform: scale(2.6); opacity: 0; } }
+    /* Hide scroll thumb in webkit while keeping scroll */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(30,58,95,0.18); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(30,58,95,0.32); }
+    ::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- Order matters: atoms (Router, Btn, Icon) → Marketing chrome → Sections → Pages → Panel shell → Panel pages → App -->
+  <script type="text/babel" src="lib/Atoms.jsx" data-screen-label="lib"></script>
+  <script type="text/babel" src="lib/Marketing.jsx"></script>
+  <script type="text/babel" src="lib/MarketingSections.jsx"></script>
+  <script type="text/babel" src="lib/MarketingPages.jsx"></script>
+  <script type="text/babel" src="lib/AuthPages.jsx"></script>
+  <script type="text/babel" src="lib/PanelShell.jsx"></script>
+  <script type="text/babel" src="lib/PanelPages1.jsx"></script>
+  <script type="text/babel" src="lib/PanelPages2.jsx"></script>
+
+  <script type="text/babel" data-presets="env,react">
+    const { useEffect } = React;
+
+    // -------- App router --------
+    const App = () => {
+      const { path } = useRoute();
+
+      // Marketing pages get the topbar/footer chrome.
+      // Panel/auth pages render their own chrome.
+      const route = (() => {
+        if (path === '/' || path === '') return { kind: 'marketing', label: '01 Home', el: <HomePage /> };
+        if (path === '/features') return { kind: 'marketing', label: '02 Features', el: <FeaturesPage /> };
+        if (path === '/pricing') return { kind: 'marketing', label: '03 Pricing', el: <PricingPage /> };
+        if (path === '/faq') return { kind: 'marketing', label: '04 FAQ', el: <FAQPage /> };
+        if (path === '/about') return { kind: 'marketing', label: '05 About', el: <AboutPage /> };
+        if (path === '/contact') return { kind: 'marketing', label: '06 Contact', el: <ContactPage /> };
+        if (path === '/status') return { kind: 'marketing', label: '07 Status', el: <StatusPage /> };
+        if (path === '/legal') return { kind: 'marketing', label: '08 Legal', el: <LegalPage /> };
+
+        if (path === '/login') return { kind: 'auth', label: '09 Sign in', el: <LoginPage /> };
+        if (path === '/signup') return { kind: 'auth', label: '10 Sign up', el: <SignupPage /> };
+
+        if (path === '/dashboard' || path === '/panel' || path === '/panel/') return { kind: 'panel', label: '11 Dashboard', el: <DashboardPage /> };
+        if (path === '/panel/nodes') return { kind: 'panel', label: '12 Nodes', el: <NodesPage /> };
+        if (path === '/panel/traffic') return { kind: 'panel', label: '13 Traffic', el: <TrafficPage /> };
+        if (path === '/panel/plans') return { kind: 'panel', label: '14 Plans', el: <PlansPage /> };
+        if (path === '/panel/billing') return { kind: 'panel', label: '15 Billing', el: <BillingPage /> };
+        if (path === '/panel/tickets') return { kind: 'panel', label: '16 Tickets', el: <TicketsPage /> };
+        if (path === '/panel/invite') return { kind: 'panel', label: '17 Invite', el: <InvitePage /> };
+        if (path === '/panel/account') return { kind: 'panel', label: '18 Account', el: <AccountPage /> };
+        if (path === '/panel/docs') return { kind: 'panel', label: '19 Docs', el: <DocsPage /> };
+
+        return { kind: 'marketing', label: '404', el: (
+          <Section pad="120px 0 160px">
+            <div style={{ textAlign: 'center', maxWidth: 540, margin: '0 auto' }}>
+              <Eyebrow>404 · path not found</Eyebrow>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '3rem', color: 'var(--brand-navy)', margin: '0 0 16px' }}>
+                Off the lotus path.
+              </h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '1.04rem', marginBottom: 28 }}>
+                The page <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-teal)' }}>{path}</code> doesn't exist. Maybe try the home page or the dashboard.
+              </p>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                <Btn variant="primary" to="/">Home</Btn>
+                <Btn variant="secondary" to="/dashboard">Dashboard</Btn>
+              </div>
+            </div>
+          </Section>
+        ) };
+      })();
+
+      // Update document title
+      useEffect(() => {
+        document.title = `${route.label.replace(/^\d+\s+/, '')} — Nilou Network`;
+      }, [route.label]);
+
+      return (
+        <div data-screen-label={route.label}>
+          {route.kind === 'marketing' && <>
+            <MarketingTopbar />
+            {route.el}
+            <MarketingFooter />
+          </>}
+          {route.kind === 'auth' && route.el}
+          {route.kind === 'panel' && route.el}
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      <Router><App /></Router>
+    );
+  </script>
+</body>
+</html>
