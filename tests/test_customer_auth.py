@@ -39,14 +39,18 @@ from app.utils.customer_auth import (
 
 
 def test_parse_sub_url_full_url() -> None:
-    p = parse_sub_url("https://nilou.cc/sub/cust_abc123/0123456789abcdef0123456789abcdef")
+    p = parse_sub_url(
+        "https://nilou.cc/sub/cust_abc123/0123456789abcdef0123456789abcdef"
+    )
     assert p is not None
     assert p.username == "cust_abc123"
     assert p.key == "0123456789abcdef0123456789abcdef"
 
 
 def test_parse_sub_url_with_format_suffix() -> None:
-    p = parse_sub_url("https://nilou.cc/sub/cust_abc/0123456789abcdef0123456789abcdef/v2ray-json")
+    p = parse_sub_url(
+        "https://nilou.cc/sub/cust_abc/0123456789abcdef0123456789abcdef/v2ray-json"
+    )
     assert p is not None
     assert p.username == "cust_abc"
     assert p.key == "0123456789abcdef0123456789abcdef"
@@ -65,7 +69,9 @@ def test_parse_sub_url_relative() -> None:
 
 
 def test_parse_sub_url_strips_whitespace() -> None:
-    p = parse_sub_url("   https://nilou.cc/sub/foo/0123456789abcdef0123456789abcdef   \n")
+    p = parse_sub_url(
+        "   https://nilou.cc/sub/foo/0123456789abcdef0123456789abcdef   \n"
+    )
     assert p is not None
     assert p.username == "foo"
 
