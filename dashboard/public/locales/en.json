@@ -844,6 +844,13 @@
             "subsystems_down": "subsystem(s) are currently DOWN. Check panel logs immediately.",
             "no_subsystems": "No subsystem data available — backend health probes may not have run yet.",
             "last_checked": "Last checked"
+        },
+        "billing": {
+            "kpi": {
+                "mrr": "MRR (30d)",
+                "unpaid": "Unpaid",
+                "paid_total": "Paid total"
+            }
         }
     },
     "filter": "Filter",

@@ -711,6 +711,13 @@
             "subsystems_down": "个子系统当前已下线，请立即检查面板日志。",
             "no_subsystems": "暂无子系统数据 — 后端健康探测可能尚未运行。",
             "last_checked": "最后检查"
+        },
+        "billing": {
+            "kpi": {
+                "mrr": "月收入(30天)",
+                "unpaid": "待付款",
+                "paid_total": "已付总计"
+            }
         }
     },
     "filter": "筛选",
