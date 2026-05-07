@@ -106,25 +106,13 @@
             },
             "subtitle": "管理面板配置与系统行为。",
             "section": {
-                "general": {
-                    "sub": "订阅规则、URL 前缀与更新间隔。"
-                },
-                "reality": {
-                    "sub": "健康探测计划与审计日志保留策略。"
-                },
-                "notifications": {
-                    "sub": "SMTP 中继、Telegram 机器人令牌与告警阈值。"
-                },
-                "maintenance": {
-                    "sub": "TLS 证书与数据库维护操作。"
-                }
+                "general": {},
+                "reality": {},
+                "notifications": {},
+                "maintenance": {}
             },
-            "reality": {
-                "placeholder": "Reality 探测间隔与审计保留设置将在此显示（后端 P2）。"
-            },
-            "notifications": {
-                "placeholder": "SMTP 与 Telegram 通知配置将在此显示（后端 P2）。"
-            }
+            "reality": {},
+            "notifications": {}
         },
         "nodes": {
             "nodes-usage-widget": {
