@@ -19,6 +19,7 @@ from slowapi.errors import RateLimitExceeded
 # Kept around so re-enabling is a one-line change once slowapi ships pure
 # ASGI middleware.
 from slowapi.middleware import SlowAPIMiddleware  # noqa: F401
+from starlette.staticfiles import StaticFiles as _StaticFiles
 
 from app.routes.customer import router as customer_router
 from hardening.health.endpoint import router as health_router
@@ -41,6 +42,47 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
 
 
+class _SPAStaticFiles(_StaticFiles):
+    """StaticFiles subclass that falls back to index.html on 404.
+
+    Required for the customer-portal SPA at /portal/ — without this,
+    typing `https://nilou.cc/portal/login` (a route name the SPA
+    handles client-side) returns 404 from Starlette because no
+    `dist/login` file exists. Returning index.html lets React boot
+    and the in-page router resolve the path.
+
+    Why subclass instead of a separate catch-all route: app.mount()
+    swallows all sub-paths, so adding an exception_handler or
+    @app.get("/portal/{path:path}") doesn't intercept them. Overriding
+    `get_response` is the only hook that runs for already-mounted
+    sub-paths.
+
+    The fallback ONLY fires on 404 (not 403, not 500), and ONLY for
+    GET-shaped lookups (StaticFiles only serves GET/HEAD anyway).
+    Asset 404s (e.g. `/portal/missing-image.png`) will incorrectly
+    return index.html — acceptable trade-off because the alternative
+    requires hand-rolling routing + lookup, and the user-visible
+    impact of a broken image asset is the same either way (image
+    fails to render). All real assets ship at `/portal/assets/*` and
+    `/portal/static/*` per Vite's base config; misses there are bugs.
+    """
+
+    async def get_response(self, path: str, scope):
+        # Only fall back for the SPA shell itself, not for assets/.
+        from starlette.exceptions import HTTPException as _HTTPEx
+
+        try:
+            return await super().get_response(path, scope)
+        except _HTTPEx as exc:
+            if exc.status_code != 404:
+                raise
+            # Don't paper over genuine missing assets — only fall back
+            # for routes that *look* like SPA paths (no file extension).
+            if "." in path.rsplit("/", 1)[-1]:
+                raise
+            return await super().get_response("index.html", scope)
+
+
 def _mount_customer_portal(app: FastAPI) -> None:
     """Mount customer-portal SPA at /portal/ + redirect / → /portal/.
 
@@ -58,11 +100,14 @@ def _mount_customer_portal(app: FastAPI) -> None:
     registered route wins in Starlette routing, so the upstream
     3D-scene `home_page()` becomes unreachable. Dashboard is still
     accessible at the randomized `DASHBOARD_PATH`.
+
+    SPA fallback: uses `_SPAStaticFiles` so unknown paths under
+    /portal/ (e.g. /portal/login from the hash router) serve
+    index.html and the in-page router resolves them.
     """
     import os
 
     from starlette.responses import RedirectResponse
-    from starlette.staticfiles import StaticFiles
 
     if not os.path.isdir("customer-portal/dist"):
         return
@@ -73,7 +118,7 @@ def _mount_customer_portal(app: FastAPI) -> None:
 
     app.mount(
         "/portal",
-        StaticFiles(directory="customer-portal/dist", html=True),
+        _SPAStaticFiles(directory="customer-portal/dist", html=True),
         name="customer-portal",
     )
 
