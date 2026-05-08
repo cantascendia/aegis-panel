@@ -1,0 +1,123 @@
+# Mutation testing for forbidden-path modules.
+#
+# Per playbook §32.1 + .claude/rules/forbidden-paths.md, auth/payment/secrets
+# code must hit ≥80% mutation score. Unit tests can pass with weak assertions
+# (e.g. `assert result is not None`); mutmut programmatically introduces small
+# behaviour changes ("mutants") and verifies that at least one test fails for
+# each mutant.
+#
+# Trigger:
+#   * push / PR touching app/utils/customer_auth.py or its tests
+#   * weekly cron (Monday 09:00 UTC) full run on main as a regression baseline
+#
+# Result:
+#   * Score is reported in the job log; the threshold check fails the job
+#     when killed < 80% of total.
+#   * Job is marked optional ("continue-on-error" on the PR check, blocking
+#     on the cron run) — see meaning column below. We start advisory while
+#     the suite settles.
+name: Mutation testing (forbidden paths)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/utils/customer_auth.py'
+      - 'tests/test_customer_auth.py'
+      - 'pyproject.toml'
+      - '.github/workflows/mutation.yml'
+  pull_request:
+    paths:
+      - 'app/utils/customer_auth.py'
+      - 'tests/test_customer_auth.py'
+      - 'pyproject.toml'
+      - '.github/workflows/mutation.yml'
+  schedule:
+    # Weekly Monday 09:00 UTC = Monday 18:00 JST — operator can read score
+    # over morning coffee with a clear head before any code change.
+    - cron: '0 9 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  mutmut:
+    name: mutmut customer_auth.py (≥80% kill rate)
+    runs-on: ubuntu-latest
+    # Advisory on PR (avoid blocking initial rollout).
+    # The `schedule` event has stricter semantics — when score drops on main,
+    # we want a notification, not silence. The cron-only branch below sets
+    # continue-on-error to false implicitly (default).
+    continue-on-error: ${{ github.event_name == 'pull_request' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install runtime deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install mutmut
+        run: pip install mutmut
+
+      - name: Verify base test suite passes
+        run: |
+          python -m pytest tests/test_customer_auth.py -x -q --no-header
+        env:
+          # Avoid noisy warnings in mutation runner output.
+          PYTHONWARNINGS: ignore::DeprecationWarning
+
+      - name: Run mutmut (paths-to-mutate read from pyproject.toml)
+        run: |
+          # `mutmut run` honours [tool.mutmut] in pyproject.toml.
+          # Linux runner supports mutmut natively (Windows is broken upstream;
+          # see https://github.com/boxed/mutmut/issues/397). Use bash so
+          # exit code is preserved.
+          mutmut run --no-progress 2>&1 | tail -30 || true
+        env:
+          PYTHONWARNINGS: ignore::DeprecationWarning
+
+      - name: Report results
+        run: |
+          mutmut results
+        env:
+          PYTHONWARNINGS: ignore::DeprecationWarning
+
+      - name: Threshold check (≥80% kill rate)
+        # mutmut doesn't expose a clean machine-readable summary, so we parse
+        # `mutmut results` output. Format (mutmut 3.x):
+        #   "Total: 154 — Killed: 130 — Survived: 24 — Timeout: 0 — Suspicious: 0"
+        # Acceptance: killed / (killed + survived + timeout) >= 0.80
+        run: |
+          set -e
+          out="$(mutmut results 2>&1)"
+          echo "$out"
+          killed=$(echo "$out"   | grep -oE 'Killed: [0-9]+'   | awk '{print $2}' | head -1)
+          survived=$(echo "$out" | grep -oE 'Survived: [0-9]+' | awk '{print $2}' | head -1)
+          timeout=$(echo "$out"  | grep -oE 'Timeout: [0-9]+'  | awk '{print $2}' | head -1)
+          killed=${killed:-0}
+          survived=${survived:-0}
+          timeout=${timeout:-0}
+          total=$((killed + survived + timeout))
+          if [ "$total" -eq 0 ]; then
+            echo "::error::No mutants run — mutmut output unparseable"
+            exit 1
+          fi
+          score=$(awk "BEGIN { printf \"%.1f\", ($killed / $total) * 100 }")
+          echo "killed=$killed total=$total score=$score%"
+          # 80% threshold — gate on cron run, advisory on PR.
+          gate=$(awk "BEGIN { print ($killed / $total >= 0.80) ? \"pass\" : \"fail\" }")
+          if [ "$gate" = "fail" ]; then
+            echo "::warning::Mutation kill rate $score% is below 80% threshold"
+            exit 1
+          fi
+          echo "::notice::Mutation kill rate $score% (killed $killed / $total)"

@@ -99,3 +99,19 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
+
+[tool.mutmut]
+# Mutation testing for forbidden-path modules (.claude/rules/forbidden-paths.md).
+# Per playbook §32.1, auth/payment/secrets paths must hit ≥80% mutation score.
+#
+# Why: unit tests can pass even with weak assertions ("assert result is not None").
+# Mutmut programmatically mutates `parse_sub_url` etc and checks if any test
+# fails. If a mutant survives, our tests have a blind spot.
+#
+# Run locally:
+#   venv/Scripts/python.exe -m mutmut run
+#   venv/Scripts/python.exe -m mutmut results
+# Goal: killed >= 80% of mutations.
+paths_to_mutate = "app/utils/customer_auth.py"
+runner = "venv/Scripts/python.exe -m pytest tests/test_customer_auth.py -x -q --no-header"
+backup = false
