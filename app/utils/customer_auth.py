@@ -91,7 +91,7 @@ def parse_sub_url(sub_url: str) -> ParsedSubUrl | None:
         return None
 
     # /sub/<username>/<key>[/...optional-suffix]
-    parts = path[len("/sub/"):].split("/")
+    parts = path[len("/sub/") :].split("/")
     if len(parts) < 2:
         return None
     username, key = parts[0], parts[1]
@@ -162,7 +162,9 @@ def get_customer_payload(token: str) -> dict | None:
     created_at = None
     if iat_value is not None:
         try:
-            created_at = datetime.fromtimestamp(iat_value, UTC).replace(tzinfo=None)
+            created_at = datetime.fromtimestamp(iat_value, UTC).replace(
+                tzinfo=None
+            )
         except (ValueError, TypeError, OSError):
             created_at = None
 

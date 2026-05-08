@@ -11,11 +11,21 @@
  * place of customer-scope.
  */
 import type { FC, ReactNode } from 'react';
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Link, Outlet, useRouterState } from '@tanstack/react-router';
-import { Loading, Toaster } from '@marzneshin/common/components';
+import {
+    CommandDialog,
+    CommandEmpty,
+    CommandInput,
+    CommandList,
+    Loading,
+    ScrollArea,
+    Toaster,
+} from '@marzneshin/common/components';
 import { useAuth, Logout } from '@marzneshin/modules/auth';
 import { sidebarItems, sidebarItemsNonSudoAdmin } from '@marzneshin/features/sidebar/items';
+import { CommandItems } from '@marzneshin/features/search-command/command-items';
+import { commandItems } from '@marzneshin/features/search-command/commands';
 import type { SidebarObject } from '@marzneshin/common/components';
 import { LotusMark } from './LotusMark';
 import { NilouIcon } from './NilouIcon';
@@ -166,6 +176,24 @@ interface PanelTopbarProps {
 
 const PanelTopbar: FC<PanelTopbarProps> = ({ adminName, adminInitials }) => {
     const [open, setOpen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const { isSudo } = useAuth();
+
+    // ⌘K / Ctrl+K to open the command palette (codex review #246: the
+    // previous PanelShell rewrite dropped the keyboard listener that
+    // shipped with `features/search-command/CommandBox`, leaving the
+    // search box a dead text input. We re-wire it here.)
+    useEffect(() => {
+        const down = (e: KeyboardEvent) => {
+            if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                setSearchOpen((prev) => !prev);
+            }
+        };
+        document.addEventListener('keydown', down);
+        return () => document.removeEventListener('keydown', down);
+    }, []);
+
     return (
         <header
             style={{
@@ -181,7 +209,10 @@ const PanelTopbar: FC<PanelTopbarProps> = ({ adminName, adminInitials }) => {
                 zIndex: 10,
             }}
         >
-            <div
+            <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                aria-label="Open command palette (Ctrl+K)"
                 style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -193,21 +224,14 @@ const PanelTopbar: FC<PanelTopbarProps> = ({ adminName, adminInitials }) => {
                     background: 'hsl(var(--muted))',
                     borderRadius: 8,
                     border: '1px solid hsl(var(--border) / 0.6)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontFamily: 'inherit',
+                    fontSize: '0.92rem',
                 }}
             >
                 <NilouIcon name="search" size={16} />
-                <input
-                    placeholder="Search users, nodes, invoices…"
-                    style={{
-                        flex: 1,
-                        border: 0,
-                        background: 'transparent',
-                        outline: 'none',
-                        color: 'hsl(var(--foreground))',
-                        fontFamily: 'inherit',
-                        fontSize: '0.92rem',
-                    }}
-                />
+                <span style={{ flex: 1 }}>Search users, nodes, invoices…</span>
                 <kbd
                     style={{
                         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
@@ -221,7 +245,23 @@ const PanelTopbar: FC<PanelTopbarProps> = ({ adminName, adminInitials }) => {
                 >
                     ⌘K
                 </kbd>
-            </div>
+            </button>
+            <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
+                <CommandInput
+                    placeholder="Type a command or search..."
+                    className="focus:ring-0 ring-0 m-1 border-none"
+                />
+                <ScrollArea className="max-h-100">
+                    <CommandList>
+                        <CommandEmpty>No results found.</CommandEmpty>
+                        <CommandItems
+                            items={commandItems}
+                            isSudo={isSudo}
+                            setOpen={setSearchOpen}
+                        />
+                    </CommandList>
+                </ScrollArea>
+            </CommandDialog>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative' }}>
                 <button type="button" style={navIconBtn} aria-label="Notifications">
                     <NilouIcon name="bell" size={18} />

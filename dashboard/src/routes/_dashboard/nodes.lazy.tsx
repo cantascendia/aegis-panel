@@ -155,14 +155,22 @@ const TH_STYLE: React.CSSProperties = {
 
 const FILTER_ALL = 'all';
 
+const PAGE_SIZE = 50;
+
 export const NodesPage: FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate({ from: '/nodes' });
     const [filter, setFilter] = useState<string>(FILTER_ALL);
     const [search, setSearch] = useState('');
+    // Pagination — codex review #246 P3: previous version fetched only
+    // the first page (size 100), making nodes >100 invisible. We now
+    // page through the result set in fixed-size chunks; entity-table's
+    // built-in pagination is preserved at the API level.
+    const [page, setPage] = useState(1);
 
-    const { data } = useNodesQuery({ page: 1, size: 100 });
+    const { data } = useNodesQuery({ page, size: PAGE_SIZE });
     const nodes: NodeType[] = data?.entities ?? [];
+    const pageCount = data?.pageCount ?? 1;
 
     /* Unique status "tags" for filter tabs */
     const statusCounts = nodes.reduce<Record<string, number>>((acc, n) => {
@@ -487,6 +495,65 @@ export const NodesPage: FC = () => {
                         })}
                     </tbody>
                 </table>
+
+                {/* Pagination footer — restored after codex review #246 P3.
+                    Always show the page indicator; disable buttons at extremes.
+                    `pageCount === 0` means no data yet → show "Page 1 of 1". */}
+                {pageCount > 0 && (
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '12px 18px',
+                            borderTop: '1px solid hsl(var(--border) / 0.4)',
+                            fontSize: '0.84rem',
+                            color: 'hsl(var(--muted-foreground))',
+                        }}
+                    >
+                        <span>
+                            {t('page.nodes.pagination.label', {
+                                page,
+                                pageCount,
+                                defaultValue: `Page ${page} of ${pageCount}`,
+                            })}
+                        </span>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                                type="button"
+                                disabled={page <= 1}
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                style={{
+                                    padding: '6px 12px',
+                                    borderRadius: 6,
+                                    border: '1px solid hsl(var(--border) / 0.6)',
+                                    background: 'hsl(var(--card))',
+                                    color: page <= 1 ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))',
+                                    cursor: page <= 1 ? 'not-allowed' : 'pointer',
+                                    fontSize: '0.84rem',
+                                }}
+                            >
+                                {t('page.nodes.pagination.prev', 'Previous')}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={page >= pageCount}
+                                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                                style={{
+                                    padding: '6px 12px',
+                                    borderRadius: 6,
+                                    border: '1px solid hsl(var(--border) / 0.6)',
+                                    background: 'hsl(var(--card))',
+                                    color: page >= pageCount ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))',
+                                    cursor: page >= pageCount ? 'not-allowed' : 'pointer',
+                                    fontSize: '0.84rem',
+                                }}
+                            >
+                                {t('page.nodes.pagination.next', 'Next')}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </NilouCard>
 
             {/* Existing outlet for nodeId sub-routes (dialogs + log viewer) */}

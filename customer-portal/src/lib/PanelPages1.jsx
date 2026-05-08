@@ -268,10 +268,23 @@ const DashboardPage = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <Card>
-          <CardHeader title="Subscription URL" sub="Drop into your client" action={<Btn variant="secondary" style={{ padding: '6px 12px', fontSize: '0.82rem' }}><Icon name="copy" size={14}/> Copy</Btn>} />
+          <CardHeader title="Subscription URL" sub="Drop into your client" action={
+            <Btn
+              variant="secondary"
+              style={{ padding: '6px 12px', fontSize: '0.82rem' }}
+              onClick={() => {
+                if (me?.subscription_url) navigator.clipboard?.writeText(me.subscription_url);
+              }}
+            >
+              <Icon name="copy" size={14}/> Copy
+            </Btn>
+          } />
+          {/* Display the canonical subscription_url returned by /me — never
+              reconstruct on the client (codex review #246: an earlier version
+              dropped the secret key, leaving the copied URL unauthenticatable). */}
           <div style={{ padding: 12, background: 'var(--surface-alt)', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--brand-navy)', wordBreak: 'break-all', lineHeight: 1.55, border: '1px solid var(--border-soft)' }}>
-            {me
-              ? `${window.location.origin}/api/v1/sub/${me.username}`
+            {me?.subscription_url
+              ? me.subscription_url
               : <span style={{ color: 'var(--text-muted)' }}>Loading…</span>
             }
           </div>
