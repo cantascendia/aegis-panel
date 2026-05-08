@@ -23,6 +23,25 @@
       name="description"
       content="Self-hosted open-source apps, run by an independent operator. Auditable, transparent, won't disappear."
     />
+    <script>
+      // SPA fallback shim — backend `_SPAStaticFiles` serves index.html
+      // for unknown /portal/* paths so a deep link like
+      // `nilou.cc/portal/login` doesn't 404. Our hash router (Atoms.jsx)
+      // reads `window.location.hash`, NOT the path. Convert
+      //   /portal/login        → /portal/#/login
+      //   /portal/panel/nodes  → /portal/#/panel/nodes
+      // before React boots so the user lands on the requested page.
+      // No-op when hash is already set, when at the bare /portal/, or
+      // when running outside the /portal/ mount (dev server).
+      (function () {
+        var p = window.location.pathname;
+        var prefix = '/portal/';
+        if (window.location.hash || !p.startsWith(prefix)) return;
+        var sub = p.slice(prefix.length).replace(/\/$/, '');
+        if (!sub) return;
+        window.location.replace(prefix + '#/' + sub + window.location.search);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
