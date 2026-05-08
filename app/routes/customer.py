@@ -72,6 +72,12 @@ class CustomerMeResponse(BaseModel):
     is_active: bool
     online_at: datetime | None
     note: str | None
+    # Full subscription URL (`<prefix>/sub/<username>/<key>`) so the
+    # portal "Copy" button hands clients a usable URL. Computed by the
+    # User model's `subscription_url` property — never reconstruct on
+    # the client (codex review #246: client was building it without
+    # the key, leaving the copied URL unauthenticatable).
+    subscription_url: str
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +104,14 @@ def get_current_customer(
     * No bearer token
     * Bad / expired JWT
     * Wrong access claim (admin tokens can't be reused here)
-    * User no longer exists, removed, or disabled
+    * User no longer exists or removed
+    * **JWT was minted before the operator revoked the subscription
+      key** — codex review #246 found that revoking a leaked sub URL
+      didn't immediately cut off panel access (the 15-min token kept
+      working). We now compare the token's `iat` (`created_at`) with
+      `user.sub_revoked_at` and reject any token that predates the
+      revocation. After revoke + 15 min the issue is moot anyway, but
+      tightening here closes the leak window.
     """
     if not token:
         raise HTTPException(
@@ -120,6 +133,18 @@ def get_current_customer(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+    # Revocation check (forbidden-path: codex cross-review verdict).
+    sub_revoked_at = getattr(user, "sub_revoked_at", None)
+    token_created_at = payload.get("created_at")
+    if (
+        sub_revoked_at is not None
+        and token_created_at is not None
+        and sub_revoked_at > token_created_at
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Subscription revoked",
+        )
     return user
 
 
@@ -136,7 +161,9 @@ def _user_model():
 
 
 @router.post("/sub-login", response_model=SubLoginResponse)
-def sub_login(payload: SubLoginRequest, db: Annotated[Session, Depends(get_db)]):
+def sub_login(
+    payload: SubLoginRequest, db: Annotated[Session, Depends(get_db)]
+):
     """Exchange a subscription URL for a 15-min customer JWT."""
     parsed = parse_sub_url(payload.sub_url)
     if parsed is None:
@@ -175,15 +202,20 @@ def get_me(user=Depends(get_current_customer)):
         used_traffic=getattr(user, "used_traffic", 0) or 0,
         data_limit=user.data_limit,
         data_limit_reset_strategy=getattr(
-            user.data_limit_reset_strategy, "value", user.data_limit_reset_strategy
+            user.data_limit_reset_strategy,
+            "value",
+            user.data_limit_reset_strategy,
         )
         if user.data_limit_reset_strategy
         else None,
         expire_date=user.expire_date,
-        expire_strategy=getattr(user.expire_strategy, "value", user.expire_strategy)
+        expire_strategy=getattr(
+            user.expire_strategy, "value", user.expire_strategy
+        )
         if user.expire_strategy
         else None,
         is_active=getattr(user, "is_active", False),
         online_at=getattr(user, "online_at", None),
         note=user.note,
+        subscription_url=user.subscription_url,
     )

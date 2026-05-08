@@ -19,6 +19,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { renderWithProviders } from "@marzneshin/test-utils/render";
+import { HealthPage as HealthPageComponent } from "../../routes/_dashboard/health.lazy";
 
 // ---------------------------------------------------------------------------
 // Mock dependencies before importing the component
@@ -84,26 +85,15 @@ vi.mock("@marzneshin/libs/sudo-routes", () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Import component AFTER mocks are set up
-// ---------------------------------------------------------------------------
+// Component import is at the top of file (static) — vitest hoists vi.mock()
+// calls above all imports, so the mocks defined here run before
+// health.lazy's module-load-time effects. Previous version used a dynamic
+// `await import(...)` inside `beforeEach` with a 30s timeout because of
+// vitest module-cache races; static import is reliable and ~1ms.
 
-// We import the Route (which includes HealthPage) but test the page
-// by re-exporting or by importing after mocks.
-// The file exports `Route` but not `HealthPage` directly — we exercise
-// via the Route.component() which renders HealthPage via SudoRoute.
-
-// To test HealthPage directly, we dynamically import after mock setup.
-// The trick: import the whole module and call Route.options.component().
-
-let HealthPageComponent: () => JSX.Element;
-
-beforeEach(async () => {
-    // Direct import — health.lazy now exports HealthPage. The Route wrapper
-    // uses TanStack's createLazyFileRoute which doesn't expose .options at
-    // runtime in the test environment.
-    const mod = await import("../../routes/_dashboard/health.lazy");
-    HealthPageComponent = mod.HealthPage as () => JSX.Element;
-}, 30000);
+beforeEach(() => {
+    vi.clearAllMocks();
+});
 
 // ---------------------------------------------------------------------------
 // Tests

@@ -123,26 +123,44 @@ const DashboardPage = () => {
   useEffect(() => {
     let cancelled = false;
     setLoadingMe(true);
-    getMe().then(result => {
-      if (cancelled) return;
-      if (result.ok) {
-        setMe(result.data);
+    // customer-api.js getMe() throws CustomerApiError on non-2xx and
+    // returns the parsed body on success. Earlier merge accidentally
+    // wrapped this as `{ ok, data }` which left meError stuck on `true`
+    // even on happy path. Use try/catch to match the actual contract.
+    getMe()
+      .then((data) => {
+        if (cancelled) return;
+        setMe(data);
         setMeError(false);
-      } else {
+        setLoadingMe(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
         setMeError(true);
-      }
-      setLoadingMe(false);
-    });
-    return () => { cancelled = true; };
+        setLoadingMe(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    getMyTraffic(trafficTabDays).then(result => {
-      if (cancelled) return;
-      setTraffic(result);
-    });
-    return () => { cancelled = true; };
+    // getMyTraffic gracefully returns a placeholder on 404 but throws
+    // CustomerApiError on 401/500. Catch so a stale token doesn't
+    // unmount the page; the /me effect will set meError separately.
+    getMyTraffic(trafficTabDays)
+      .then((result) => {
+        if (cancelled) return;
+        setTraffic(result);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setTraffic({ _placeholder: true, _reason: 'error', daily: [], total_bytes: 0 });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [trafficTabDays]);
 
   // Derive display values from real /me data when available.
@@ -250,10 +268,23 @@ const DashboardPage = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <Card>
-          <CardHeader title="Subscription URL" sub="Drop into your client" action={<Btn variant="secondary" style={{ padding: '6px 12px', fontSize: '0.82rem' }}><Icon name="copy" size={14}/> Copy</Btn>} />
+          <CardHeader title="Subscription URL" sub="Drop into your client" action={
+            <Btn
+              variant="secondary"
+              style={{ padding: '6px 12px', fontSize: '0.82rem' }}
+              onClick={() => {
+                if (me?.subscription_url) navigator.clipboard?.writeText(me.subscription_url);
+              }}
+            >
+              <Icon name="copy" size={14}/> Copy
+            </Btn>
+          } />
+          {/* Display the canonical subscription_url returned by /me — never
+              reconstruct on the client (codex review #246: an earlier version
+              dropped the secret key, leaving the copied URL unauthenticatable). */}
           <div style={{ padding: 12, background: 'var(--surface-alt)', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--brand-navy)', wordBreak: 'break-all', lineHeight: 1.55, border: '1px solid var(--border-soft)' }}>
-            {me
-              ? `${window.location.origin}/api/v1/sub/${me.username}`
+            {me?.subscription_url
+              ? me.subscription_url
               : <span style={{ color: 'var(--text-muted)' }}>Loading…</span>
             }
           </div>

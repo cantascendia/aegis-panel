@@ -279,3 +279,46 @@ def test_customer_token_round_trip_various_user_ids(user_id: int) -> None:
     payload = get_customer_payload(token)
     assert payload is not None
     assert payload["user_id"] == user_id
+
+
+# ---------------------------------------------------------------------------
+# Codex review #246 — sub-revocation check
+# ---------------------------------------------------------------------------
+#
+# Codex flagged that customer JWTs survive subscription revocation
+# until their natural 15-minute expiry. The fix in app/routes/customer.py
+# `get_current_customer` compares the token's `created_at` (iat) with
+# `user.sub_revoked_at` and 401s if the token predates the revocation.
+#
+# We can't test the FastAPI dependency end-to-end here without a TestClient
+# fixture, but we CAN test the comparison logic that matters: the payload
+# extracted from a freshly-minted token MUST expose `created_at`, and the
+# field must be a naive UTC datetime (the same shape `User.sub_revoked_at`
+# stores) so the comparison `>` is well-defined.
+
+
+def test_customer_payload_exposes_created_at() -> None:
+    """The revocation check needs payload['created_at'] to be set."""
+    token = create_customer_token(1)
+    payload = get_customer_payload(token)
+    assert payload is not None
+    # iat → datetime conversion must succeed; comparison with
+    # User.sub_revoked_at depends on this being a real datetime.
+    from datetime import datetime as _dt
+
+    assert isinstance(payload.get("created_at"), _dt)
+    # Naive (no tzinfo) — matches now_utc_naive() shape used elsewhere.
+    assert payload["created_at"].tzinfo is None
+
+
+def test_customer_payload_created_at_is_recent() -> None:
+    """Sanity: a token issued now reports an iat within ±2 seconds of now."""
+    from datetime import timedelta as _td
+
+    from app.utils._aegis_clocks import now_utc_naive
+
+    token = create_customer_token(7)
+    payload = get_customer_payload(token)
+    assert payload is not None
+    delta = abs((now_utc_naive() - payload["created_at"]).total_seconds())
+    assert delta < 2.0
