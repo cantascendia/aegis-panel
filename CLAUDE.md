@@ -47,6 +47,34 @@ CTO 操作手册见 ai-playbook 仓库的 `playbook/handbook.md`。
 默认 Claude Code 直接执行（Opus 规划/Sonnet 编码/Haiku 轻量）。
 浏览器验证/UI 设计 → 委派 Antigravity。隔离并行/自动化 → 委派 Codex。
 
+## 成本封顶（wave-15，手册 §43 reliability）
+
+**周度上限 \$50**（默认），由 `scripts/cost-cap-check.sh` 通过 PreToolUse hook 强制。超上限即阻塞 tool 调用，避免 runaway agent loop 烧钱。
+
+```bash
+# 查看本周消耗
+DOW=$(date +%w); OFFSET=$([ "$DOW" = "0" ] && echo 6 || echo $((DOW - 1)))
+TOTAL=0
+for i in $(seq 0 $OFFSET); do
+  DAY=$(date -d "today -$i day" +%Y-%m-%d 2>/dev/null)
+  C=$(grep -c '"type":"tool_call"' .claude/agent-logs/$DAY.jsonl 2>/dev/null || echo 0)
+  TOTAL=$((TOTAL + C))
+done
+echo "本周 tool_call: $TOTAL；估算 \$$(awk "BEGIN{printf \"%.2f\", $TOTAL*0.05}")"
+
+# 查看阻塞历史
+cat docs/ai-cto/COST-CAP-LOG.md 2>/dev/null
+```
+
+| 场景 | 命令（PowerShell / Bash） |
+|---|---|
+| 临时提高周上限 | `$env:AEGIS_WEEKLY_COST_CAP="100"` / `export AEGIS_WEEKLY_COST_CAP=100` |
+| 紧急放行单 session | `export AEGIS_COST_BYPASS=1` |
+| 切换 Haiku（调单价估值） | `export AEGIS_COST_PER_CALL_USD=0.01` |
+| Codex bridge 关闭限制 | `export CODEX_BRIDGE_NO_COST_CAP=1` |
+
+调整默认阈值 → 改 `scripts/cost-cap-check.sh` + `.claude/settings.json` + 同步 `evals/regression/012-cost-cap-hook-no-interference.yaml`。完整设计见 HARNESS-CHANGELOG wave-15。
+
 ## 项目特定规则
 
 ### 项目身份

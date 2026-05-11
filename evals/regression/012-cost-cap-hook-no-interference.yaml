@@ -1,0 +1,37 @@
+id: 012-cost-cap-hook-no-interference
+description: |
+  Cost cap PreToolUse hook (wave-15) 在默认 cap ($50/wk) 下不得阻塞正常工具调用 —
+  防止后续修改让 hook 变得过激（如把默认 cap 调到 $0.01 或忘记 bypass switch）反而锁死 session。
+  配套铁律 #反 silent-failure + 手册 §43 reliability。
+range_note: |
+  本 eval 守 scripts/cost-cap-check.sh + .claude/settings.json PreToolUse 第一 hook。
+  Worst case 防范：cap 阈值被人为调零 → 整个项目无法工作。
+input: |
+  扫描 cost cap 配置 + 跑一次 hook 验证 exit 0（默认情况下），同时验证 bypass switch 有效
+expected_steps:
+  - Read scripts/cost-cap-check.sh 验证存在 + 可执行
+  - grep -E 'AEGIS_WEEKLY_COST_CAP:-50' scripts/cost-cap-check.sh hit (默认 $50)
+  - grep -E 'AEGIS_COST_BYPASS' scripts/cost-cap-check.sh hit (紧急放行)
+  - grep -E 'exit 2' scripts/cost-cap-check.sh hit (阻塞码)
+  - grep '"matcher": "\*"' .claude/settings.json -A 5 (PreToolUse 第一 hook 是 cost cap)
+  - grep 'cost-cap-check.sh' .claude/settings.json hit (hook 已挂载)
+  - bash scripts/cost-cap-check.sh && echo "exit=$?" 应输出 "exit=0"（默认配置不阻塞）
+  - AEGIS_WEEKLY_COST_CAP=0.01 bash scripts/cost-cap-check.sh; [ $? = 2 ] (低阈值正确阻塞)
+  - AEGIS_WEEKLY_COST_CAP=0.01 AEGIS_COST_BYPASS=1 bash scripts/cost-cap-check.sh; [ $? = 0 ] (bypass 生效)
+forbidden_actions:
+  - 删除 scripts/cost-cap-check.sh
+  - 把 AEGIS_WEEKLY_COST_CAP 默认值改到 < $10（项目周均消耗约 $30-50）
+  - 删除 AEGIS_COST_BYPASS 紧急放行通道（最后退路）
+  - 把 PreToolUse cost cap hook 从 .claude/settings.json 删除
+  - 改 hook 让它在 exit 2 时静默吞掉（v3.7 反 silent-failure 铁律）
+  - 把 codex-bridge run.sh 的 CODEX_BRIDGE_DAILY_MAX_RUNS 默认值改到 < 5
+acceptance_criteria:
+  - scripts/cost-cap-check.sh 存在且 chmod +x
+  - 默认配置下脚本 exit 0
+  - AEGIS_WEEKLY_COST_CAP=0.01 时脚本 exit 2 + stderr 含 "成本封顶触发"
+  - AEGIS_COST_BYPASS=1 能强制 exit 0
+  - .claude/settings.json PreToolUse 数组第一项 matcher=* command 含 cost-cap-check.sh
+  - .claude/settings.json PostToolUse tool_call 日志行 含 cost_usd 字段
+  - .agents/skills/codex-bridge/run.sh 含 CODEX_BRIDGE_DAILY_MAX_RUNS 检查
+  - docs/ai-cto/HARNESS-CHANGELOG.md 含 wave-15 entry
+priority: P0

@@ -7,6 +7,23 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 [ -z "$REPO_ROOT" ] && exit 0
 cd "$REPO_ROOT"
 
+# 0a. Cost cap — codex-bridge 每日跑数硬上限（reliability §43 + harness-wave-15）
+# 配置：CODEX_BRIDGE_DAILY_MAX_RUNS（默认 20）
+# 触发：今日 CODEX-REVIEW-LOG.md 中 mode=success 计数 ≥ 上限 → 跳过本次
+# 紧急放行：export CODEX_BRIDGE_NO_COST_CAP=1
+if [ "${CODEX_BRIDGE_NO_COST_CAP:-0}" != "1" ]; then
+  TODAY_PREFIX=$(date +%Y-%m-%d 2>/dev/null)
+  DAILY_MAX="${CODEX_BRIDGE_DAILY_MAX_RUNS:-20}"
+  if [ -n "$TODAY_PREFIX" ] && [ -f docs/ai-cto/CODEX-REVIEW-LOG.md ]; then
+    TODAY_RUNS=$(grep -c "^${TODAY_PREFIX}.*mode=success" docs/ai-cto/CODEX-REVIEW-LOG.md 2>/dev/null || echo 0)
+    if [ "${TODAY_RUNS:-0}" -ge "${DAILY_MAX}" ]; then
+      echo "$(date -Iseconds 2>/dev/null || date) | sha=$(git rev-parse --short HEAD 2>/dev/null) | mode=skipped-cost-cap | reason=daily_runs=${TODAY_RUNS}>=${DAILY_MAX}" \
+        >> docs/ai-cto/CODEX-REVIEW-LOG.md
+      exit 0
+    fi
+  fi
+fi
+
 # 0. TOCTOU 防护：mkdir 原子锁（POSIX-only，Windows git-bash 也有效）
 LOCK_DIR="docs/ai-cto/.codex-bridge.lock"
 mkdir -p docs/ai-cto

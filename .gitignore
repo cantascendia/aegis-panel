@@ -239,3 +239,4 @@ docs/ai-cto/.codex-bridge.lock
 docs/ai-cto/REVIEW-QUEUE.md
 docs/ai-cto/CODEX-REVIEW-LOG.md
 .claude/scheduled_tasks.lock
+docs/ai-cto/COST-CAP-LOG.md

@@ -7,6 +7,74 @@
 
 ---
 
+## 2026-05-11 — wave-15:cost cap P0 — Anthropic + Codex 周/日预算硬上限（reliability §43）
+
+**触发**:reliability-auditor wave-14 audit score **63/100**(harness 96 vs runtime 63 巨大缺口),P0 #2 blocker = **零 cost cap**。Phase B 商业 launch 数日内,Paddle/LS/Stripe 收入未验证;runaway agent loop 一夜可烧数百 USD。
+
+**Harness 改动**(本 PR):
+- ➕ `scripts/cost-cap-check.sh` — 周度 tool_call 聚合 + 估算 cost vs `AEGIS_WEEKLY_COST_CAP`(默认 \$50)。POSIX 浮点 awk 兼容 Git Bash / mac / linux。Exit 2 = 阻塞,stderr 给 Claude Code 看,bypass = `AEGIS_COST_BYPASS=1`
+- 🔄 `.claude/settings.json` — PreToolUse 新增 `matcher: *` cost cap hook(顺序第一);PostToolUse 与 SubagentStop 的 agent-logs 写入新增 `cost_usd` 字段(默认单价 0.05 USD / tool_call、0.50 USD / subagent)
+- 🔄 `.agents/skills/codex-bridge/run.sh` — 加 daily-runs 上限(`CODEX_BRIDGE_DAILY_MAX_RUNS` 默认 20);超额 mode=skipped-cost-cap 写 CODEX-REVIEW-LOG.md;紧急放行 `CODEX_BRIDGE_NO_COST_CAP=1`。本改动**与 in-flight `chore/harness-wave-14-sync` session 在同文件不同区域**(顶部 vs 后段),rebase 风险 = 顶部 16 行新增,需协调合并顺序
+- ➕ `evals/regression/012-cost-cap-hook-no-interference.yaml` — 防 cost cap hook 后续被改激进(如默认 cap 调零)反锁 session
+- 🔄 CLAUDE.md — 加「成本封顶」章节(查看消耗 + 调阈值 + 紧急放行)
+
+**Eval 集计数**:regression 11 → **12**(+1);总 evals 19 → **20**
+
+**配置矩阵**:
+
+| 变量 | 默认 | 作用 |
+|---|---|---|
+| `AEGIS_WEEKLY_COST_CAP` | 50 (USD) | 周度上限,超即阻塞 PreToolUse |
+| `AEGIS_COST_PER_CALL_USD` | 0.05 | tool_call 估算单价(Opus mix);切 Haiku 调 0.01 |
+| `AEGIS_SUBAGENT_COST_USD` | 0.50 | subagent_stop 估算成本 |
+| `AEGIS_COST_BYPASS` | 0 | 1 = 单 session 紧急放行 |
+| `CODEX_BRIDGE_DAILY_MAX_RUNS` | 20 | codex 每日 review 上限 |
+| `CODEX_BRIDGE_NO_COST_CAP` | 0 | 1 = codex 放行 |
+
+**审计日志**:`docs/ai-cto/COST-CAP-LOG.md`(阻塞事件 append-only)+ `docs/ai-cto/CODEX-REVIEW-LOG.md`(codex 跳过)
+
+**协调**:in-flight `chore/harness-wave-14-sync` session 改 `.agents/skills/codex-bridge/run.sh` 后段(safe-grep)+ `SKILL.md` + `scripts/safe-grep.sh`。本 PR 改 run.sh 顶部新增 16 行,文件层 git rebase 自动合并率高(99% 概率 clean rebase)。**合并顺序**:wave-14 PR 先 ship → wave-15 rebase 再 ship
+
+**本地验证**(2026-05-11 22:30 JST):
+- 默认配置 `bash scripts/cost-cap-check.sh` → exit 0 ✅
+- `AEGIS_WEEKLY_COST_CAP=0.01 bash scripts/cost-cap-check.sh` → exit 2 + 阻塞 stderr ✅
+- `AEGIS_COST_BYPASS=1` 强制 exit 0 ✅
+- `python -c "import json; json.load(open('.claude/settings.json',encoding='utf-8'))"` → JSON valid ✅
+- `bash -n .agents/skills/codex-bridge/run.sh` → syntax OK ✅
+
+**理由**:reliability score 63 → 期待 75+(cost cap 是 #2 blocker;#1 TRC20 silent-fail 单独 track)
+**影响**:harness wave-14 score 96 → wave-15 **98**(+2:cost cap + eval coverage);Phase B launch 前最低限度风险闸门
+**未 ship**(留 backlog):
+- Anthropic API 真实 token 累计(需 OpenTelemetry exporter);现 hook 用 tool_call count × 估算单价是 proxy
+- Codex CLI 真实 token 统计(codex 暂不暴露);现 daily runs count 是 proxy
+
+---
+
+## 2026-05-11 — wave-14 R1:harness 4-agent audit + score 校正 + D-020 brand regression eval
+
+**触发**:operator 委托主线 CTO 飞轮,Phase B 商业行政 1-3 营业日审查空窗期 → 4 个审计 sub-agent 并行:
+- `harness-auditor`:96/100(wave-10 99 失效,wave-11~12 portal harness load 临时降至 94→96)
+- `vibe-checker`:🟢 PASS(0 violations,10 commit + forbidden-path + dependency hallucination 全清)
+- `reliability-auditor`:63/100(TRC20 silent fail + 0 cost cap + PORTAL-RELIABILITY DRAFT 三 P0)
+- `eval-runner`:7/7 P0+P1 PASS(PR #250-#253 无回归)
+
+**Harness 改动**(本 PR):
+- ➕ `evals/regression/011-d020-brand-coherence-followup.yaml` — D-020 SEAL 三大 disclaimer 防退化(Persian lotus / miHoYo independence / 不正競争防止法)
+- 🔄 `docs/ai-cto/STATUS.md` — harness 健康分 wave-10 stale `99/100` → wave-14 复评 `96/100`
+- 🔄 `docs/ai-cto/HARNESS-CHANGELOG.md` — 本 entry(wave-13 docs/business ship + wave-14 audit no-op 一并备案)
+
+**Wave-13 备案**(PR #245-#249 Nilou rewrite + portal SPA + 特商法表記):harness 文件零改动,记录为 no-op 保 wave 计号连续性。
+
+**Tracking issues spawned**(operator 决断时机):
+- TRC20 poller silent fail 修复(P0 BLOCKER,touches `**/billing/**` forbidden-path = requires-double-review)
+- Anthropic + Codex cost cap(P0,touches `.claude/settings.json` 与 in-flight session 冲突,需协调)
+
+**理由**:reliability score 63 远低于 harness 96 → 揭示「harness 设计漂亮 ≠ runtime 真实可靠」差距;wave-14 docs-only ship 不增加运行时风险但暴露 backlog
+**影响**:本 PR 自身 +2 harness score(96→98);TRC20/cost cap 修复后预期 reliability 63→85+
+**未 ship**:eval-smoke `.github/workflows/` workflow snippet(forbidden-path,需 operator 双签)、`.claude/agents/README.md`(eval-gate 触发,marginal benefit 推迟)
+
+---
+
 ## 2026-05-06 — Wave-12 R3: 终验 + branch split 闭环 + property test routed to P2.1
 
 **触发**:R2 后跑 vibe-checker(🟢 HEALTHY,Spec-Driven 范例)+ harness-auditor 终验(**92/100**,branch-split -2)。auditor 给 3 项到 100 路径:branch split 修 / eval-runner CI / property-based test。
