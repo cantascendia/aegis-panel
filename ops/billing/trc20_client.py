@@ -16,10 +16,10 @@ Why Tronscan
   needs (we make 1 call per tick across all open invoices).
 - **Stable schema** for the fields we care about (``transaction_id``,
   ``trigger_info`` decoded amount, ``confirmed`` boolean, block).
-- **Fallback exists**: same shape on Trongrid public-node JSON-RPC,
-  so if Tronscan degrades we override ``BILLING_TRC20_TRONSCAN_API_BASE``
-  + tweak the parsing in this file. Documented in
-  ``OPS-trc20-runbook.md`` (future).
+- **Fallback chain**: configure ``BILLING_TRC20_FALLBACK_API_BASES``
+  (CSV) for automatic failover after
+  ``BILLING_TRC20_FALLBACK_THRESHOLD`` consecutive failures on the
+  active base. See SPEC-trc20-client-resilience.md §4.2.
 
 Response normalisation
 ----------------------
@@ -44,6 +44,15 @@ Error handling
   ``receive_address``. Worth alerting on.
 - Empty result list → returns ``[]`` cleanly (a quiet wallet is not
   an error).
+
+Cost guard
+----------
+A per-process sliding-window counter
+(:class:`~ops.billing.trc20_cost_guard.TronscanCostGuard`) is checked
+before every outbound request.  If the hourly cap is reached (default
+200; override via ``BILLING_TRC20_MAX_CALLS_PER_HOUR``), the method
+raises :class:`Trc20ClientError` immediately without hitting the
+network, avoiding IP bans from accidental rate flooding.
 """
 
 from __future__ import annotations
@@ -54,6 +63,7 @@ from typing import Any
 
 import aiohttp
 
+from ops.billing.trc20_cost_guard import TronscanCostGuard
 from ops.billing.trc20_matcher import Trc20Transfer
 
 logger = logging.getLogger(__name__)
@@ -75,21 +85,51 @@ class TronscanClient:
     Constructed via :meth:`from_env` for production use; tests can
     instantiate directly with a custom ``aiohttp.ClientSession`` to
     inject mocked HTTP behavior.
+
+    Supports a fallback chain: if ``api_bases`` contains more than one
+    URL, a base that fails ``fallback_threshold`` consecutive times is
+    rotated out in favour of the next one in the list, and a Telegram
+    alert is sent via ``ops.billing.trc20_health``.
     """
 
     def __init__(
         self,
         *,
-        api_base: str,
+        api_base: str | None = None,
+        api_bases: list[str] | None = None,
         contract_address: str,
         session: aiohttp.ClientSession | None = None,
         request_timeout: float = 10.0,
+        cost_guard: TronscanCostGuard | None = None,
+        fallback_threshold: int = 5,
     ) -> None:
-        self._api_base = api_base.rstrip("/")
+        # Accept either the legacy single api_base or the new api_bases list.
+        if api_bases is not None:
+            self._api_bases: list[str] = [
+                b.rstrip("/") for b in api_bases if b
+            ]
+        elif api_base is not None:
+            self._api_bases = [api_base.rstrip("/")]
+        else:
+            raise ValueError("TronscanClient requires api_base or api_bases")
+
+        if not self._api_bases:
+            raise ValueError("TronscanClient: api_bases must not be empty")
+
         self._contract_address = contract_address
         self._session = session
         self._owns_session = session is None
         self._timeout = aiohttp.ClientTimeout(total=request_timeout)
+
+        # Fallback tracking: per-base consecutive failure counters and
+        # the index of the currently active base.
+        self._failure_counts: list[int] = [0] * len(self._api_bases)
+        self._active_base_idx: int = 0
+        self._fallback_threshold = fallback_threshold
+
+        self._cost_guard: TronscanCostGuard = (
+            cost_guard if cost_guard is not None else TronscanCostGuard()
+        )
 
     @classmethod
     def from_env(cls) -> TronscanClient:
@@ -97,13 +137,29 @@ class TronscanClient:
         # Local import — env module imports providers, providers imports
         # this client, so we delay until first call to break the cycle.
         from ops.billing.trc20_config import (
+            BILLING_TRC20_FALLBACK_API_BASES,
+            BILLING_TRC20_FALLBACK_THRESHOLD,
+            BILLING_TRC20_MAX_CALLS_PER_HOUR,
             BILLING_TRC20_TRONSCAN_API_BASE,
             BILLING_TRC20_USDT_CONTRACT,
         )
 
+        bases = [BILLING_TRC20_TRONSCAN_API_BASE]
+        if BILLING_TRC20_FALLBACK_API_BASES:
+            extras = [
+                b.strip()
+                for b in BILLING_TRC20_FALLBACK_API_BASES.split(",")
+                if b.strip()
+            ]
+            bases.extend(extras)
+
         return cls(
-            api_base=BILLING_TRC20_TRONSCAN_API_BASE,
+            api_bases=bases,
             contract_address=BILLING_TRC20_USDT_CONTRACT,
+            cost_guard=TronscanCostGuard(
+                max_calls_per_hour=BILLING_TRC20_MAX_CALLS_PER_HOUR
+            ),
+            fallback_threshold=BILLING_TRC20_FALLBACK_THRESHOLD,
         )
 
     async def __aenter__(self) -> TronscanClient:
@@ -116,6 +172,10 @@ class TronscanClient:
         if self._owns_session and self._session is not None:
             await self._session.close()
             self._session = None
+
+    @property
+    def _active_base(self) -> str:
+        return self._api_bases[self._active_base_idx]
 
     async def list_recent_transfers(
         self,
@@ -130,13 +190,76 @@ class TronscanClient:
         traffic level. Operators with extreme volume can dial this
         higher via SPEC follow-up; matching cost is O(open invoices ×
         transfers), trivial at 50.
+
+        Raises :class:`Trc20ClientError` if all bases in the fallback
+        chain fail, or if the cost guard cap is exceeded.
         """
         if self._session is None:
             raise Trc20ClientError(
                 "Client used outside async context manager; call "
                 "`async with client:` or pass an explicit session."
             )
-        url = f"{self._api_base}/api/token_trc20/transfers"
+
+        # Cost guard — checked once per call regardless of which base
+        # is active.  A single cap covers total outbound traffic.
+        await self._cost_guard.record_call()
+
+        last_exc: Trc20ClientError | None = None
+
+        # Try the active base first; on failure try remaining bases in
+        # order (wrap around if needed).
+        #
+        # ``start_idx`` is captured once so that mid-loop rotation of
+        # ``_active_base_idx`` does not confuse the current call's
+        # iteration order.  Rotation takes effect from the NEXT call.
+        num_bases = len(self._api_bases)
+        start_idx = self._active_base_idx
+        for attempt in range(num_bases):
+            idx = (start_idx + attempt) % num_bases
+            base = self._api_bases[idx]
+            try:
+                result = await self._fetch_from(
+                    base, to_address=to_address, limit=limit
+                )
+                # Success — reset failure counter for this base.
+                self._failure_counts[idx] = 0
+                return result
+            except Trc20ClientError as exc:
+                self._failure_counts[idx] += 1
+                last_exc = exc
+                if (
+                    len(self._api_bases) > 1
+                    and self._failure_counts[idx] >= self._fallback_threshold
+                    and idx == self._active_base_idx
+                ):
+                    # Threshold crossed on the currently-active base —
+                    # rotate active pointer to next base and alert.
+                    # Takes effect starting from the next call.
+                    next_idx = (self._active_base_idx + 1) % num_bases
+                    next_base = self._api_bases[next_idx]
+                    self._active_base_idx = next_idx
+                    logger.warning(
+                        "trc20 client: base %s failed %d times; "
+                        "switching to %s",
+                        base,
+                        self._failure_counts[idx],
+                        next_base,
+                    )
+                    await self._record_fallback_switch(next_base)
+                continue
+
+        assert last_exc is not None  # loop ran at least once
+        raise last_exc
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    async def _fetch_from(
+        self, base: str, *, to_address: str, limit: int
+    ) -> list[Trc20Transfer]:
+        """Issue one HTTP GET to ``base`` and return parsed transfers."""
+        url = f"{base}/api/token_trc20/transfers"
         params = {
             "contract_address": self._contract_address,
             "toAddress": to_address,
@@ -146,6 +269,7 @@ class TronscanClient:
             "confirm": "true",
         }
         try:
+            assert self._session is not None
             async with self._session.get(
                 url, params=params, timeout=self._timeout
             ) as resp:
@@ -159,6 +283,18 @@ class TronscanClient:
             raise Trc20ClientError(f"Tronscan network error: {exc}") from exc
 
         return _parse_transfers(data)
+
+    @staticmethod
+    async def _record_fallback_switch(new_base: str) -> None:
+        """Notify trc20_health that the active base was rotated."""
+        try:
+            from ops.billing.trc20_health import record_failure
+
+            await record_failure(reason=f"fallback_switch:{new_base}")
+        except Exception:  # pragma: no cover — defensive
+            logger.exception(
+                "trc20 client: health fallback-switch notification failed"
+            )
 
 
 def _parse_transfers(data: dict[str, Any]) -> list[Trc20Transfer]:
