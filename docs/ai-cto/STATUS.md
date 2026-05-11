@@ -1,7 +1,11 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-08 wave-14 (商业行政 launch-B Day 2 — 050 番号申請 + 屋号カナ SEALED + brand defense)
+> 最后更新:2026-05-11 wave-14 R1 (4-agent audit + harness 96 复评 + reliability 63 暴露 P0 backlog)
 > 更新频率:每 3 轮或重大节点
+> Harness 健康分:**96/100**(wave-14 复评,wave-10 99/100 已失效;portal harness load 引入 -3 永久债)
+> Reliability 健康分:**63/100**(wave-14 R1 首次审计;TRC20 silent fail + 0 cost cap + PORTAL-RELIABILITY DRAFT 为三 P0 backlog)
+> Eval 回归:**7/7 P0+P1 PASS**(PR #250-#253 无破坏)
+> Vibe coding 红线:**🟢 PASS**(10 commit + forbidden-path + dependency hallucination 全清)
 
 ---
 
