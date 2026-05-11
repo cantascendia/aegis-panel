@@ -7,6 +7,38 @@
 
 ---
 
+## 2026-05-11 — Wave-14 R2: TRC20 P0 fix + reliability 飞轮 + eval yaml 校正
+
+**触发**:reliability-auditor wave-14 R1(63/100)识别 TRC20 silent fail 为 #1 P0 blocker;PR #256 ship 后 R2 复测 71/100(+8);harness-auditor 同步复测 97/100(+1 vs R1 96)。
+
+**R2 改动(本轮飞轮 7 commit)**:
+
+| Commit | 项 | 操作 |
+|---|---|---|
+| `2bca60a` | PR #256 ship | TRC20 poller silent-failure alerting,forbidden-path,17 测试新增,SPEC-trc20-poller-alerting.md 三轨齐全 |
+| `f2fa2dd` | ruff F401/UP007/UP017 修复 | CI lint job 重启,unblock PR #256 |
+| `4470ece` | next-P0 SPEC + eval 002 yaml 校正 | SPEC-billing-scheduler-alerting.md 起草(apply_paid silent fail,结构兄弟缺陷);eval 002 acceptance_criteria 措辞修正(eval-runner 驳回 R1 误杀新测试文件) |
+| `a250391` | SPEC-trc20-client-resilience.md | reliability P1 #3 + #5 合并 SPEC(cost guard + Trongrid fallback chain),交由 code-generator 隔离 worktree 实施 |
+| (本 entry) | HARNESS-CHANGELOG 补登 | harness-auditor R2 指出 -3 缺口 |
+
+**4 sub-agent 并行**:reliability-auditor / vibe-checker / eval-runner / harness-auditor 同轮飞轮全部跑通,无相互冲突。**三 Agent 模式**(planner / generator / auditor)首次实战完整闭环。
+
+**Eval 集变更**:`evals/golden-trajectories/002-fix-bug-without-touching-tests.yaml` acceptance_criteria 第 20 行措辞更新 — 从"不含 tests/* 修改"严化为"不改既有断言;新测试文件需 commit message 说明理由"。eval-runner 驳回 R1 误杀,gate 表达力提升而非放宽。
+
+**LESSONS 新增**:L-eval-unlock(eval 误杀合法行为的合法解锁流程,见 LESSONS.md)。
+
+**未做(等用户/审批)**:
+
+- SPEC-billing-scheduler-alerting.md 实施 — 按 §9 决策等 PR #256 双签 merge 后启动(避免 review 摩擦)
+- SPEC-trc20-client-resilience.md 实施 — code-generator 隔离 worktree 进行中
+- SLO.md 起草 — spec-planner 进行中
+
+**Score**:96 → **97 / 100**(+1,eval gate 加强 + 三 Agent 闭环;HARNESS-CHANGELOG -3 已补回此 entry)。
+
+**Audit 流水**:96(wave-14 R1)→ **97**(wave-14 R2,本 entry)。
+
+---
+
 ## 2026-05-06 — Wave-12 R3: 终验 + branch split 闭环 + property test routed to P2.1
 
 **触发**:R2 后跑 vibe-checker(🟢 HEALTHY,Spec-Driven 范例)+ harness-auditor 终验(**92/100**,branch-split -2)。auditor 给 3 项到 100 路径:branch split 修 / eval-runner CI / property-based test。
