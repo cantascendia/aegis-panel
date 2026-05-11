@@ -121,6 +121,47 @@ BILLING_TRC20_USDT_CONTRACT: str = config(
     default="TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
 )
 
+# --- Health alerting (SPEC-trc20-poller-alerting.md) ----------------------
+# Consecutive failed Tronscan fetches that must occur before we page the
+# operator via Telegram. 3 ticks × 30 s = ~90 s window — aggressive
+# enough to surface real outages before users start refund-pinging, but
+# tolerant of single transient network blips.
+BILLING_TRC20_ALERT_THRESHOLD: int = int(
+    config("BILLING_TRC20_ALERT_THRESHOLD", default=3)
+)
+
+# Directory for Prometheus textfile collector. Empty string disables file
+# emission (default) — operators wiring node_exporter
+# ``--collector.textfile.directory`` set this to that path. Atomic
+# write (tmp + rename), no crash on permission / disk-full errors.
+BILLING_TRC20_METRICS_DIR: str = config(
+    "BILLING_TRC20_METRICS_DIR", default=""
+)
+
+# --- Client resilience (SPEC-trc20-client-resilience.md) ------------------
+# Soft hourly call cap for the Tronscan API client. Default 200/h gives
+# ~67% headroom over normal production traffic (~120/h at 30-s poll) while
+# catching obvious misconfiguration (e.g. POLL_INTERVAL=1s → 3600/h).
+# Set to 0 to disable the guard (not recommended in production).
+BILLING_TRC20_MAX_CALLS_PER_HOUR: int = int(
+    config("BILLING_TRC20_MAX_CALLS_PER_HOUR", default=200)
+)
+
+# CSV of fallback API base URLs tried in order after
+# BILLING_TRC20_TRONSCAN_API_BASE fails BILLING_TRC20_FALLBACK_THRESHOLD
+# consecutive times. Empty string (default) disables the fallback chain and
+# preserves existing single-base behaviour.
+# Example: "https://api.trongrid.io,https://my-indexer.example.com"
+BILLING_TRC20_FALLBACK_API_BASES: str = config(
+    "BILLING_TRC20_FALLBACK_API_BASES", default=""
+)
+
+# Number of consecutive fetch failures on the active base before the client
+# automatically switches to the next entry in the fallback chain.
+BILLING_TRC20_FALLBACK_THRESHOLD: int = int(
+    config("BILLING_TRC20_FALLBACK_THRESHOLD", default=5)
+)
+
 
 @lru_cache(maxsize=1)
 def get_trc20_provider() -> Trc20Provider:
@@ -169,6 +210,11 @@ def _reload_for_tests(
     min_confirmations: int = 1,
     poll_interval: int = 30,
     payment_window_minutes: int = 30,
+    alert_threshold: int = 3,
+    metrics_dir: str = "",
+    max_calls_per_hour: int = 200,
+    fallback_api_bases: str = "",
+    fallback_threshold: int = 5,
 ) -> None:
     """Test-only hook to rewire module state without re-importing.
 
@@ -183,7 +229,12 @@ def _reload_for_tests(
         BILLING_TRC20_TRONSCAN_API_BASE, \
         BILLING_TRC20_MIN_CONFIRMATIONS, \
         BILLING_TRC20_POLL_INTERVAL, \
-        BILLING_TRC20_PAYMENT_WINDOW_MINUTES
+        BILLING_TRC20_PAYMENT_WINDOW_MINUTES, \
+        BILLING_TRC20_ALERT_THRESHOLD, \
+        BILLING_TRC20_METRICS_DIR, \
+        BILLING_TRC20_MAX_CALLS_PER_HOUR, \
+        BILLING_TRC20_FALLBACK_API_BASES, \
+        BILLING_TRC20_FALLBACK_THRESHOLD
     BILLING_TRC20_ENABLED = enabled
     BILLING_TRC20_RECEIVE_ADDRESS = receive_address
     BILLING_TRC20_RATE_FEN_PER_USDT = rate_fen_per_usdt
@@ -192,12 +243,22 @@ def _reload_for_tests(
     BILLING_TRC20_MIN_CONFIRMATIONS = min_confirmations
     BILLING_TRC20_POLL_INTERVAL = poll_interval
     BILLING_TRC20_PAYMENT_WINDOW_MINUTES = payment_window_minutes
+    BILLING_TRC20_ALERT_THRESHOLD = alert_threshold
+    BILLING_TRC20_METRICS_DIR = metrics_dir
+    BILLING_TRC20_MAX_CALLS_PER_HOUR = max_calls_per_hour
+    BILLING_TRC20_FALLBACK_API_BASES = fallback_api_bases
+    BILLING_TRC20_FALLBACK_THRESHOLD = fallback_threshold
     get_trc20_provider.cache_clear()
 
 
 __all__ = [
+    "BILLING_TRC20_ALERT_THRESHOLD",
     "BILLING_TRC20_ENABLED",
+    "BILLING_TRC20_FALLBACK_API_BASES",
+    "BILLING_TRC20_FALLBACK_THRESHOLD",
+    "BILLING_TRC20_MAX_CALLS_PER_HOUR",
     "BILLING_TRC20_MEMO_SALT",
+    "BILLING_TRC20_METRICS_DIR",
     "BILLING_TRC20_MIN_CONFIRMATIONS",
     "BILLING_TRC20_PAYMENT_WINDOW_MINUTES",
     "BILLING_TRC20_POLL_INTERVAL",

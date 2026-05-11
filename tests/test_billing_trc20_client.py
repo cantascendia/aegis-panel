@@ -264,3 +264,176 @@ def test_client_returns_parsed_transfers() -> None:
     assert len(transfers) == 1
     assert transfers[0].amount_millis == 1223
     assert transfers[0].memo == "ABCDEFGH"
+
+
+# --------------------------------------------------------------------------
+# Fallback chain
+# --------------------------------------------------------------------------
+
+
+class _SequentialSession:
+    """Session that fails on ``primary_base`` and succeeds on any other.
+
+    Used to test the fallback chain without real network calls.
+    Tracks (url, base) pairs for all calls made.
+    """
+
+    def __init__(self, fail_base: str, success_body: dict) -> None:
+        self._fail_base = fail_base.rstrip("/")
+        self._success_body = success_body
+        self.calls: list[str] = []  # base prefixes actually called
+
+    def get(self, url: str, params: dict | None = None, timeout=None):
+        # Extract base from the URL (everything before /api/)
+        base = url.split("/api/")[0]
+        self.calls.append(base)
+        if base == self._fail_base:
+            return _MockResponse(500, "server error")
+        return _MockResponse(200, self._success_body)
+
+    async def close(self) -> None:
+        pass
+
+
+def test_fallback_kicks_in_after_threshold_failures() -> None:
+    """Active base rotates after ``fallback_threshold`` consecutive failures.
+
+    Semantics: within a single call the client tries all bases in order.
+    Before the threshold is reached the call still succeeds via the fallback
+    without permanently changing the active base.  On the call where the
+    threshold is crossed, the active base pointer rotates to the next entry —
+    subsequent calls start from the fallback directly (no primary retry).
+    """
+    success_body = {"data": [_good_record(transaction_id="tx-fallback")]}
+    # Primary (index 0) always fails; fallback (index 1) always succeeds.
+    session = _SequentialSession(
+        fail_base="https://primary.example.com",
+        success_body=success_body,
+    )
+
+    client = TronscanClient(
+        api_bases=[
+            "https://primary.example.com",
+            "https://fallback.example.com",
+        ],
+        contract_address="USDT-CONTRACT",
+        session=session,  # type: ignore[arg-type]
+        fallback_threshold=3,
+    )
+
+    # Calls 1–2: primary fails (count < 3), fallback succeeds within same
+    # call.  Active base is still primary (idx=0).
+    for call_num in range(1, 3):
+        transfers = _run(client.list_recent_transfers(to_address="TR-receive"))
+        assert (
+            len(transfers) == 1
+        ), f"call {call_num}: expected fallback success"
+    assert client._active_base_idx == 0, "active base should still be primary"
+
+    # Call 3: primary fails (count reaches 3 = threshold) → active base
+    # rotates to fallback (idx=1); fallback succeeds within same call.
+    transfers = _run(client.list_recent_transfers(to_address="TR-receive"))
+    assert len(transfers) == 1
+    assert transfers[0].tx_hash == "tx-fallback"
+    assert client._active_base_idx == 1, "active base should now be fallback"
+
+    # Call 4+: now the active base is fallback directly — primary is NOT
+    # tried again.
+    prev_call_count = len(session.calls)
+    _run(client.list_recent_transfers(to_address="TR-receive"))
+    new_calls = session.calls[prev_call_count:]
+    assert len(new_calls) == 1
+    assert "fallback" in new_calls[0]
+
+
+def test_fallback_switch_emits_health_failure() -> None:
+    """When the fallback switch fires, trc20_health.record_failure is
+    called exactly once with reason='fallback_switch:<new_base>'."""
+    health_calls: list[str] = []
+
+    import ops.billing.trc20_client as _client_mod
+
+    original_method = _client_mod.TronscanClient._record_fallback_switch
+
+    @staticmethod  # type: ignore[misc]
+    async def _patched(new_base: str) -> None:
+        health_calls.append(f"fallback_switch:{new_base}")
+
+    _client_mod.TronscanClient._record_fallback_switch = _patched  # type: ignore[assignment]
+
+    try:
+        success_body = {"data": []}
+        session = _SequentialSession(
+            fail_base="https://primary.example.com",
+            success_body=success_body,
+        )
+        client = TronscanClient(
+            api_bases=[
+                "https://primary.example.com",
+                "https://fallback.example.com",
+            ],
+            contract_address="USDT-CONTRACT",
+            session=session,  # type: ignore[arg-type]
+            fallback_threshold=2,
+        )
+        # Call 1: primary fails (count=1 < 2), fallback succeeds — no switch yet.
+        _run(client.list_recent_transfers(to_address="TR-receive"))
+        assert len(health_calls) == 0
+
+        # Call 2: primary fails (count=2 >= threshold) → switch fires, fallback
+        # succeeds within same call.
+        _run(client.list_recent_transfers(to_address="TR-receive"))
+    finally:
+        _client_mod.TronscanClient._record_fallback_switch = original_method  # type: ignore[assignment]
+
+    # Exactly one switch notification on call 2, mentioning the fallback base.
+    assert len(health_calls) == 1
+    assert "fallback_switch:" in health_calls[0]
+    assert "fallback.example.com" in health_calls[0]
+
+
+def test_no_fallback_configured_raises_normal() -> None:
+    """With a single-element api_bases list, failures raise normally
+    without any fallback rotation — behaviour identical to pre-resilience
+    code."""
+    session = _MockSession(_MockResponse(500, "error"))
+    client = TronscanClient(
+        api_bases=["https://only.example.com"],
+        contract_address="USDT-CONTRACT",
+        session=session,  # type: ignore[arg-type]
+    )
+
+    with pytest.raises(Trc20ClientError):
+        _run(client.list_recent_transfers(to_address="TR-receive"))
+
+    # Only one HTTP call was made (no retry to another base)
+    assert len(session.calls) == 1
+
+
+def test_trongrid_response_schema_parsed() -> None:
+    """Parser handles Trongrid-style ``token_transfers`` key and
+    ``block_timestamp`` field instead of ``block_ts``."""
+    trongrid_body = {
+        "token_transfers": [
+            {
+                "transaction_id": "tg-tx-1",
+                "amount_str": "5000000",  # 5 USDT on-chain → 5000 millis
+                "block_timestamp": 1746100800000,
+                "confirmed": True,
+                "block": 42,
+            }
+        ]
+    }
+    session = _MockSession(_MockResponse(200, trongrid_body))
+    client = TronscanClient(
+        api_base="https://api.trongrid.io",
+        contract_address="USDT-CONTRACT",
+        session=session,  # type: ignore[arg-type]
+    )
+
+    transfers = _run(client.list_recent_transfers(to_address="TR-receive"))
+
+    assert len(transfers) == 1
+    assert transfers[0].tx_hash == "tg-tx-1"
+    assert transfers[0].amount_millis == 5000
+    assert transfers[0].block_number == 42

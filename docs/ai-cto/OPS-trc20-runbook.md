@@ -278,25 +278,46 @@ curl -v https://apilist.tronscanapi.com/api/token_trc20/transfers?limit=1 2>&1 |
 - 返回 5xx = Tronscan 自己挂,等 + 切 fallback
 - 网络层完全不通 = 中国大陆出口被墙,切 Trongrid 或自建 indexer
 
-**Mitigation**(15 分钟内不能恢复时):
+**自动 Mitigation（已实装，2026-05-11 SPEC-trc20-client-resilience）**:
+
+配置 `BILLING_TRC20_FALLBACK_API_BASES` 后，连续 5 次主 base 失败即
+自动切换到下一个 base，同时发 Telegram 告警。推荐初始 `.env`:
 
 ```bash
-# 切到备用 base
-echo 'BILLING_TRC20_TRONSCAN_API_BASE=https://api.trongrid.io' >> .env
+# 主 base(Tronscan 公共节点)
+BILLING_TRC20_TRONSCAN_API_BASE=https://apilist.tronscanapi.com
+
+# 自动 fallback — Tronscan 宕时自动切换，无需人工干预
+BILLING_TRC20_FALLBACK_API_BASES=https://api.trongrid.io
+
+# 可选调参（默认值即合理）
+BILLING_TRC20_FALLBACK_THRESHOLD=5        # 切换前需几次连续失败
+BILLING_TRC20_MAX_CALLS_PER_HOUR=200      # 每小时最多发出多少 API 请求
+```
+
+配置后重启生效：
+```bash
 docker compose restart marzneshin
 ```
 
-注意 Trongrid 的响应 schema 不完全相同 —— `_parse_one` 会因字段缺失
-退出哪些 entries 的 warning 日志。如果完全 parse 失败,临时停用
-TRC20:
+面板会在切换瞬间发一条 Telegram "已切到 fallback" 告警；恢复主 base
+后自动发 "已切回" 告警。**无需人工操作**。
+
+**手动 Mitigation（escape hatch，仅在 fallback 也全部失联时使用）**:
+
+```bash
+# 临时改主 base（重启后 fallback chain 以新 base 为起点重建）
+sed -i 's|BILLING_TRC20_TRONSCAN_API_BASE=.*|BILLING_TRC20_TRONSCAN_API_BASE=https://api.trongrid.io|' .env
+docker compose restart marzneshin
+```
+
+如果 Trongrid 也不可用，临时停用 TRC20（已开 invoice 30 分钟后自动
+expire，A.5 reaper 收尾）:
 
 ```bash
 sed -i 's/BILLING_TRC20_ENABLED=true/BILLING_TRC20_ENABLED=false/' .env
 docker compose restart marzneshin
 ```
-
-dashboard 用户结账时不再看到 TRC20 选项,但已开 invoice 仍会在窗口期
-内被处理(只是 poll 不会跑)—— 等 30 分钟自动 expire,A.5 reaper 收尾。
 
 ### 6.2 Scheduler 没启动(没看到 trc20_poll_interval 日志)
 
