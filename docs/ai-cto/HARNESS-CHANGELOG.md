@@ -18,24 +18,49 @@
 | `2bca60a` | PR #256 ship | TRC20 poller silent-failure alerting,forbidden-path,17 测试新增,SPEC-trc20-poller-alerting.md 三轨齐全 |
 | `f2fa2dd` | ruff F401/UP007/UP017 修复 | CI lint job 重启,unblock PR #256 |
 | `4470ece` | next-P0 SPEC + eval 002 yaml 校正 | SPEC-billing-scheduler-alerting.md 起草(apply_paid silent fail,结构兄弟缺陷);eval 002 acceptance_criteria 措辞修正(eval-runner 驳回 R1 误杀新测试文件) |
-| `a250391` | SPEC-trc20-client-resilience.md | reliability P1 #3 + #5 合并 SPEC(cost guard + Trongrid fallback chain),交由 code-generator 隔离 worktree 实施 |
-| (本 entry) | HARNESS-CHANGELOG 补登 | harness-auditor R2 指出 -3 缺口 |
+| `a250391` | SPEC-trc20-client-resilience.md | reliability P1 #3 + #5 合并 SPEC(cost guard + Trongrid fallback chain),交由 code-generator 隔离 worktree 实施(PR #260)|
+| `19cb0ba` | docs trio | HARNESS-CHANGELOG 补登 + LESSONS L-046 (eval-unlock 流程) + SLO.md DRAFT(spec-planner sub-agent 产出)|
+| `edab9d8` | STATUS R2 + L-047 | sub-agent worktree base trap(generator 从未 merge PR branch 分叉,PR 内容 superset)|
+| `70b3b9f` | OPS-billing-scheduler-runbook.md | next-P0 实施前 ops 文档预就位(per-reason ApplierSkip taxonomy + Prometheus alert rules)|
 
-**4 sub-agent 并行**:reliability-auditor / vibe-checker / eval-runner / harness-auditor 同轮飞轮全部跑通,无相互冲突。**三 Agent 模式**(planner / generator / auditor)首次实战完整闭环。
+**4 sub-agent 并行 + 1 code-generator**:reliability-auditor / vibe-checker / eval-runner / harness-auditor 同轮飞轮全部跑通,无相互冲突。**三 Agent 模式**(planner / generator / auditor)首次实战完整闭环。
 
 **Eval 集变更**:`evals/golden-trajectories/002-fix-bug-without-touching-tests.yaml` acceptance_criteria 第 20 行措辞更新 — 从"不含 tests/* 修改"严化为"不改既有断言;新测试文件需 commit message 说明理由"。eval-runner 驳回 R1 误杀,gate 表达力提升而非放宽。
 
-**LESSONS 新增**:L-eval-unlock(eval 误杀合法行为的合法解锁流程,见 LESSONS.md)。
+**LESSONS 新增**:L-046(eval 误杀合法行为的合法解锁流程)+ L-047(code-generator 隔离 worktree 基础分支必须 origin/main,否则 PR 内容 superset)。
 
 **未做(等用户/审批)**:
 
 - SPEC-billing-scheduler-alerting.md 实施 — 按 §9 决策等 PR #256 双签 merge 后启动(避免 review 摩擦)
-- SPEC-trc20-client-resilience.md 实施 — code-generator 隔离 worktree 进行中
-- SLO.md 起草 — spec-planner 进行中
 
 **Score**:96 → **97 / 100**(+1,eval gate 加强 + 三 Agent 闭环;HARNESS-CHANGELOG -3 已补回此 entry)。
 
 **Audit 流水**:96(wave-14 R1)→ **97**(wave-14 R2,本 entry)。
+
+---
+
+## 2026-05-11 — wave-14 R1:harness 4-agent audit + score 校正 + D-020 brand regression eval
+
+**触发**:operator 委托主线 CTO 飞轮,Phase B 商业行政 1-3 营业日审查空窗期 → 4 个审计 sub-agent 并行:
+- `harness-auditor`:96/100(wave-10 99 失效,wave-11~12 portal harness load 临时降至 94→96)
+- `vibe-checker`:🟢 PASS(0 violations,10 commit + forbidden-path + dependency hallucination 全清)
+- `reliability-auditor`:63/100(TRC20 silent fail + 0 cost cap + PORTAL-RELIABILITY DRAFT 三 P0)
+- `eval-runner`:7/7 P0+P1 PASS(PR #250-#253 无回归)
+
+**Harness 改动**(本 PR):
+- ➕ `evals/regression/011-d020-brand-coherence-followup.yaml` — D-020 SEAL 三大 disclaimer 防退化(Persian lotus / miHoYo independence / 不正競争防止法)
+- 🔄 `docs/ai-cto/STATUS.md` — harness 健康分 wave-10 stale `99/100` → wave-14 复评 `96/100`
+- 🔄 `docs/ai-cto/HARNESS-CHANGELOG.md` — 本 entry(wave-13 docs/business ship + wave-14 audit no-op 一并备案)
+
+**Wave-13 备案**(PR #245-#249 Nilou rewrite + portal SPA + 特商法表記):harness 文件零改动,记录为 no-op 保 wave 计号连续性。
+
+**Tracking issues spawned**(operator 决断时机):
+- TRC20 poller silent fail 修复(P0 BLOCKER,touches `**/billing/**` forbidden-path = requires-double-review)
+- Anthropic + Codex cost cap(P0,touches `.claude/settings.json` 与 in-flight session 冲突,需协调)
+
+**理由**:reliability score 63 远低于 harness 96 → 揭示「harness 设计漂亮 ≠ runtime 真实可靠」差距;wave-14 docs-only ship 不增加运行时风险但暴露 backlog
+**影响**:本 PR 自身 +2 harness score(96→98);TRC20/cost cap 修复后预期 reliability 63→85+
+**未 ship**:eval-smoke `.github/workflows/` workflow snippet(forbidden-path,需 operator 双签)、`.claude/agents/README.md`(eval-gate 触发,marginal benefit 推迟)
 
 ---
 

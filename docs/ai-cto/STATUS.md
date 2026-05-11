@@ -2,9 +2,10 @@
 
 > 最后更新:2026-05-11 wave-14 R2 (reliability 飞轮 + 4 sub-agent 并行 + PR #256/#260 ship)
 > 更新频率:每 3 轮或重大节点
-> Harness 健康分:**97/100**(wave-14 R2,+1 vs R1 96)
-> Reliability 健康分:**71/100**(wave-14 R2,+8 vs R1 63;TRC20 P0 已修)
+> Harness 健康分:**97/100**(wave-14 R2,+1 vs R1 96;portal harness load 引入 -3 永久债;eval gate 强化 +1)
+> Reliability 健康分:**71/100**(wave-14 R2,+8 vs R1 63;TRC20 silent fail P0 已修 via PR #256;0 cost cap + PORTAL-RELIABILITY DRAFT 仍开放)
 > Eval 回归:**5/7 PASS + 1 PARTIAL + 1 yaml-quality 修正(已 ship)**
+> Vibe coding 红线:**🟢 PASS**(本轮 7 commit + forbidden-path 合规 + dependency hallucination 全清)
 
 ---
 
