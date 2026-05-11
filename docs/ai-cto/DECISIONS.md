@@ -58,6 +58,27 @@
 - `marketing/nilou-network/legal.html`(trademark notice 後続強化)
 - 開業届 e-Tax 受付番号 `20260507224845548217`(2026/5/7、品川税務署、ニィロウ ネットワーク 法定登録済)
 
+**Footnote (2026-05-11 j-platpat preliminary research)**:
+
+CTO 間接調査(j-platpat JS-rendered で WebFetch 不可、代替源で実施):
+
+1. ✅ **「ニィロウ」 IS official Japanese reading of Genshin character 妮露** — pixiv 百科事典 primary entry confirms (`https://dic.pixiv.net/a/%E5%A6%AE%E9%9C%B2`). 本決定の IP collision risk 評価が**正確**であることを再確認。
+2. ⚠️ **No public evidence of miHoYo/COGNOSPHERE registering individual character names as Japanese trademark** — iptops.com / Gematsu / retronews 等専門 trademark watch sources 確認、miHoYo の既知日本商標出願は game titles + service names のみ:
+   - Genshin Impact / 原神(game title)
+   - HoYoverse(service name)
+   - 崩壊 3rd / 崩壊スターレイル / 崩壊ネクサスアニマ(game titles)
+   - Astaweave Haven / Hoshimi Haven(future game/service names、2024/6/25 出願)
+3. ✅ **直接商標衝突リスク LOW** — 当方が第 9/42 類 SaaS 区分で「Nilou Network」+ フリガナ「ニィロウ ネットワーク」 出願時、miHoYo の prior art は character name レベルで存在せず、game title「原神 / Genshin Impact」とは 商品 / 役務 categories が異なる。
+4. ⚠️ **不正競争防止法 第 2 条 1 項 2 号(著名表示冒用)リスク MEDIUM 維持** — 商標登録あろうとなかろうと、角色 妮露 の 著名性 が高い → 「混同惹起」or「悪意の借用」主張 余地は残る。`legal.html` trademark notice の Persian lotus 由来 + 業種区分 disclosure が依然 防衛要石。
+5. **Operator 最終確認 TODO**:Phase B 商標登録 申請 直前に operator が **j-platpat 簡易検索を手動 5 分実施**(URL `https://www.j-platpat.inpit.go.jp/`、検索キーワード「ニィロウ」「妮露」「Nilou」「Nilou Network」全分類)→ COGNOSPHERE 名義 prior art **無**を最終 verify。あれば surrogate kana(ニロウ / ニル)へ pivot、別 ADR で記録。
+
+調査ソース:
+- `https://dic.pixiv.net/a/%E5%A6%AE%E9%9C%B2`(pixiv 百科事典「妮露」エントリ、ニィロウ 読み public 確認)
+- `https://www.gematsu.com/2024/07/mihoyo-trademarks-astaweave-haven-bandai-namco-trademarks-case-mirage-in-japan`(Gematsu trademark watch、character name 出願 なし)
+- `https://www.itmedia.co.jp/news/articles/2406/03/news090.html`(関連時期の業界商標報道)
+
+→ 本footnote は indirect evidence、商標登録 Phase B 直前に operator が 5 分 j-platpat 手動 verify 必須。
+
 ---
 
 ## D-018 | 2026-05-06 | customer-portal 解禁(推翻 D-016) — 商业化 Phase B 启用用户自助门户
