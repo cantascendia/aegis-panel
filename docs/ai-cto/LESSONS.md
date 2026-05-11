@@ -8,6 +8,27 @@
 
 ---
 
+## L-047 | 2026-05-11 wave-14 R2 | code-generator 隔离 worktree 在 unmerged PR 上分叉 → PR 内容 superset
+
+**现象**:wave-14 R2 派 `code-generator` 实施 SPEC-trc20-client-resilience.md。CTO 主线在当前分支 `claude/dreamy-tharp-951bce`(PR #256 head,**未 merge**)上 commit SPEC,然后派 generator。生成的 PR #260 包含了 PR #256 已经引入的 `trc20_health.py` + 部分 `trc20_config.py` 内容(superset),产生潜在 merge conflict。
+
+**根因**:`code-generator` 用 `isolation: "worktree"` 时,git worktree 从**当前 HEAD** 拉,而当前 HEAD 已经包含未 merge 的 PR #256 内容。generator 从那个 HEAD 写代码,自然包含 PR #256 的所有改动 + 自己的增量。
+
+**影响**:
+- PR #260 看似独立,实际上 stack 在 PR #256 之上
+- 如果 PR #260 先 merge → 把 trc20_health.py 直接落 main,PR #256 merge 时 conflict
+- 即便 PR #256 先 merge,PR #260 rebase 时需要"接受 PR #260 版本"(因为是 superset)
+
+**落地防线**:
+1. **派 `code-generator` 前先 check**:`git log origin/main..HEAD` — 若有 commit 未 merge,要么 wait,要么显式说明 stack 关系
+2. **PR description 必含"Stacking note"**:列出与哪个 unmerged PR 共享文件 + 推荐合并顺序
+3. **优选方案**:从 `origin/main` 创建 SPEC commit + `git worktree add` 后派 generator(而非当前 head)
+4. **退路**:本轮已用 — PR #260 加 `requires-double-review` 标签 + comment 注明 stack。Reviewer 看 diff 时不会困惑
+
+**未沉淀**:本轮没立即写入 `.agents/rules/sub-agent-worktree.md`(已存在的硬规则)— 留待 R3 沉淀 ✓。
+
+---
+
 ## L-046 | 2026-05-11 wave-14 R2 | eval yaml 误杀合法行为时的合法解锁流程
 
 **现象**:`evals/golden-trajectories/002-fix-bug-without-touching-tests.yaml` acceptance_criteria 第 20 行写"git diff --name-only 不包含 tests/* 的修改"。eval-runner 在 PR #256(TRC20 alerting,17 新测试)上跑出 FAIL,但实质上 PR #256 行为完全合规(test-lock §3 明确"新增测试覆盖漏洞"合法)。

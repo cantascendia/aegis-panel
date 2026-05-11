@@ -1,13 +1,39 @@
 # 项目状态(STATUS)
 
-> 最后更新:2026-05-08 wave-14 (商业行政 launch-B Day 2 — 050 番号申請 + 屋号カナ SEALED + brand defense)
+> 最后更新:2026-05-11 wave-14 R2 (reliability 飞轮 + 4 sub-agent 并行 + PR #256/#260 ship)
 > 更新频率:每 3 轮或重大节点
+> Harness 健康分:**97/100**(wave-14 R2,+1 vs R1 96)
+> Reliability 健康分:**71/100**(wave-14 R2,+8 vs R1 63;TRC20 P0 已修)
+> Eval 回归:**5/7 PASS + 1 PARTIAL + 1 yaml-quality 修正(已 ship)**
 
 ---
 
 ## 当前轮次
 
-**wave-14 launch-B 商业行政 Day 2**(2026-05-08,**050 番号申請 + 屋号カナ SEALED + brand defense docs**):
+**wave-14 R2 reliability 飞轮**(2026-05-11,**自我飞轮 + 多 sub-agent 并行**):
+
+### Sub-agent 飞轮(4 sub-agent + 1 code-generator 并行,主线 0 干扰)
+
+| Agent | 任务 | 输出 |
+|---|---|---|
+| reliability-auditor | R1 63 → R2 复测 | **71/100**,识别 next P0 = `apply_paid` silent failure(同构兄弟) |
+| vibe-checker | PR #256 红线扫描 | **GREEN×5 + YELLOW×1**(YELLOW = 数字 vs 实际测试数 minor) |
+| eval-runner | 7 个 golden trajectory 回归 | **5 PASS / 1 PARTIAL / 1 yaml-FAIL**(002 措辞缺陷已修正) |
+| harness-auditor | R1 96 → R2 复测 | **97/100**(+1),三 Agent 闭环首次实战 |
+| code-generator | 实施 SPEC-trc20-client-resilience | **PR #260** ship,84/84 测试 + ruff clean |
+
+### 本轮 R2 ship 内容
+
+| Item | 状态 | 链接 |
+|---|---|---|
+| TRC20 silent-failure alerting(P0)| ✅ PR #256 等双签 | [#256](https://github.com/cantascendia/aegis-panel/pull/256) |
+| Eval 002 yaml acceptance 措辞修正 | ✅ commit 4470ece | 解锁合法新测试 |
+| Trc20 client cost guard + Trongrid fallback chain(P1)| ✅ PR #260 等 review | [#260](https://github.com/cantascendia/aegis-panel/pull/260)(stack on #256,合并顺序注明) |
+| SPEC-billing-scheduler-alerting(next P0 草稿)| ✅ commit 4470ece | 等 PR #256 merge 后实施 |
+| docs/ai-cto/SLO.md(DRAFT)| ✅ commit 19cb0ba | 4 SLO domain,Telegram-only 出口 |
+| HARNESS-CHANGELOG wave-14 R2 + LESSONS L-046/L-047 | ✅ commit 19cb0ba | eval-unlock 流程 + 隔离 worktree base trap |
+
+### 历史轮次:wave-14 R1 商业行政 launch-B Day 2(2026-05-08,**050 番号申請 + 屋号カナ SEALED + brand defense docs**):
 
 - **楽天 モバイルチョイス"050" 申請**:✅ 提出完了(個人事業主証明 = 受信通知 + 開業届控え 結合 PDF + 在留カード両面)
   - プラン:ベーシック ¥100/月
@@ -35,7 +61,7 @@
 🔄 開業届控え PDF 正式版          税務署受理印付き、1-3 営業日
 🔄 銀行口座 開通                  審査結果メール、1-3 営業日
 🔄 050 番号 発番                  楽天審査通過後、1-3 営業日
-⏳ legal.html trademark notice 強化  follow-up PR(Persian lotus 語源 + 不正競争防止法 disclaimer)
+✅ legal.html trademark notice 強化  (PR #251 ship,Persian lotus 語源 + 不正競争防止法 §2-1-1/2 disclaimer 已实落)
 ⏳ j-platpat 商標先行検索         operator 5 分作業(妮露 / ニィロウ / Nilou 全分類)
 ⏳ Paddle / LS / Stripe 申請      銀行 + 開業届控え 双就位後(5/10-5/12 予測)
    → Phase B 商業化決済通路完工
@@ -48,7 +74,10 @@
 | 開業届控え PDF 正式版取得 | 🔄 審査中 | 5/8-5/10 |
 | 住信SBI 銀行口座 開通 | 🔄 審査中 | 5/8-5/10 |
 | 楽天 050 番号 発番 | 🔄 審査中 | 5/9-5/11 |
-| legal.html trademark notice 強化 | ⏳ next PR | 今夜 / 明日 |
+| legal.html trademark notice 強化 | ✅ PR #251 ship | — |
+| TRC20 poller silent-failure alerting (P0) | 🔄 PR #256 等双签 | — |
+| TRC20 client cost guard + Trongrid fallback (P1) | 🔄 PR #260 等 review (stack on #256) | — |
+| SPEC-billing-scheduler-alerting 实施 (next P0) | ⏳ blocked on PR #256 merge | 1-3 日 |
 | j-platpat 商標先行検索 | ⏳ operator | 任意、5 分 |
 | 050 番号取得後 → 特商法表記 直公開化 PR | ⏳ blocked on 050 発番 | 1-3 営業日後 |
 | Paddle merchant 申請 | ⏳ blocked on 銀行+控え | 5/10-5/12 |
