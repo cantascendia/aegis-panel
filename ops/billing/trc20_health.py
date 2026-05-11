@@ -43,9 +43,8 @@ import asyncio
 import logging
 import os
 import tempfile
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Optional
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +58,8 @@ logger = logging.getLogger(__name__)
 class _HealthState:
     consecutive_failures: int = 0
     alert_sent: bool = False
-    last_success_at: Optional[datetime] = None
-    last_failure_at: Optional[datetime] = None
+    last_success_at: datetime | None = None
+    last_failure_at: datetime | None = None
     last_failure_reason: str = ""
 
 
@@ -69,7 +68,7 @@ _lock: asyncio.Lock = asyncio.Lock()
 
 
 def _now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # --------------------------------------------------------------------------
@@ -77,7 +76,7 @@ def _now_utc() -> datetime:
 # --------------------------------------------------------------------------
 
 
-async def record_success(*, now: Optional[datetime] = None) -> None:
+async def record_success(*, now: datetime | None = None) -> None:
     """Called by the poller after a clean Tronscan fetch.
 
     Side effects (in order):
@@ -106,7 +105,7 @@ async def record_success(*, now: Optional[datetime] = None) -> None:
 
 
 async def record_failure(
-    reason: str, *, now: Optional[datetime] = None
+    reason: str, *, now: datetime | None = None
 ) -> None:
     """Called by the poller when ``Trc20ClientError`` was raised.
 

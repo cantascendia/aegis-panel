@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -22,7 +22,7 @@ import pytest
 from ops.billing import trc20_health
 from ops.billing.trc20_config import _reload_for_tests as _reload_cfg
 
-_T0 = datetime(2026, 5, 11, 12, 0, 0, tzinfo=timezone.utc)
+_T0 = datetime(2026, 5, 11, 12, 0, 0, tzinfo=UTC)
 
 
 @pytest.fixture(autouse=True)
