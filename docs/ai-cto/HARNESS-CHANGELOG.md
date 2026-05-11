@@ -7,6 +7,31 @@
 
 ---
 
+## 2026-05-11 — wave-14 R1:harness 4-agent audit + score 校正 + D-020 brand regression eval
+
+**触发**:operator 委托主线 CTO 飞轮,Phase B 商业行政 1-3 营业日审查空窗期 → 4 个审计 sub-agent 并行:
+- `harness-auditor`:96/100(wave-10 99 失效,wave-11~12 portal harness load 临时降至 94→96)
+- `vibe-checker`:🟢 PASS(0 violations,10 commit + forbidden-path + dependency hallucination 全清)
+- `reliability-auditor`:63/100(TRC20 silent fail + 0 cost cap + PORTAL-RELIABILITY DRAFT 三 P0)
+- `eval-runner`:7/7 P0+P1 PASS(PR #250-#253 无回归)
+
+**Harness 改动**(本 PR):
+- ➕ `evals/regression/011-d020-brand-coherence-followup.yaml` — D-020 SEAL 三大 disclaimer 防退化(Persian lotus / miHoYo independence / 不正競争防止法)
+- 🔄 `docs/ai-cto/STATUS.md` — harness 健康分 wave-10 stale `99/100` → wave-14 复评 `96/100`
+- 🔄 `docs/ai-cto/HARNESS-CHANGELOG.md` — 本 entry(wave-13 docs/business ship + wave-14 audit no-op 一并备案)
+
+**Wave-13 备案**(PR #245-#249 Nilou rewrite + portal SPA + 特商法表記):harness 文件零改动,记录为 no-op 保 wave 计号连续性。
+
+**Tracking issues spawned**(operator 决断时机):
+- TRC20 poller silent fail 修复(P0 BLOCKER,touches `**/billing/**` forbidden-path = requires-double-review)
+- Anthropic + Codex cost cap(P0,touches `.claude/settings.json` 与 in-flight session 冲突,需协调)
+
+**理由**:reliability score 63 远低于 harness 96 → 揭示「harness 设计漂亮 ≠ runtime 真实可靠」差距;wave-14 docs-only ship 不增加运行时风险但暴露 backlog
+**影响**:本 PR 自身 +2 harness score(96→98);TRC20/cost cap 修复后预期 reliability 63→85+
+**未 ship**:eval-smoke `.github/workflows/` workflow snippet(forbidden-path,需 operator 双签)、`.claude/agents/README.md`(eval-gate 触发,marginal benefit 推迟)
+
+---
+
 ## 2026-05-06 — Wave-12 R3: 终验 + branch split 闭环 + property test routed to P2.1
 
 **触发**:R2 后跑 vibe-checker(🟢 HEALTHY,Spec-Driven 范例)+ harness-auditor 终验(**92/100**,branch-split -2)。auditor 给 3 项到 100 路径:branch split 修 / eval-runner CI / property-based test。

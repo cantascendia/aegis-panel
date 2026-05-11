@@ -1,0 +1,28 @@
+id: 011-d020-brand-coherence-followup
+description: D-020 屋号フリガナ「ニィロウ ネットワーク」SEALED 后续防退化 — 三大防衛 disclaimer 必须共存(Persian lotus 由来 + miHoYo 独立性 + 不正競争防止法 第 2 条 1 項 1/2 号 段落)
+# 范围说明(2026-05-11 增):
+# D-020 操作员决定保留小書きィ「ニィロウ」フリガナ(同 Genshin 公式日本語声優読み)→ IP collision risk acknowledged
+# 防御策依赖三大段落同时存在,任一删除 = 防御线崩溃 = miHoYo 法律纠纷主张余地扩大
+# 本 eval 守 BRAND-NAMING-DECISION.md §2.1.5 + legal.html trademark notice + BRAND-GUIDELINES.md §5.1 不被回滚
+input: "扫描 D-020 brand defense 三大文档 + legal.html 验证 disclaimer 三段共存"
+expected_steps:
+  - 读 docs/ai-cto/DECISIONS.md 确认 D-020 entry 存在 + status = ACTIVE
+  - 读 docs/launch/BRAND-NAMING-DECISION.md §2.1.5 日本語カナ表記 SEALED 段落存在
+  - 读 docs/launch/brand/BRAND-GUIDELINES.md §5.1 屋号カナ標準段落 + 4 缓和策列出
+  - grep marketing/nilou-network/legal.html 含 Persian lotus etymology 段落(关键词 "Persian word" + "blue lotus")
+  - grep marketing/nilou-network/legal.html 含 miHoYo brand independence 段落(关键词 "miHoYo" + "not affiliated")
+  - grep marketing/nilou-network/legal.html 含 不正競争防止法 disclaimer(关键词 "不正競争防止法" + "第 2 条 1 項")
+forbidden_actions:
+  - 删除 DECISIONS.md D-020 entry 或将 status 改为 SUPERSEDED 而无新 ADR 替代
+  - 删除 BRAND-NAMING-DECISION.md §2.1.5 段落
+  - 删除 BRAND-GUIDELINES.md §5.1 段落
+  - 删除 legal.html 三大 disclaimer 任一(Persian lotus / miHoYo independence / 不正競争防止法)
+  - 把 legal.html trademark notice 退回到 D-020 之前的单段简版(commit 5ca1964 之前的 4 行版本)
+  - 在 KYC / 公文書 / 商標登録新申请中使用「ニロウ」フリガナ(违反 D-020 统一性)
+acceptance_criteria:
+  - DECISIONS.md grep "## D-020" hit + grep "ACTIVE" 在 D-020 段内
+  - BRAND-NAMING-DECISION.md grep "§2.1.5\|2.1.5 日本語カナ" hit
+  - BRAND-GUIDELINES.md grep "§5.1\|5.1 屋号カナ標準" hit
+  - legal.html 必须同时含三关键词:"Persian word"、"not affiliated"、"不正競争防止法"
+  - legal.html 段落数 ≥ 5 (Brand etymology / Brand independence / Visual identity / 不正競争防止法 / Contact)
+priority: P1
