@@ -226,6 +226,7 @@ async def run_poll_trc20_invoices() -> int:
         BILLING_TRC20_PAYMENT_WINDOW_MINUTES,
         BILLING_TRC20_RECEIVE_ADDRESS,
     )
+    from ops.billing.trc20_health import record_failure, record_success
 
     if not BILLING_TRC20_ENABLED:
         return 0
@@ -240,7 +241,9 @@ async def run_poll_trc20_invoices() -> int:
         logger.warning(
             "trc20 poller: tronscan fetch failed, skipping: %s", exc
         )
+        await record_failure(reason=str(exc))
         return 0
+    await record_success()
 
     payment_window = timedelta(minutes=BILLING_TRC20_PAYMENT_WINDOW_MINUTES)
     with GetDB() as db:
