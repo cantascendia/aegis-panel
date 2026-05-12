@@ -18,8 +18,6 @@ import {
     HStack,
 } from "@marzneshin/common/components";
 
-import { DATA_LIMIT_METRIC } from "../../../constants";
-
 interface QuickPlan {
     code: string;
     label: string;
@@ -47,7 +45,15 @@ export const QuickPlans: FC = () => {
     const form = useFormContext();
 
     const apply = (plan: QuickPlan) => {
-        form.setValue("data_limit", plan.gb * DATA_LIMIT_METRIC, {
+        // The data_limit input field is in GB and `UserSchema` (domain/
+        // schema.ts) multiplies by DATA_LIMIT_METRIC = 1024**3 on submit
+        // to send bytes to the backend. Set the form value in GB here —
+        // the original wave-9 PR #179 incorrectly pre-multiplied by
+        // DATA_LIMIT_METRIC which double-applied the conversion on submit
+        // (100 GB → 100 * 1024^3 * 1024^3 = 1.15e20 bytes → SQLite
+        // "Python int too large to convert to SQLite INTEGER" 500 error).
+        // Customer-blocking bug fixed 2026-05-08.
+        form.setValue("data_limit", plan.gb, {
             shouldDirty: true, shouldTouch: true, shouldValidate: true,
         });
         form.setValue("data_limit_reset_strategy", "no_reset", {
