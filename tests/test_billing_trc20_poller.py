@@ -399,3 +399,117 @@ def test_poller_with_deeper_confirmations_marks_paid(session) -> None:
     assert count == 1
     session.refresh(inv)
     assert inv.state == INVOICE_STATE_PAID
+
+
+# --------------------------------------------------------------------------
+# Health-tracker integration (SPEC-trc20-poller-alerting.md)
+# --------------------------------------------------------------------------
+
+
+async def test_run_poll_invokes_record_success_on_clean_tick(monkeypatch):
+    """A successful Tronscan fetch must call record_success exactly once
+    so the health tracker resets its failure counter / lag metric."""
+    from contextlib import contextmanager
+
+    from ops.billing import trc20_health
+    from ops.billing.trc20_config import _reload_for_tests as _reload_cfg
+    from ops.billing.trc20_poller import run_poll_trc20_invoices
+
+    _reload_cfg(enabled=True)
+    trc20_health._reset_for_tests()
+
+    class _FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return None
+
+        async def list_recent_transfers(self, *, to_address):
+            return []  # quiet wallet, no error → clean tick
+
+    import ops.billing.trc20_client as tc
+
+    monkeypatch.setattr(
+        tc.TronscanClient, "from_env", classmethod(lambda cls: _FakeClient())
+    )
+
+    success_calls: list[object] = []
+    real_success = trc20_health.record_success
+
+    async def spy_success(**kwargs):
+        success_calls.append(kwargs)
+        await real_success(**kwargs)
+
+    monkeypatch.setattr(trc20_health, "record_success", spy_success)
+
+    class _Query:
+        def filter(self, *a, **k):
+            return self
+
+        def order_by(self, *a, **k):
+            return self
+
+        def all(self):
+            return []
+
+    class _NullSession:
+        def query(self, *a, **kw):
+            return _Query()
+
+    @contextmanager
+    def fake_getdb():
+        yield _NullSession()
+
+    import app.db as appdb
+
+    monkeypatch.setattr(appdb, "GetDB", fake_getdb)
+
+    result = await run_poll_trc20_invoices()
+
+    assert result == 0
+    assert len(success_calls) == 1
+
+
+async def test_run_poll_invokes_record_failure_on_client_error(monkeypatch):
+    """Trc20ClientError must trigger record_failure with the exception
+    message as ``reason`` — this is the path that ultimately fires the
+    Telegram alert at the 3rd consecutive failure."""
+    from ops.billing import trc20_health
+    from ops.billing.trc20_client import Trc20ClientError
+    from ops.billing.trc20_config import _reload_for_tests as _reload_cfg
+    from ops.billing.trc20_poller import run_poll_trc20_invoices
+
+    _reload_cfg(enabled=True)
+    trc20_health._reset_for_tests()
+
+    class _BoomClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return None
+
+        async def list_recent_transfers(self, *, to_address):
+            raise Trc20ClientError("HTTP 502 from tronscan")
+
+    import ops.billing.trc20_client as tc
+
+    monkeypatch.setattr(
+        tc.TronscanClient, "from_env", classmethod(lambda cls: _BoomClient())
+    )
+
+    failure_calls: list[str] = []
+    real_failure = trc20_health.record_failure
+
+    async def spy_failure(reason, **kwargs):
+        failure_calls.append(reason)
+        await real_failure(reason, **kwargs)
+
+    monkeypatch.setattr(trc20_health, "record_failure", spy_failure)
+
+    result = await run_poll_trc20_invoices()
+
+    assert result == 0
+    assert len(failure_calls) == 1
+    assert "502" in failure_calls[0]

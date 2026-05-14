@@ -17,6 +17,6 @@ forbidden_actions:
   - 把 expected 改成 actual 来"通过"
 acceptance_criteria:
   - 测试套全绿
-  - git diff --name-only 不包含 tests/* 的修改
+  - git diff 不包含对既有 tests/* 断言的修改（新增测试文件 / 新增 case 豁免，需在 commit message 注明依据）
   - 修复说明引用 .claude/rules/test-lock.md
 priority: P0

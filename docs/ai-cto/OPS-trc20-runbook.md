@@ -217,7 +217,7 @@ with GetDB() as db:
 | 日志 | 含义 | 告警级别 |
 |---|---|---|
 | `trc20 poller marked N invoice(s) paid` | 正常工作 | INFO,周对账时统计 |
-| `trc20 poller: tronscan fetch failed` | API 单次失败 | WARN,持续 > 10 分钟告警 |
+| `trc20 poller: tronscan fetch failed` | API 单次失败 | WARN,**连续 3 次(默认)自动 Telegram 告警**(§5.3) |
 | `trc20 poller: invoice X skipped (state race)` | 罕见,不影响功能 | INFO |
 | `trc20 poller: invoice X failed to mark paid` | 严重,可能数据库故障 | CRITICAL,立即介入 |
 | `trc20 poller: invoice X missing trc20_memo` | provider/DB drift | CRITICAL,数据腐败 |
@@ -251,7 +251,69 @@ WHERE event_type = 'state_paid'
 把 SQL 算出的 `total_usdt` 和 cold wallet **链上余额变化**对比,差值
 应 = 0(误差应只来自 cents-dither,< 1000 millis × invoice 数)。
 
-### 5.3 用户体验指标
+### 5.3 健康告警 / textfile collector(2026-05-11 起,SPEC-trc20-poller-alerting)
+
+Poller 已内嵌 silent-failure 检测,行为如下:
+
+| 状态 | 触发 | 出口 |
+|---|---|---|
+| OK | 单次成功 fetch | metric `trc20_poller_lag_seconds` 重置,`alert_active=0` |
+| Degraded | 连续 `BILLING_TRC20_ALERT_THRESHOLD`(默认 3 次,约 90s)Tronscan 失败 | Telegram 告警**一次** + `alert_active=1` |
+| Recovered | 退化后第一次成功 fetch | Telegram 恢复消息 + 计数器清零 |
+| Re-degraded | 恢复后再次连续失败到阈值 | 新告警(去抖随恢复一并解除) |
+
+**部署 textfile collector**(可选,需要本地 node_exporter):
+
+```bash
+# 1. 找到 node_exporter 的 textfile 目录(常见 /var/lib/node_exporter/textfile)
+mkdir -p /var/lib/node_exporter/textfile
+chown <panel-user>:<node-exporter-user> /var/lib/node_exporter/textfile
+chmod 0770 /var/lib/node_exporter/textfile
+
+# 2. 在 .env 配置
+echo 'BILLING_TRC20_METRICS_DIR=/var/lib/node_exporter/textfile' >> .env
+
+# 3. node_exporter 启动参数加
+#    --collector.textfile.directory=/var/lib/node_exporter/textfile
+
+# 4. 重启 panel + node_exporter
+docker compose restart marzneshin
+systemctl restart node_exporter
+```
+
+可被刮取的指标:
+
+```text
+trc20_poller_last_success_timestamp   # 上次成功 fetch 的 Unix epoch
+trc20_poller_lag_seconds              # 距离上次成功多少秒
+trc20_poller_consecutive_failures     # 当前连续失败次数
+trc20_poller_alert_active             # 1=Telegram 告警已发出未恢复
+```
+
+Prometheus 告警示例 (rule.yml):
+
+```yaml
+- alert: TRC20PollerStuck
+  expr: trc20_poller_lag_seconds > 300
+  for: 2m
+  labels:
+    severity: critical
+  annotations:
+    summary: "TRC20 poller has not fetched successfully for {{ $value }}s"
+    runbook: "docs/ai-cto/OPS-trc20-runbook.md#6.1"
+```
+
+**告警阈值调整**:
+
+如果商业化早期(< 10 客户)觉得 3 次太敏感,可加大:
+
+```bash
+echo 'BILLING_TRC20_ALERT_THRESHOLD=10' >> .env  # 5min 才告警
+```
+
+但要清楚代价:延迟 5min 告警 = 用户已经付了款 5min 没看到状态变化 = 可能客服群已经在问了。
+
+### 5.4 用户体验指标
 
 `expired_count / (applied + expired)` = 用户**放弃支付率**。> 50% =
 通道 UX 不好(memo 难复制 / amount 难记 / 钱包不支持 memo),考虑
